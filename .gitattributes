@@ -1,0 +1,40 @@
+# 统一换行符：仓库内存 LF，避免 Windows 开发机与 Linux 服务器之间产生
+# 「整个文件都变了」的假 diff（本机 core.autocrlf=true，必须靠本文件兜住）
+
+* text=auto eol=lf
+
+# 文本文件强制 LF
+*.md    text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.js    text eol=lf
+*.mjs   text eol=lf
+*.ts    text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+*.svg   text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.toml  text eol=lf
+*.sh    text eol=lf
+
+# 部署脚本必须在 Linux 服务器上可执行
+deploy.sh  text eol=lf
+
+# 批处理文件必须 CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# 二进制文件不做任何转换
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.pdf   binary
