@@ -252,14 +252,14 @@ button { font-family: inherit; }
   padding: 30px 20px 72px;
   min-height: calc(100vh - var(--header-h) - 160px);
 }
-/* 翻面离场动画（面 → 面，PRD 4.2 的 Demo 简化实现） */
+/* 翻面离场动画（面 → 面，幅度加大版） */
 body { perspective: 2200px; }
 .page {
   transform-origin: left center;
-  transition: transform 380ms var(--ease), opacity 380ms ease;
+  transition: transform 440ms var(--ease), opacity 400ms ease;
 }
 body.page-leaving .page {
-  transform: rotateY(-26deg) scale(0.95);
+  transform: rotateY(-42deg) rotateZ(-2deg) translateX(9%) scale(0.88);
   opacity: 0;
   pointer-events: none;
 }
@@ -859,12 +859,12 @@ a.post-card:hover h2 { color: var(--accent-deep); }
   transform-style: preserve-3d;
   transition: transform 520ms cubic-bezier(0.33, 1, 0.68, 1), opacity 300ms ease;
 }
-/* S0：并列（桌面横向 / 移动纵向） */
+/* S0：并列（桌面横向 / 移动纵向），卡片带倾斜角，呈「随手摆桌上的牌」感 */
 .stage:not(.s1):not(.s2):not(.s3) .entry-card--uu {
-  transform: translate(calc(-50% - 212px), -50%);
+  transform: translate(calc(-50% - 212px), -50%) rotate(-8deg);
 }
 .stage:not(.s1):not(.s2):not(.s3) .entry-card--mixt {
-  transform: translate(calc(-50% + 212px), -50%);
+  transform: translate(calc(-50% + 212px), -50%) rotate(7deg);
 }
 /* 卡面 / 卡背 */
 .card-front, .card-back {
@@ -984,28 +984,39 @@ html[data-mode="dark"] .entry-card--mixt { --card-deep: #85b9f2; }
 .card-back .hint { font-size: 0.92rem; font-weight: 600; }
 .card-back .sub { font-size: 0.78rem; opacity: 0.75; }
 
-/* S1：收拢重叠（选中卡居中 1.06；另一卡 0.96 + -2.5° + 左上错出 12px） */
+/* S1：收拢重叠（选中卡居中 1.06；另一卡大幅错出左上，露出更多卡面） */
 .stage.s1 .entry-card.is-selected {
   transform: translate(-50%, -50%) scale(1.06);
   z-index: 2;
 }
 .stage.s1 .entry-card:not(.is-selected) {
-  transform: translate(calc(-50% - 12px), calc(-50% - 12px)) scale(0.96)
-    rotate(-2.5deg);
+  transform: translate(calc(-50% - 38px), calc(-50% - 28px)) scale(0.92)
+    rotate(-10deg);
   z-index: 1;
-  opacity: 0.92;
+  opacity: 0.96;
 }
-/* S2：整叠翻转 180°（720ms，PRD 缓动） */
+/* S2：整叠翻转 180°，中点放大弹出 + 侧摆（幅度加大版，粒子在此刻爆开） */
+@keyframes entry-flip {
+  0% { transform: translate(-50%, -50%) scale(1.06) rotateY(0deg); }
+  50% { transform: translate(-50%, -50%) scale(1.5) rotateY(90deg) rotateZ(-7deg); }
+  100% { transform: translate(-50%, -50%) scale(1.06) rotateY(180deg); }
+}
 .stage.s2 .entry-card.is-selected {
-  transform: translate(-50%, -50%) scale(1.06) rotateY(180deg);
-  transition: transform 720ms var(--ease);
+  animation: entry-flip 780ms var(--ease) forwards;
+  z-index: 2;
 }
-.stage.s2 .entry-card:not(.is-selected) { opacity: 0; }
-/* S3：放大入场（scale → 7 + 淡出 420ms） */
-.stage.s3 .entry-card.is-selected {
-  transform: translate(-50%, -50%) rotateY(180deg) scale(7);
+.stage.s2 .entry-card:not(.is-selected) {
+  transform: translate(calc(-50% + 130px), calc(-50% - 70px)) scale(0.6)
+    rotate(26deg);
   opacity: 0;
-  transition: transform 420ms ease-in, opacity 420ms ease;
+}
+/* S3：放大入场（scale → 7.5 + 轻微旋摆 + 淡出） */
+@keyframes entry-zoom {
+  0% { transform: translate(-50%, -50%) scale(1.06) rotateY(180deg); opacity: 1; }
+  100% { transform: translate(-50%, -54%) scale(7.5) rotateY(180deg) rotateZ(-5deg); opacity: 0; }
+}
+.stage.s3 .entry-card.is-selected {
+  animation: entry-zoom 480ms cubic-bezier(0.6, 0.05, 0.9, 0.4) forwards;
 }
 .stage.s3 .entry-card:not(.is-selected) { opacity: 0; }
 .entry-hint {
@@ -1096,6 +1107,24 @@ html[data-mode="dark"] .entry-card--mixt { --card-deep: #85b9f2; }
 .back-top:hover { color: var(--accent-deep); border-color: var(--accent-border); }
 .back-top svg { width: 17px; height: 17px; }
 
+/* ---------- 13.5 粒子与冲击波（入口页动效增强，WAAPI 驱动） ---------- */
+.particle {
+  position: fixed;
+  z-index: 92;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.shockwave {
+  position: fixed;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 3px solid;
+  z-index: 91;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
 /* ---------- 14. 响应式 ---------- */
 @media (max-width: 1020px) {
   .article-layout { grid-template-columns: 1fr; }
@@ -1119,13 +1148,13 @@ html[data-mode="dark"] .entry-card--mixt { --card-deep: #85b9f2; }
   .post-nav .next { text-align: left; }
   .archive-row { flex-wrap: wrap; gap: 6px 12px; }
   .archive-row .chip { margin-left: 0; }
-  /* 入口页：两卡纵向并列 */
+  /* 入口页：两卡纵向并列（带倾斜） */
   .stage { height: 850px; }
   .stage:not(.s1):not(.s2):not(.s3) .entry-card--uu {
-    transform: translate(-50%, calc(-50% - 222px));
+    transform: translate(-50%, calc(-50% - 222px)) rotate(-6deg);
   }
   .stage:not(.s1):not(.s2):not(.s3) .entry-card--mixt {
-    transform: translate(-50%, calc(-50% + 222px));
+    transform: translate(-50%, calc(-50% + 222px)) rotate(6deg);
   }
   .entry-title { font-size: 1.7rem; }
 }

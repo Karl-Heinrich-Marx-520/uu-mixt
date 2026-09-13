@@ -58,12 +58,78 @@
   /* ---------- 翻面控件（面页面） ---------- */
   var flipTo = doc.body.dataset.flipTo;
   var leaving = false;
+
+  /* 粒子调色板（与两面主题色同源） */
+  var PALETTES = {
+    uu: ["#ef9f27", "#f6c468", "#ffe1a8", "#ffffff", "#c96f08"],
+    mixt: ["#378add", "#6fb7ff", "#b3d5f8", "#ffffff", "#1b62b5"]
+  };
+
+  function spawnParticles(x, y, palette, count) {
+    if (reducedMotion || !palette) return;
+    for (var i = 0; i < count; i++) {
+      var p = doc.createElement("span");
+      p.className = "particle";
+      var size = 4 + Math.random() * 6;
+      var circle = Math.random() < 0.55;
+      p.style.width = size + "px";
+      p.style.height = circle ? size + "px" : (size * 0.45) + "px";
+      if (circle) p.style.borderRadius = "50%";
+      p.style.background = palette[i % palette.length];
+      p.style.left = x + "px";
+      p.style.top = y + "px";
+      var angle = Math.random() * Math.PI * 2;
+      var dist = 70 + Math.random() * 170;
+      var dx = Math.cos(angle) * dist;
+      var dy = Math.sin(angle) * dist - 50;
+      var rot = Math.random() * 660 - 330;
+      var dur = 620 + Math.random() * 480;
+      try {
+        var a = p.animate(
+          [
+            { transform: "translate(0,0) rotate(0deg) scale(1)", opacity: 1 },
+            { transform: "translate(" + dx + "px," + dy + "px) rotate(" + rot + "deg) scale(.3)", opacity: 0 }
+          ],
+          { duration: dur, easing: "cubic-bezier(.16,1,.3,1)", fill: "forwards" }
+        );
+        a.finished.then(function () { this.remove(); }.bind(p)).catch(function () { p.remove(); });
+      } catch (e) { p.remove(); return; }
+      doc.body.appendChild(p);
+    }
+  }
+
+  function spawnShockwave(x, y, color) {
+    if (reducedMotion) return;
+    var r = doc.createElement("span");
+    r.className = "shockwave";
+    r.style.left = x + "px";
+    r.style.top = y + "px";
+    r.style.borderColor = color || "#fff";
+    doc.body.appendChild(r);
+    try {
+      var a = r.animate(
+        [
+          { transform: "translate(-50%,-50%) scale(.15)", opacity: 0.95 },
+          { transform: "translate(-50%,-50%) scale(3.4)", opacity: 0 }
+        ],
+        { duration: 620, easing: "cubic-bezier(.16,1,.3,1)", fill: "forwards" }
+      );
+      a.finished.then(function () { r.remove(); }).catch(function () { r.remove(); });
+    } catch (e) { r.remove(); }
+  }
+
   function doFlip() {
     if (!flipTo || leaving) return;
     leaving = true;
     if (reducedMotion) { location.href = flipTo; return; }
+    /* 离场时以当前面主题色在视口中心爆开一小撮粒子 */
+    var face = doc.body.dataset.face;
+    spawnParticles(
+      window.innerWidth / 2, window.innerHeight / 2,
+      PALETTES[face], 20
+    );
     doc.body.classList.add("page-leaving");
-    setTimeout(function () { location.href = flipTo; }, 390);
+    setTimeout(function () { location.href = flipTo; }, 440);
   }
 
   /* 键盘 Alt + ←/→（PRD 4.2） */
@@ -195,13 +261,25 @@
 
     function enter(target) {
       try { localStorage.setItem("uum-demo-last-face", target); } catch (e) {}
+      var card = stage.querySelector(".entry-card.is-selected");
+      var rect = card.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      var pal = PALETTES[target] || PALETTES.uu;
+      var accent = target === "mixt" ? "#378add" : "#ef9f27";
+      /* S2：翻转起手，粒子 + 冲击波 */
       stage.classList.add("s2");
       state = 2;
+      spawnParticles(cx, cy, pal, 26);
+      spawnShockwave(cx, cy, accent);
       setTimeout(function () {
+        /* S3：放大入场，再补一记更密的爆发 */
         stage.classList.add("s3");
         state = 3;
-        setTimeout(function () { location.href = target + ".html"; }, reducedMotion ? 0 : 330);
-      }, reducedMotion ? 0 : 720);
+        spawnParticles(cx, cy, pal, 36);
+        spawnShockwave(cx, cy, accent);
+        setTimeout(function () { location.href = target + ".html"; }, reducedMotion ? 0 : 440);
+      }, reducedMotion ? 0 : 780);
     }
 
     stage.addEventListener("click", function (e) {
