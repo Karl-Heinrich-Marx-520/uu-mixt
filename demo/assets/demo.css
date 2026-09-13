@@ -19,6 +19,8 @@
   --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow-2: 0 12px 32px rgba(15, 23, 42, 0.13);
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);       /* PRD 4.2 翻转缓动 */
+  /* 直接压在（虚化/清晰）背景图上的次级文字：比 --text-2 深一档，保 4.5:1 */
+  --on-bg-2: #434d69;
   --t-fast: 160ms;
   --t-mid: 300ms;
 }
@@ -54,6 +56,7 @@ html[data-mode="dark"] {
   --text-2: #a7b0c3;
   --text-3: #6d7890;
   --selection: rgba(125, 180, 255, 0.28);
+  --on-bg-2: #c3ccdd;
   --code-bg: #0b101c;
   --code-border: #1b2540;
 }
@@ -1191,11 +1194,15 @@ body[data-face="mixt"] { --face-bg-img: url("bg-mixt.jpg"); }
   filter: blur(26px) saturate(1.05);
   transform: scale(1.12); /* 抵消 blur 造成的边缘透明 */
 }
-.page-veil { z-index: -1; background: rgba(245, 246, 248, 0.84); }
-html[data-mode="dark"] .page-veil { background: rgba(13, 18, 29, 0.86); }
+.page-veil { z-index: -1; background: rgba(245, 246, 248, 0.7); }
+html[data-mode="dark"] .page-veil { background: rgba(13, 18, 29, 0.74); }
 body.has-hero { background: transparent; }
 body.has-hero .page-bg,
 body.has-hero .page-veil { opacity: 1; }
+/* 直接压在虚化背景上的次级文字统一深一档（veil 调薄后仍需 ≥ 4.5:1） */
+body.has-hero .section-title { color: var(--on-bg-2); }
+body.has-hero .pager a,
+body.has-hero .pager span { color: var(--on-bg-2); }
 
 /* Hero：整屏高清图（清晰、不虚化） */
 .hero {
@@ -1280,6 +1287,7 @@ body.has-hero .page-veil { opacity: 1; }
    把 --entry-bg-img 设为图片路径即可启用。 */
 body[data-face="shared"] {
   --entry-bg-img: url("bg-entry.jpg");
+  --entry-link: var(--on-bg-2);
 }
 .entry-bg,
 .entry-veil { position: fixed; inset: 0; pointer-events: none; display: none; }
@@ -1289,12 +1297,12 @@ body[data-face="shared"] {
   background-size: cover;
   background-position: center;
 }
-.entry-veil { z-index: -1; background: rgba(245, 246, 248, 0.82); }
-html[data-mode="dark"] .entry-veil { background: rgba(13, 18, 29, 0.82); }
+.entry-veil { z-index: -1; background: rgba(245, 246, 248, 0.62); }
+html[data-mode="dark"] .entry-veil { background: rgba(13, 18, 29, 0.66); }
 /* 有背景图时，把次级文字压深一档，保证 WCAG AA（≥ 4.5:1） */
 body.entry-has-bg .entry-sub,
 body.entry-has-bg .entry-hint { color: var(--text-1); }
-body.entry-has-bg .entry-links { color: var(--text-2); }
+body.entry-has-bg .entry-links { color: var(--entry-link); }
 body.entry-has-bg .entry-links a:hover { color: var(--accent-deep); }
 body.entry-has-bg { background: transparent; }
 body.entry-has-bg .entry-bg,
