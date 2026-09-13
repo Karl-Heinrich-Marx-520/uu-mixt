@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-mode="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UU&amp;Mixt · 双作者双面技术博客</title>
+  <meta name="description" content="一个可以整站翻转的双作者博客：UU 写 C++ 后端与网络编程，Mixt 写 PWN 二进制安全。两个人，各占一面。">
+  <link rel="stylesheet" href="assets/demo.css">
+</head>
+<body data-face="shared" data-page="entry">
+
+  <!-- 明暗模式切换（浮动，入口页无页头） -->
+  <button class="icon-btn mode-float" data-action="toggle-mode" aria-label="切换明暗模式" title="切换明暗模式"
+          style="position:fixed;top:18px;right:18px;z-index:80;background:var(--surface)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+    </svg>
+  </button>
+
+  <main class="entry">
+    <h1 class="entry-title">UU<span class="amp">&amp;</span>Mixt</h1>
+    <p class="entry-sub">一个可以整站翻转的双作者博客 —— 两个人，各占一面，互不干涉</p>
+    <nav class="entry-links" aria-label="站点级链接">
+      <a href="#" data-action="todo" data-msg="RSS 将在 M6（搜索、分享与订阅）提供">RSS</a>
+      <a href="#" data-action="todo" data-msg="全站搜索将在 M6 提供，结果会同时覆盖两面并标识作者">全站搜索</a>
+    </nav>
+
+    <!-- 两张作者卡片：S0 并列 → S1 收拢 → S2 翻转 → S3 放大入场 -->
+    <div class="stage" role="group" aria-label="选择要进入的作者面">
+      <a class="entry-card entry-card--uu" href="uu.html" data-face="uu">
+        <span class="card-front">
+          <img class="avatar" src="assets/uu.svg" alt="UU 的头像" width="86" height="86">
+          <span class="name">UU</span>
+          <p class="dir">C++ 后端 · 网络编程 · 科研复现</p>
+          <span class="card-divider" aria-hidden="true"></span>
+          <span class="card-stats">
+            <span><b>7</b>篇文章</span>
+            <span><b>2026-09-05</b>最近更新</span>
+          </span>
+          <span class="card-latest">
+            最近发布
+            <span class="t">用 Boost.Asio 搭一个可优雅退出的异步 TCP 服务器</span>
+          </span>
+          <span class="card-enter">进入这一面 →</span>
+        </span>
+        <span class="card-back" aria-hidden="true">
+          <span class="mark">U&amp;M</span>
+          <span class="hint">正在进入 UU 的一面</span>
+          <span class="sub">uuandmixt.com/uu/</span>
+        </span>
+      </a>
+
+      <a class="entry-card entry-card--mixt" href="mixt.html" data-face="mixt">
+        <span class="card-front">
+          <img class="avatar" src="assets/mixt.svg" alt="Mixt 的头像" width="86" height="86">
+          <span class="name">Mixt</span>
+          <p class="dir">PWN · 二进制安全 · CTF</p>
+          <span class="card-divider" aria-hidden="true"></span>
+          <span class="card-stats">
+            <span><b>4</b>篇文章</span>
+            <span><b>2026-09-01</b>最近更新</span>
+          </span>
+          <span class="card-latest">
+            最近发布
+            <span class="t">tcache 机制分析：从 glibc 2.27 到 2.42 的攻与防</span>
+          </span>
+          <span class="card-enter">进入这一面 →</span>
+        </span>
+        <span class="card-back" aria-hidden="true">
+          <span class="mark">U&amp;M</span>
+          <span class="hint">正在进入 Mixt 的一面</span>
+          <span class="sub">uuandmixt.com/mixt/</span>
+        </span>
+      </a>
+    </div>
+
+    <p class="entry-hint" aria-live="polite">选择一张卡片，进入该作者的一面</p>
+
+    <footer class="entry-foot">
+      <p style="margin:0">
+        本站由 UU 与 Mixt 各自独立维护，两面内容互不干涉 ·
+        <a href="#" data-action="todo" data-msg="「关于本站」页将在 M4（页面完备）实现，入口仅在入口页底部">关于本站</a>
+      </p>
+      <p class="icp" style="margin-top:6px">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">湘ICP备XXXXXXXX号-1（备案审核中，上线后展示正式备案号）</a>
+      </p>
+    </footer>
+  </main>
+
+  <noscript>
+    <style>.entry-hint{display:none}</style>
+    <p style="text-align:center;color:var(--text-3)">JavaScript 已禁用：卡片可直接点击进入对应作者面（整页跳转）。</p>
+  </noscript>
+
+  <script src="assets/demo.js"></script>
+</body>
+</html>

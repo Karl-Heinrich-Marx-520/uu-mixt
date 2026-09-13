@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-mode="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mixt 的文章 · UU&amp;Mixt</title>
+  <meta name="description" content="Mixt 的一面：PWN 二进制安全、漏洞分析、利用技巧与 CTF writeup。">
+  <link rel="stylesheet" href="assets/demo.css">
+</head>
+<body data-face="mixt" data-flip-to="uu.html">
+
+  <a class="skip-link" href="#main">跳到正文</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" title="回到入口页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12a8 8 0 0 1 13-6.2M20 12a8 8 0 0 1-13 6.2"/>
+            <path d="M17 3v3.5h-3.5M7 21v-3.5h3.5"/>
+          </svg>
+        </span>
+        UU<span class="amp">&amp;</span>Mixt
+      </a>
+      <nav class="nav" aria-label="Mixt 面导航">
+        <a href="mixt.html" aria-current="page">首页</a>
+        <a href="#" data-action="todo" data-msg="Mixt 面的归档页未在本 Demo 中制作，结构与 UU 面对称">归档</a>
+        <a href="#" data-action="todo" data-msg="Mixt 面的分类当前为空（由其本人日后经网页入口添加），本页分类为 Demo 示例数据">分类</a>
+        <a href="#" data-action="todo" data-msg="作者页将在 M4（页面完备）实现">关于</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" data-action="todo" data-msg="全站搜索将在 M6 提供：一次搜索覆盖两面，结果标识所属作者" aria-label="全站搜索" title="全站搜索（M6）">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+        <button class="icon-btn" data-action="toggle-mode" aria-label="切换明暗模式" title="切换明暗模式">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <button class="flip-btn" data-action="flip" title="翻到 UU 的一面（Alt + ←/→）">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 12a8 8 0 0 1 13-6.2M20 12a8 8 0 0 1-13 6.2"/>
+            <path d="M17 3v3.5h-3.5M7 21v-3.5h3.5"/>
+          </svg>
+          <span class="flip-text">翻到 UU</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page" id="main">
+    <!-- 作者身份区（PRD 4.4：面首页必须项） -->
+    <section class="face-hero" aria-label="作者信息">
+      <img src="assets/mixt.svg" alt="Mixt 的头像" width="72" height="72">
+      <div class="who">
+        <h1>Mixt <span class="face-tag">这一面</span></h1>
+        <p class="bio">主攻 PWN 二进制安全。写漏洞分析、利用技巧与 CTF writeup。（简介为占位草稿，由 Mixt 本人确认或改写）</p>
+      </div>
+      <div class="face-stats" aria-label="文章统计">
+        <div><b>4</b><span>文章</span></div>
+        <div><b>3</b><span>分类</span></div>
+        <div><b>9</b><span>标签</span></div>
+      </div>
+    </section>
+
+    <div class="notice notice--info" style="margin-top:0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 12v4"/></svg>
+      <span>按 PRD 3.5，Mixt 面的分类当前为<strong>空</strong>（由其本人日后经网页入口添加）。本页出现的分类与文章均为 Demo 示例数据，仅用于展示双面隔离的视觉效果。</span>
+    </div>
+
+    <h2 class="section-title">最新文章</h2>
+    <div class="post-list">
+
+      <a class="post-card" href="mixt-post.html">
+        <div class="post-meta">
+          <span class="pin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6l-1 6 3 4H7l3-4-1-6zM12 14v7"/></svg>
+            置顶
+          </span>
+          <time datetime="2026-09-01">2026-09-01</time>
+          <span>3.5k 字 · 约 14 分钟</span>
+        </div>
+        <h2>tcache 机制分析：从 glibc 2.27 到 2.42 的攻与防</h2>
+        <div class="chip-row">
+          <span class="chip chip--cat">堆利用</span>
+          <span class="chip">glibc</span>
+          <span class="chip">tcache</span>
+          <span class="chip">safe-linking</span>
+        </div>
+        <p class="post-excerpt">梳理 tcache_entry 结构、key 字段的 double free 检测与 safe-linking 指针保护在各版本的演进，用伪代码与调试记录还原检测思路，不含可直接复用的利用代码。</p>
+        <span class="read-more">阅读全文 <span class="arr">→</span></span>
+      </a>
+
+      <a class="post-card" href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇，其余为列表数据">
+        <div class="post-meta">
+          <time datetime="2026-08-20">2026-08-20</time>
+          <span>2.9k 字 · 约 12 分钟</span>
+        </div>
+        <h2>从栈溢出到 ROP：一道题的完整调试记录</h2>
+        <div class="chip-row">
+          <span class="chip chip--cat">栈溢出</span>
+          <span class="chip">rop</span>
+          <span class="chip">gdb</span>
+          <span class="chip">栈迁移</span>
+        </div>
+        <p class="post-excerpt">从静态分析定位溢出点，到 leak 栈地址、构造 ROP 链，再到一次失败的栈迁移与修复——完整保留每一步的 gdb 输出与思考过程。</p>
+        <span class="read-more">阅读全文 <span class="arr">→</span></span>
+      </a>
+
+      <a class="post-card" href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇，其余为列表数据">
+        <div class="post-meta">
+          <time datetime="2026-07-30">2026-07-30</time>
+          <span>2.4k 字 · 约 10 分钟</span>
+        </div>
+        <h2>格式化字符串的三种利用姿势与防御</h2>
+        <div class="chip-row">
+          <span class="chip chip--cat">格式化字符串</span>
+          <span class="chip">fmt-string</span>
+          <span class="chip">got</span>
+        </div>
+        <p class="post-excerpt">读内存、任意写、劫持控制流——三种姿势的原理、触发条件与现代编译器 / 内核的对应防御，全部基于自建靶机验证。</p>
+        <span class="read-more">阅读全文 <span class="arr">→</span></span>
+      </a>
+
+      <a class="post-card" href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇，其余为列表数据">
+        <div class="post-meta">
+          <time datetime="2026-07-12">2026-07-12</time>
+          <span>3.1k 字 · 约 13 分钟</span>
+        </div>
+        <h2>House of Apple 2 学习笔记：IO 利用链的构造思路</h2>
+        <div class="chip-row">
+          <span class="chip chip--cat">堆利用</span>
+          <span class="chip">io-file</span>
+          <span class="chip">fsop</span>
+        </div>
+        <p class="post-excerpt">从 _IO_list_all 与 exit 的调用路径读起，拆解 House of Apple 2 的链构造思路，伪代码层面理解每一步的前置条件。</p>
+        <span class="read-more">阅读全文 <span class="arr">→</span></span>
+      </a>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">UU<span class="amp">&amp;</span>Mixt</div>
+      <nav class="footer-links" aria-label="站点级链接">
+        <a href="#" data-action="todo" data-msg="RSS 将在 M6 提供（全站 + 双面单 feed）">RSS</a>
+        <span class="sep">·</span>
+        <a href="#" data-action="todo" data-msg="全站搜索将在 M6 提供">全站搜索</a>
+        <span class="sep">·</span>
+        <a href="#" data-action="todo" data-msg="「关于本站」页将在 M4 实现">关于本站</a>
+      </nav>
+      <p class="icp"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">湘ICP备XXXXXXXX号-1（备案审核中，上线后展示正式备案号）</a></p>
+      <p>Mixt 的一面 · 由 Mixt 独立维护 · Demo 版</p>
+    </div>
+  </footer>
+
+  <button class="back-top" data-action="back-top" aria-label="回到顶部" title="回到顶部">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+  </button>
+
+  <script src="assets/demo.js"></script>
+</body>
+</html>

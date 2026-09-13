@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Mixt">
+  <title>Mixt</title>
+  <circle cx="256" cy="256" r="256" fill="#85B7EB"/>
+  <path d="M256 0a256 256 0 0 1 0 512z" fill="#378ADD" opacity="0.30"/>
+  <circle cx="256" cy="256" r="218" fill="none" stroke="#042C53" stroke-width="8" opacity="0.30"/>
+  <text x="256" y="262" text-anchor="middle" dominant-baseline="central" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="300" font-weight="700" fill="#042C53">M</text>
+</svg>
