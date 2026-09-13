@@ -6,10 +6,26 @@
   <title>Mixt 的文章 · UU&amp;Mixt</title>
   <meta name="description" content="Mixt 的一面：PWN 二进制安全、漏洞分析、利用技巧与 CTF writeup。">
   <link rel="stylesheet" href="assets/demo.css">
+  <script>
+    /* 翻入预备：从另一面翻转跳来时，先隐藏页面避免闪帧（demo.js 接管后移除） */
+    try {
+      if (sessionStorage.getItem("uum-flip-in") === "1") {
+        document.documentElement.classList.add("flip-in-pending");
+        setTimeout(function () {
+          document.documentElement.classList.remove("flip-in-pending");
+        }, 1500);
+      }
+    } catch (e) {}
+  </script>
 </head>
-<body data-face="mixt" data-flip-to="uu.html">
+<body data-face="mixt" data-flip-to="uu.html" class="has-hero">
 
   <a class="skip-link" href="#main">跳到正文</a>
+
+  <div class="page-bg" aria-hidden="true"></div>
+  <div class="page-veil" aria-hidden="true"></div>
+
+  <div class="page-card">
 
   <header class="site-header">
     <div class="header-inner">
@@ -45,6 +61,21 @@
       </div>
     </div>
   </header>
+
+  <!-- Hero：整屏高清封面（清晰图），下滑才进入简介与文章 -->
+  <section class="hero" aria-label="Mixt 的一面 · 封面">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-veil" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <img src="assets/mixt.svg" alt="Mixt 的头像" width="96" height="96">
+      <h1 class="hero-title">Mixt<span class="hero-tag">这一面</span></h1>
+      <p class="hero-tagline">PWN · 二进制安全 · 漏洞分析 · CTF writeup</p>
+    </div>
+    <a class="hero-scroll" href="#main">
+      <span>下滑查看简介与文章</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </a>
+  </section>
 
   <main class="page" id="main">
     <!-- 作者身份区（PRD 4.4：面首页必须项） -->
@@ -152,6 +183,8 @@
       <p>Mixt 的一面 · 由 Mixt 独立维护 · Demo 版</p>
     </div>
   </footer>
+
+  </div><!-- /.page-card -->
 
   <button class="back-top" data-action="back-top" aria-label="回到顶部" title="回到顶部">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>

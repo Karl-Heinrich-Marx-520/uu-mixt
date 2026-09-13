@@ -252,17 +252,41 @@ button { font-family: inherit; }
   padding: 30px 20px 72px;
   min-height: calc(100vh - var(--header-h) - 160px);
 }
-/* 翻面离场动画（面 → 面，幅度加大版） */
-body { perspective: 2200px; }
-.page {
-  transform-origin: left center;
-  transition: transform 440ms var(--ease), opacity 400ms ease;
-}
-body.page-leaving .page {
-  transform: rotateY(-42deg) rotateZ(-2deg) translateX(9%) scale(0.88);
-  opacity: 0;
+/* 面 → 面：卡牌式翻转（v4）
+   整页内容包在 .page-card 中作为一张卡牌；高光带扫过后，背景与内容在 90° 瞬间同时切换 */
+body { perspective: 2400px; }
+body.flip-out .page-card {
+  animation: card-flip-out 700ms cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
   pointer-events: none;
+  will-change: transform, opacity;
 }
+body.flip-in .page-card {
+  animation: card-flip-in 760ms var(--ease) backwards;
+  will-change: transform, opacity;
+}
+@keyframes card-flip-out {
+  0% { transform: rotateY(0deg) scale(1); opacity: 1; }
+  100% { transform: rotateY(-89deg) scale(0.94); opacity: 0.85; }
+}
+@keyframes card-flip-in {
+  0% { transform: rotateY(89deg) scale(0.94); opacity: 0.85; }
+  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
+/* 高光带（转场瞬间）：斜向白色光带，只动画 transform/opacity */
+.gloss {
+  position: fixed;
+  inset: -10% -30%;
+  z-index: 96;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(105deg,
+    transparent 34%, rgba(255, 255, 255, 0.5) 47%,
+    rgba(255, 255, 255, 0.92) 50%, rgba(255, 255, 255, 0.5) 53%,
+    transparent 66%);
+  will-change: transform, opacity;
+}
+/* 翻入预备（内联脚本注入到 <html>，避免翻入页闪帧；demo.js 接管后移除） */
+html.flip-in-pending .page-card { opacity: 0; }
 
 /* ---------- 7. 面首页：作者身份区 ---------- */
 .face-hero {
@@ -1144,6 +1168,131 @@ html[data-mode="dark"] .entry-card--mixt { --card-deep: #85b9f2; }
   will-change: opacity;
 }
 
+/* ---------- 13b. 面首页 Hero 全景 + 常驻虚化背景（2026-09-13 v4） ----------
+   进入面首页先看到整屏高清图（清晰）；下滑后正文区以同图虚化铺底。
+   背景图按面注入 CSS 变量，换图只改这两行。 */
+body[data-face="uu"] { --face-bg-img: url("assets/bg-uu.jpg"); }
+body[data-face="mixt"] { --face-bg-img: url("assets/bg-mixt.jpg"); }
+
+/* 常驻虚化背景：仅面首页（body.has-hero）启用 */
+.page-bg,
+.page-veil {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.page-bg {
+  z-index: -2;
+  background-image: var(--face-bg-img);
+  background-size: cover;
+  background-position: center;
+  filter: blur(26px) saturate(1.05);
+  transform: scale(1.12); /* 抵消 blur 造成的边缘透明 */
+}
+.page-veil { z-index: -1; background: rgba(245, 246, 248, 0.84); }
+html[data-mode="dark"] .page-veil { background: rgba(13, 18, 29, 0.86); }
+body.has-hero { background: transparent; }
+body.has-hero .page-bg,
+body.has-hero .page-veil { opacity: 1; }
+
+/* Hero：整屏高清图（清晰、不虚化） */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  color: #fff;
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-image: var(--face-bg-img);
+  background-size: cover;
+  background-position: center;
+}
+.hero-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(8, 10, 18, 0.42) 0%, rgba(8, 10, 18, 0.3) 45%, rgba(8, 10, 18, 0.62) 100%);
+}
+.hero-inner { position: relative; z-index: 1; padding: 0 24px; }
+.hero-inner img {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+.hero-title {
+  margin: 18px 0 8px;
+  font-size: 3rem;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+.hero-tag {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 3px 12px;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+}
+.hero-tagline {
+  margin: 0;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
+}
+.hero-scroll {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.82rem;
+  letter-spacing: 0.22em;
+}
+.hero-scroll:hover { color: #fff; }
+.hero-scroll svg { width: 22px; height: 22px; animation: hero-cue 1.8s ease-in-out infinite; }
+@keyframes hero-cue {
+  0%, 100% { transform: translateY(0); opacity: 0.65; }
+  50% { transform: translateY(7px); opacity: 1; }
+}
+
+/* 入口页背景（接口预留）：第三张图到位后，给 index.html 的 <body> 加
+   class="entry-has-bg" 并加入 .entry-bg / .entry-veil 两个 div、
+   把 --entry-bg-img 设为图片路径即可启用。 */
+body[data-face="shared"] { --entry-bg-img: none; }
+.entry-bg,
+.entry-veil { position: fixed; inset: 0; pointer-events: none; display: none; }
+.entry-bg {
+  z-index: -2;
+  background-image: var(--entry-bg-img);
+  background-size: cover;
+  background-position: center;
+}
+.entry-veil { z-index: -1; background: rgba(245, 246, 248, 0.68); }
+html[data-mode="dark"] .entry-veil { background: rgba(13, 18, 29, 0.74); }
+body.entry-has-bg { background: transparent; }
+body.entry-has-bg .entry-bg,
+body.entry-has-bg .entry-veil { display: block; }
+
 /* ---------- 14. 响应式 ---------- */
 @media (max-width: 1020px) {
   .article-layout { grid-template-columns: 1fr; }
@@ -1158,6 +1307,9 @@ html[data-mode="dark"] .entry-card--mixt { --card-deep: #85b9f2; }
   .flip-btn .flip-text { display: none; }
   .flip-btn { padding: 0 10px; }
   .page { padding: 22px 16px 60px; }
+  .hero-title { font-size: 2.1rem; }
+  .hero-tagline { font-size: 0.95rem; }
+  .hero-inner img { width: 76px; height: 76px; }
   .face-hero { padding: 18px; gap: 14px; }
   .face-stats { margin-left: 0; gap: 20px; }
   .post-card { padding: 17px 18px 16px 24px; }

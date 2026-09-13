@@ -59,6 +59,43 @@
   var flipTo = doc.body.dataset.flipTo;
   var leaving = false;
 
+  /* 卡牌高光：斜向光带扫过（out = 扫到中央，in = 从中央扫出），跨页衔接 */
+  function playGloss(phase) {
+    if (reducedMotion) return;
+    var g = doc.createElement("div");
+    g.className = "gloss";
+    doc.body.appendChild(g);
+    try {
+      var frames = phase === "out"
+        ? [{ transform: "translateX(-118%)", opacity: 0 },
+           { opacity: 0.95, offset: 0.45 },
+           { transform: "translateX(0%)", opacity: 0.95 }]
+        : [{ transform: "translateX(0%)", opacity: 0.95 },
+           { opacity: 0.9, offset: 0.4 },
+           { transform: "translateX(118%)", opacity: 0 }];
+      var a = g.animate(frames, {
+        duration: phase === "out" ? 700 : 760,
+        easing: "cubic-bezier(.45,.05,.35,1)",
+        fill: "forwards"
+      });
+      a.finished.then(function () { g.remove(); }).catch(function () { g.remove(); });
+    } catch (e) { g.remove(); }
+  }
+
+  /* 翻入：从另一面跳转来时播放卡牌入场 + 高光后半程 */
+  if (doc.documentElement.classList.contains("flip-in-pending")) {
+    doc.documentElement.classList.remove("flip-in-pending");
+    try { sessionStorage.removeItem("uum-flip-in"); } catch (e) {}
+    doc.body.classList.add("flip-in");
+    playGloss("in");
+    doc.body.addEventListener("animationend", function onFlipIn(e) {
+      if (e.animationName === "card-flip-in") {
+        doc.body.classList.remove("flip-in");
+        doc.body.removeEventListener("animationend", onFlipIn);
+      }
+    });
+  }
+
   /* 粒子调色板（与两面主题色同源） */
   var PALETTES = {
     uu: ["#ef9f27", "#f6c468", "#ffe1a8", "#ffffff", "#c96f08"],
@@ -151,15 +188,12 @@
     if (!flipTo || leaving) return;
     leaving = true;
     if (reducedMotion) { location.href = flipTo; return; }
-    /* 离场：当前面主题色在视口中心爆开 + 闪光 + 冲击波 */
-    var face = doc.body.dataset.face;
-    var cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-    var accent = face === "mixt" ? "#378add" : "#ef9f27";
-    spawnParticles(cx, cy, PALETTES[face], 44, 1.4);
-    spawnShockwave(cx, cy, accent, 0, 4.2);
-    spawnFlash(accent);
-    doc.body.classList.add("page-leaving");
-    setTimeout(function () { location.href = flipTo; }, 460);
+    /* 卡牌式翻转：缓慢高光扫到中央 → 整页卡牌翻出 90° →
+       跳转后另一面从 90° 翻入，背景与内容在 90° 瞬间同时切换 */
+    try { sessionStorage.setItem("uum-flip-in", "1"); } catch (e) {}
+    playGloss("out");
+    doc.body.classList.add("flip-out");
+    setTimeout(function () { location.href = flipTo; }, 700);
   }
 
   /* 键盘 Alt + ←/→（PRD 4.2） */
