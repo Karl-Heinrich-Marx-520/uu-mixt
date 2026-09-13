@@ -1278,7 +1278,9 @@ body.has-hero .page-veil { opacity: 1; }
 /* 入口页背景（接口预留）：第三张图到位后，给 index.html 的 <body> 加
    class="entry-has-bg" 并加入 .entry-bg / .entry-veil 两个 div、
    把 --entry-bg-img 设为图片路径即可启用。 */
-body[data-face="shared"] { --entry-bg-img: none; }
+body[data-face="shared"] {
+  --entry-bg-img: url("bg-entry.jpg");
+}
 .entry-bg,
 .entry-veil { position: fixed; inset: 0; pointer-events: none; display: none; }
 .entry-bg {
@@ -1287,8 +1289,13 @@ body[data-face="shared"] { --entry-bg-img: none; }
   background-size: cover;
   background-position: center;
 }
-.entry-veil { z-index: -1; background: rgba(245, 246, 248, 0.68); }
-html[data-mode="dark"] .entry-veil { background: rgba(13, 18, 29, 0.74); }
+.entry-veil { z-index: -1; background: rgba(245, 246, 248, 0.82); }
+html[data-mode="dark"] .entry-veil { background: rgba(13, 18, 29, 0.82); }
+/* 有背景图时，把次级文字压深一档，保证 WCAG AA（≥ 4.5:1） */
+body.entry-has-bg .entry-sub,
+body.entry-has-bg .entry-hint { color: var(--text-1); }
+body.entry-has-bg .entry-links { color: var(--text-2); }
+body.entry-has-bg .entry-links a:hover { color: var(--accent-deep); }
 body.entry-has-bg { background: transparent; }
 body.entry-has-bg .entry-bg,
 body.entry-has-bg .entry-veil { display: block; }

@@ -6,8 +6,12 @@
   <title>UU&amp;Mixt · 双作者双面技术博客</title>
   <meta name="description" content="一个可以整站翻转的双作者博客：UU 写 C++ 后端与网络编程，Mixt 写 PWN 二进制安全。两个人，各占一面。">
   <link rel="stylesheet" href="assets/demo.css">
+  <link rel="preload" as="image" href="assets/bg-entry.jpg">
 </head>
-<body data-face="shared" data-page="entry">
+<body data-face="shared" data-page="entry" class="entry-has-bg">
+
+  <div class="entry-bg" aria-hidden="true"></div>
+  <div class="entry-veil" aria-hidden="true"></div>
 
   <!-- 明暗模式切换（浮动，入口页无页头） -->
   <button class="icon-btn mode-float" data-action="toggle-mode" aria-label="切换明暗模式" title="切换明暗模式"
