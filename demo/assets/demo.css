@@ -1171,8 +1171,8 @@ html[data-mode="dark"] .entry-card--mixt { --card-deep: #85b9f2; }
 /* ---------- 13b. 面首页 Hero 全景 + 常驻虚化背景（2026-09-13 v4） ----------
    进入面首页先看到整屏高清图（清晰）；下滑后正文区以同图虚化铺底。
    背景图按面注入 CSS 变量，换图只改这两行。 */
-body[data-face="uu"] { --face-bg-img: url("assets/bg-uu.jpg"); }
-body[data-face="mixt"] { --face-bg-img: url("assets/bg-mixt.jpg"); }
+body[data-face="uu"] { --face-bg-img: url("bg-uu.jpg"); }
+body[data-face="mixt"] { --face-bg-img: url("bg-mixt.jpg"); }
 
 /* 常驻虚化背景：仅面首页（body.has-hero）启用 */
 .page-bg,
