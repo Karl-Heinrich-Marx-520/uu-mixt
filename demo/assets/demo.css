@@ -995,28 +995,38 @@ html[data-mode="dark"] .entry-card--mixt { --card-deep: #85b9f2; }
   z-index: 1;
   opacity: 0.96;
 }
-/* S2：整叠翻转 180°，中点放大弹出 + 侧摆（幅度加大版，粒子在此刻爆开） */
+/* S2：整叠翻转 180°——蓄力 → 弹出放大 + 侧摆 + 主题色发光（粒子在此刻爆发） */
 @keyframes entry-flip {
-  0% { transform: translate(-50%, -50%) scale(1.06) rotateY(0deg); }
-  50% { transform: translate(-50%, -50%) scale(1.5) rotateY(90deg) rotateZ(-7deg); }
-  100% { transform: translate(-50%, -50%) scale(1.06) rotateY(180deg); }
+  0% { transform: translate(-50%, -50%) scale(1.06) rotateY(0deg) rotateZ(0deg); }
+  14% { transform: translate(-50%, -50%) scale(1.18) rotateY(0deg) rotateZ(0deg); }
+  50% { transform: translate(-50%, -50%) scale(1.85) rotateY(90deg) rotateZ(-10deg); }
+  100% { transform: translate(-50%, -50%) scale(1.06) rotateY(180deg) rotateZ(0deg); }
+}
+@keyframes stage-tilt {
+  0%, 100% { transform: rotateZ(0deg); }
+  45% { transform: rotateZ(-3.5deg); }
+}
+.stage.s2 {
+  animation: stage-tilt 860ms var(--ease) forwards;
 }
 .stage.s2 .entry-card.is-selected {
-  animation: entry-flip 780ms var(--ease) forwards;
+  animation: entry-flip 860ms var(--ease) forwards;
   z-index: 2;
+  border-radius: var(--radius-l);
+  box-shadow: 0 0 90px 8px color-mix(in srgb, var(--card-accent) 45%, transparent);
 }
 .stage.s2 .entry-card:not(.is-selected) {
-  transform: translate(calc(-50% + 130px), calc(-50% - 70px)) scale(0.6)
-    rotate(26deg);
+  transform: translate(calc(-50% + 170px), calc(-50% - 90px)) scale(0.45)
+    rotate(32deg);
   opacity: 0;
 }
-/* S3：放大入场（scale → 7.5 + 轻微旋摆 + 淡出） */
+/* S3：放大入场（scale → 9 + 旋摆 + 淡出，配合全屏闪光与双连爆） */
 @keyframes entry-zoom {
   0% { transform: translate(-50%, -50%) scale(1.06) rotateY(180deg); opacity: 1; }
-  100% { transform: translate(-50%, -54%) scale(7.5) rotateY(180deg) rotateZ(-5deg); opacity: 0; }
+  100% { transform: translate(-50%, -56%) scale(9) rotateY(180deg) rotateZ(-8deg); opacity: 0; }
 }
 .stage.s3 .entry-card.is-selected {
-  animation: entry-zoom 480ms cubic-bezier(0.6, 0.05, 0.9, 0.4) forwards;
+  animation: entry-zoom 520ms cubic-bezier(0.6, 0.05, 0.9, 0.4) forwards;
 }
 .stage.s3 .entry-card:not(.is-selected) { opacity: 0; }
 .entry-hint {
@@ -1123,6 +1133,15 @@ html[data-mode="dark"] .entry-card--mixt { --card-deep: #85b9f2; }
   z-index: 91;
   pointer-events: none;
   will-change: transform, opacity;
+}
+/* 全屏闪光（仅转场瞬间，z-index 低于粒子） */
+.flash {
+  position: fixed;
+  inset: 0;
+  z-index: 88;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
 }
 
 /* ---------- 14. 响应式 ---------- */

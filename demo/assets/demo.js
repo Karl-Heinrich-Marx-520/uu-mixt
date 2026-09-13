@@ -65,8 +65,9 @@
     mixt: ["#378add", "#6fb7ff", "#b3d5f8", "#ffffff", "#1b62b5"]
   };
 
-  function spawnParticles(x, y, palette, count) {
+  function spawnParticles(x, y, palette, count, power) {
     if (reducedMotion || !palette) return;
+    power = power || 1;
     for (var i = 0; i < count; i++) {
       var p = doc.createElement("span");
       p.className = "particle";
@@ -79,7 +80,7 @@
       p.style.left = x + "px";
       p.style.top = y + "px";
       var angle = Math.random() * Math.PI * 2;
-      var dist = 70 + Math.random() * 170;
+      var dist = (70 + Math.random() * 170) * power;
       var dx = Math.cos(angle) * dist;
       var dy = Math.sin(angle) * dist - 50;
       var rot = Math.random() * 660 - 330;
@@ -98,7 +99,7 @@
     }
   }
 
-  function spawnShockwave(x, y, color) {
+  function spawnShockwave(x, y, color, delay, scaleMax) {
     if (reducedMotion) return;
     var r = doc.createElement("span");
     r.className = "shockwave";
@@ -110,26 +111,55 @@
       var a = r.animate(
         [
           { transform: "translate(-50%,-50%) scale(.15)", opacity: 0.95 },
-          { transform: "translate(-50%,-50%) scale(3.4)", opacity: 0 }
+          { transform: "translate(-50%,-50%) scale(" + (scaleMax || 3.4) + ")", opacity: 0 }
         ],
-        { duration: 620, easing: "cubic-bezier(.16,1,.3,1)", fill: "forwards" }
+        { duration: 620, delay: delay || 0, easing: "cubic-bezier(.16,1,.3,1)", fill: "forwards" }
       );
       a.finished.then(function () { r.remove(); }).catch(function () { r.remove(); });
     } catch (e) { r.remove(); }
+  }
+
+  /* 持续喷泉：翻转期间从卡片中心不断喷出粒子，营造"引擎点火"感 */
+  function spawnFountain(x, y, palette, duration) {
+    if (reducedMotion || !palette) return;
+    var stopAt = Date.now() + duration;
+    (function tick() {
+      spawnParticles(x + (Math.random() * 60 - 30), y + (Math.random() * 30 - 15),
+        palette, 5, 0.85);
+      if (Date.now() < stopAt) setTimeout(tick, 80);
+    })();
+  }
+
+  /* 全屏闪光：入场瞬间亮一记主题色（仅 700ms，随即消散） */
+  function spawnFlash(color) {
+    if (reducedMotion) return;
+    var f = doc.createElement("div");
+    f.className = "flash";
+    f.style.background =
+      "radial-gradient(circle at 50% 44%, " + color + " 0%, transparent 62%)";
+    doc.body.appendChild(f);
+    try {
+      var a = f.animate(
+        [{ opacity: 0 }, { opacity: 0.16, offset: 0.25 }, { opacity: 0 }],
+        { duration: 700, easing: "ease-out", fill: "forwards" }
+      );
+      a.finished.then(function () { f.remove(); }).catch(function () { f.remove(); });
+    } catch (e) { f.remove(); }
   }
 
   function doFlip() {
     if (!flipTo || leaving) return;
     leaving = true;
     if (reducedMotion) { location.href = flipTo; return; }
-    /* 离场时以当前面主题色在视口中心爆开一小撮粒子 */
+    /* 离场：当前面主题色在视口中心爆开 + 闪光 + 冲击波 */
     var face = doc.body.dataset.face;
-    spawnParticles(
-      window.innerWidth / 2, window.innerHeight / 2,
-      PALETTES[face], 20
-    );
+    var cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    var accent = face === "mixt" ? "#378add" : "#ef9f27";
+    spawnParticles(cx, cy, PALETTES[face], 44, 1.4);
+    spawnShockwave(cx, cy, accent, 0, 4.2);
+    spawnFlash(accent);
     doc.body.classList.add("page-leaving");
-    setTimeout(function () { location.href = flipTo; }, 440);
+    setTimeout(function () { location.href = flipTo; }, 460);
   }
 
   /* 键盘 Alt + ←/→（PRD 4.2） */
@@ -267,19 +297,25 @@
       var cy = rect.top + rect.height / 2;
       var pal = PALETTES[target] || PALETTES.uu;
       var accent = target === "mixt" ? "#378add" : "#ef9f27";
-      /* S2：翻转起手，粒子 + 冲击波 */
+      /* S2：翻转起手 —— 喷泉持续喷发 + 首发大爆发 + 双重冲击波 */
       stage.classList.add("s2");
       state = 2;
-      spawnParticles(cx, cy, pal, 26);
-      spawnShockwave(cx, cy, accent);
+      spawnFountain(cx, cy, pal, reducedMotion ? 0 : 860);
+      spawnParticles(cx, cy, pal, 40, 1.5);
+      spawnShockwave(cx, cy, accent, 0, 4.2);
+      spawnShockwave(cx, cy, accent, 180, 2.6);
       setTimeout(function () {
-        /* S3：放大入场，再补一记更密的爆发 */
+        /* S3：放大入场 —— 双连爆（错开 140ms）+ 全屏闪光 */
         stage.classList.add("s3");
         state = 3;
-        spawnParticles(cx, cy, pal, 36);
-        spawnShockwave(cx, cy, accent);
-        setTimeout(function () { location.href = target + ".html"; }, reducedMotion ? 0 : 440);
-      }, reducedMotion ? 0 : 780);
+        spawnParticles(cx, cy, pal, 50, 1.8);
+        setTimeout(function () {
+          spawnParticles(cx, cy, pal, 40, 1.3);
+        }, 140);
+        spawnShockwave(cx, cy, "#ffffff", 0, 4.6);
+        spawnFlash(accent);
+        setTimeout(function () { location.href = target + ".html"; }, reducedMotion ? 0 : 490);
+      }, reducedMotion ? 0 : 860);
     }
 
     stage.addEventListener("click", function (e) {
