@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=4">
+  <link rel="stylesheet" href="assets/demo.css?v=5">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -107,10 +107,6 @@
               </div>
             </div>
             <div class="admin-field">
-              <label for="f-slug">URL 短名（保存时自动生成，无需填写）</label>
-              <input id="f-slug" type="text" readonly>
-            </div>
-            <div class="admin-field">
               <label for="f-cat">分类</label>
               <select id="f-cat"></select>
             </div>
@@ -166,14 +162,19 @@
           </form>
         </div>
 
-        <!-- 媒体面板 -->
+        <!-- 媒体面板：文章配图的引用生成器 -->
         <div class="admin-panel" data-panel-body="media">
-          <p class="admin-hint">静态站点不单独建媒体服务：图片直接随文章进仓库，构建期压缩并生成响应式尺寸。Demo 里以占位块示意。</p>
-          <div class="admin-media-grid">
-            <div class="admin-media-item">拖拽上传区域</div>
-            <div class="admin-media-item">已用图片（示意）</div>
-            <div class="admin-media-item">已用图片（示意）</div>
-          </div>
+          <p class="admin-hint">
+            「媒体」用来管理<strong>文章配图</strong>。正式实现里：图片作为文件随文章提交进仓库
+            （构建期自动压缩、生成响应式尺寸），正文里用 <code>/images/&lt;面&gt;/文件名</code> 引用。
+            Demo 没有真正的文件上传——你在下面选图后，它帮你把<strong>仓库引用代码</strong>生成好，复制进正文即可。
+          </p>
+          <label class="admin-media-pick">
+            <input type="file" accept="image/*" multiple data-media-input hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            选择本地图片（可多选）→ 生成引用代码
+          </label>
+          <div class="admin-media-list" data-media-list></div>
         </div>
 
         <!-- 设置面板 -->
@@ -205,8 +206,8 @@
 
   </div><!-- /.page-card -->
 
-  <script src="assets/demo-store.js?v=4"></script>
-  <script src="assets/demo.js?v=4"></script>
+  <script src="assets/demo-store.js?v=5"></script>
+  <script src="assets/demo.js?v=5"></script>
   <script>
     /* 写作台本体：身份取自登录会话（或 ?face= 便捷入口），无权访问则退回登录页 */
     (function () {
@@ -240,6 +241,8 @@
         return;
       }
       face = detected;
+      /* 写作台强调色跟随作者主题：UU 琥珀 / Mixt 蓝，按钮不再一片灰 */
+      document.body.dataset.face = face;
       try { localStorage.setItem(SESSION, face); } catch (e) {}
 
       function msg(el, text) { if (el) el.textContent = text; }
@@ -282,11 +285,6 @@
         while (taken.indexOf(base + "-" + n) !== -1) n++;
         return base + "-" + n;
       }
-
-      $("#f-title").addEventListener("input", function () {
-        if ($("#f-slug").dataset.locked === "1") return; /* 编辑旧文章时保留原 slug */
-        $("#f-slug").value = autoSlug(this.value, editingId);
-      });
 
       /* ---------- 面板切换 ---------- */
       [].slice.call(document.querySelectorAll(".admin-side-item")).forEach(function (btn) {
@@ -357,8 +355,6 @@
         editingId = null;
         $("[data-editor-title]").textContent = "新建文章";
         $("#f-title").value = "";
-        $("#f-slug").value = "";
-        $("#f-slug").dataset.locked = "0";
         $("#f-date").value = new Date().toISOString().slice(0, 10);
         $("#f-tags").value = "";
         $("#f-desc").value = "";
@@ -374,8 +370,6 @@
         editingId = id || null;
         $("[data-editor-title]").textContent = p ? "编辑文章" : "新建文章";
         $("#f-title").value = p ? p.title : "";
-        $("#f-slug").value = p ? (p.slug || "") : "";
-        $("#f-slug").dataset.locked = p ? "1" : "0";  /* 已发布文章的 slug 冻结，不回改 */
         $("#f-date").value = p ? p.date : new Date().toISOString().slice(0, 10);
         $("#f-tags").value = p ? (p.tags || []).join(", ") : "";
         $("#f-desc").value = p ? p.desc : "";
@@ -393,7 +387,7 @@
         var out = $("[data-post-msg]");
         if (!title) { msg(out, "标题为必填字段。"); $("#f-title").focus(); return; }
         if (!desc) { msg(out, "description 为必填字段（构建期校验同样会拦）。"); $("#f-desc").focus(); return; }
-        var slug = $("#f-slug").value.trim() || autoSlug(title, editingId);
+        var slug = autoSlug(title, editingId);  /* URL 全自动生成，作者不用管 */
         var data = {
           face: face,
           title: title,
@@ -434,16 +428,42 @@
         }
         host.innerHTML = cats.map(function (c) {
           var n = store.categoryCount(face, c.name);
-          return '<div class="admin-cat-row"><div>' +
-            "<b>" + escapeHtml(c.name) + '</b> <span class="slug">/' + escapeHtml(c.slug) + "</span>" +
-            "<p>" + escapeHtml(c.desc || "") + "</p>" +
-            '</div><div class="admin-row-actions">' +
-            '<span class="admin-saved-badge">' + n + " 篇</span>" +
-            '<button class="admin-mini" data-edit-cat="' + escapeHtml(c.slug) + '">编辑</button>' +
-            '<button class="admin-mini admin-mini--danger" data-del-cat="' + escapeHtml(c.slug) + '">删除</button>' +
-            "</div></div>";
+          var posts = store.published(face).filter(function (p) { return p.category === c.name; });
+          var rows = posts.map(function (p) {
+            var href = p.detail || ("post.html?face=" + face + "&slug=" + encodeURIComponent(p.slug));
+            return '<li class="archive-row"><time datetime="' + escapeHtml(p.date) + '">' + escapeHtml((p.date || "").slice(5)) + "</time>" +
+              '<a href="' + escapeHtml(href) + '">' + escapeHtml(p.title) + "</a></li>";
+          }).join("");
+          return '<div class="admin-cat-row" data-cat-slug="' + escapeHtml(c.slug) + '">' +
+            '<div class="admin-cat-head">' +
+              "<b>" + escapeHtml(c.name) + '</b> <span class="slug">/' + escapeHtml(c.slug) + "</span>" +
+              '<span class="admin-cat-arrow" aria-hidden="true">▸</span>' +
+              "<p>" + escapeHtml(c.desc || "") + "</p>" +
+            "</div>" +
+            '<div class="admin-row-actions">' +
+              '<span class="admin-saved-badge">' + n + " 篇</span>" +
+              '<button class="admin-mini" data-edit-cat="' + escapeHtml(c.slug) + '">编辑</button>' +
+              '<button class="admin-mini admin-mini--danger" data-del-cat="' + escapeHtml(c.slug) + '">删除</button>' +
+            "</div>" +
+            '<div class="admin-cat-timeline" hidden>' +
+              (posts.length
+                ? '<ul class="archive-list">' + rows + "</ul>"
+                : '<p class="admin-cat-none">该分类下还没有已发布的文章。</p>') +
+            "</div>" +
+            "</div>";
         }).join("");
       }
+
+      /* 点击分类行 → 展开/收起与内容页分类栏一致的时间线（编辑/删除按钮除外） */
+      $("[data-cat-list]").addEventListener("click", function (e) {
+        if (e.target.closest(".admin-mini")) return;
+        var row = e.target.closest(".admin-cat-row");
+        if (!row || !row.dataset.catSlug) return;
+        var tl = row.querySelector(".admin-cat-timeline");
+        if (!tl) return;
+        var open = row.classList.toggle("is-open");
+        tl.hidden = !open;
+      });
 
       function resetCatForm() {
         editingCatSlug = null;
@@ -547,6 +567,42 @@
           }
           return;
         }
+      });
+
+      /* ---------- 媒体：选图 → 生成仓库引用 ---------- */
+      $("[data-media-input]").addEventListener("change", function () {
+        var list = $("[data-media-list]");
+        var files = [].slice.call(this.files || []);
+        if (!files.length) return;
+        files.forEach(function (file) {
+          var ref = "/images/" + face + "/" + file.name;
+          var url = URL.createObjectURL(file);
+          var row = document.createElement("div");
+          row.className = "admin-media-row";
+          row.innerHTML =
+            '<img src="' + url + '" alt="">' +
+            '<div class="admin-media-info">' +
+              "<b>" + escapeHtml(file.name) + "</b>" +
+              '<code class="admin-media-ref">![' + escapeHtml(file.name.replace(/\.[^.]+$/, "")) + "](" + escapeHtml(ref) + ")</code>" +
+            "</div>" +
+            '<button class="admin-mini" data-media-copy="' + escapeHtml(ref) + '" data-media-name="' + escapeHtml(file.name.replace(/\.[^.]+$/, "")) + '">复制引用</button>';
+          list.insertBefore(row, list.firstChild);
+        });
+        this.value = "";
+      });
+
+      document.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-media-copy]");
+        if (!btn) return;
+        var text = "![" + btn.dataset.mediaName + "](" + btn.dataset.mediaCopy + ")";
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.cssText = "position:fixed;opacity:0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); window.uumToast("引用已复制，粘贴到正文里即可"); }
+        catch (err) { window.uumToast("复制失败，请手动选中复制"); }
+        document.body.removeChild(ta);
       });
 
       /* 分类名 → URL 短名自动预填 */
