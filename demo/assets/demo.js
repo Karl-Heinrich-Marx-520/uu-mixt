@@ -63,27 +63,9 @@
   var flipTo = doc.body.dataset.flipTo;
   var leaving = false;
 
-  /* 卡牌高光：斜向光带扫过（out = 扫到中央，in = 从中央扫出），跨页衔接 */
-  function playGloss(phase) {
-    if (reducedMotion) return;
-    var g = doc.createElement("div");
-    g.className = "gloss";
-    doc.body.appendChild(g);
-    try {
-      var frames = phase === "out"
-        ? [{ transform: "translateX(-118%)", opacity: 0 },
-           { opacity: 0.95, offset: 0.45 },
-           { transform: "translateX(0%)", opacity: 0.95 }]
-        : [{ transform: "translateX(0%)", opacity: 0.95 },
-           { opacity: 0.9, offset: 0.4 },
-           { transform: "translateX(118%)", opacity: 0 }];
-      var a = g.animate(frames, {
-        duration: phase === "out" ? 700 : 760,
-        easing: "cubic-bezier(.45,.05,.35,1)",
-        fill: "forwards"
-      });
-      a.finished.then(function () { g.remove(); }).catch(function () { g.remove(); });
-    } catch (e) { g.remove(); }
+  /* FX（粒子/冲击波/高光）只在入口页加载，面页调用时做存在性保护 */
+  function callFX(phase) {
+    if (window.UUMFX && window.UUMFX.gloss) window.UUMFX.gloss(phase);
   }
 
   /* 翻入：从另一面跳转来时播放卡牌入场 + 高光后半程 */
@@ -91,101 +73,13 @@
     doc.documentElement.classList.remove("flip-in-pending");
     try { sessionStorage.removeItem("uum-flip-in"); } catch (e) {}
     doc.body.classList.add("flip-in");
-    playGloss("in");
+    callFX("in");
     doc.body.addEventListener("animationend", function onFlipIn(e) {
       if (e.animationName === "card-flip-in") {
         doc.body.classList.remove("flip-in");
         doc.body.removeEventListener("animationend", onFlipIn);
       }
     });
-  }
-
-  /* 粒子调色板（与两面主题色同源） */
-  var PALETTES = {
-    uu: ["#ef9f27", "#f6c468", "#ffe1a8", "#ffffff", "#c96f08"],
-    mixt: ["#378add", "#6fb7ff", "#b3d5f8", "#ffffff", "#1b62b5"]
-  };
-
-  function spawnParticles(x, y, palette, count, power) {
-    if (reducedMotion || !palette) return;
-    power = power || 1;
-    for (var i = 0; i < count; i++) {
-      var p = doc.createElement("span");
-      p.className = "particle";
-      var size = 4 + Math.random() * 6;
-      var circle = Math.random() < 0.55;
-      p.style.width = size + "px";
-      p.style.height = circle ? size + "px" : (size * 0.45) + "px";
-      if (circle) p.style.borderRadius = "50%";
-      p.style.background = palette[i % palette.length];
-      p.style.left = x + "px";
-      p.style.top = y + "px";
-      var angle = Math.random() * Math.PI * 2;
-      var dist = (70 + Math.random() * 170) * power;
-      var dx = Math.cos(angle) * dist;
-      var dy = Math.sin(angle) * dist - 50;
-      var rot = Math.random() * 660 - 330;
-      var dur = 620 + Math.random() * 480;
-      try {
-        var a = p.animate(
-          [
-            { transform: "translate(0,0) rotate(0deg) scale(1)", opacity: 1 },
-            { transform: "translate(" + dx + "px," + dy + "px) rotate(" + rot + "deg) scale(.3)", opacity: 0 }
-          ],
-          { duration: dur, easing: "cubic-bezier(.16,1,.3,1)", fill: "forwards" }
-        );
-        a.finished.then(function () { this.remove(); }.bind(p)).catch(function () { p.remove(); });
-      } catch (e) { p.remove(); return; }
-      doc.body.appendChild(p);
-    }
-  }
-
-  function spawnShockwave(x, y, color, delay, scaleMax) {
-    if (reducedMotion) return;
-    var r = doc.createElement("span");
-    r.className = "shockwave";
-    r.style.left = x + "px";
-    r.style.top = y + "px";
-    r.style.borderColor = color || "#fff";
-    doc.body.appendChild(r);
-    try {
-      var a = r.animate(
-        [
-          { transform: "translate(-50%,-50%) scale(.15)", opacity: 0.95 },
-          { transform: "translate(-50%,-50%) scale(" + (scaleMax || 3.4) + ")", opacity: 0 }
-        ],
-        { duration: 620, delay: delay || 0, easing: "cubic-bezier(.16,1,.3,1)", fill: "forwards" }
-      );
-      a.finished.then(function () { r.remove(); }).catch(function () { r.remove(); });
-    } catch (e) { r.remove(); }
-  }
-
-  /* 持续喷泉：翻转期间从卡片中心不断喷出粒子，营造"引擎点火"感 */
-  function spawnFountain(x, y, palette, duration) {
-    if (reducedMotion || !palette) return;
-    var stopAt = Date.now() + duration;
-    (function tick() {
-      spawnParticles(x + (Math.random() * 60 - 30), y + (Math.random() * 30 - 15),
-        palette, 5, 0.85);
-      if (Date.now() < stopAt) setTimeout(tick, 80);
-    })();
-  }
-
-  /* 全屏闪光：入场瞬间亮一记主题色（仅 700ms，随即消散） */
-  function spawnFlash(color) {
-    if (reducedMotion) return;
-    var f = doc.createElement("div");
-    f.className = "flash";
-    f.style.background =
-      "radial-gradient(circle at 50% 44%, " + color + " 0%, transparent 62%)";
-    doc.body.appendChild(f);
-    try {
-      var a = f.animate(
-        [{ opacity: 0 }, { opacity: 0.16, offset: 0.25 }, { opacity: 0 }],
-        { duration: 700, easing: "ease-out", fill: "forwards" }
-      );
-      a.finished.then(function () { f.remove(); }).catch(function () { f.remove(); });
-    } catch (e) { f.remove(); }
   }
 
   function doFlip() {
@@ -195,7 +89,7 @@
     /* 卡牌式翻转：缓慢高光扫到中央 → 整页卡牌翻出 90° →
        跳转后另一面从 90° 翻入，背景与内容在 90° 瞬间同时切换 */
     try { sessionStorage.setItem("uum-flip-in", "1"); } catch (e) {}
-    playGloss("out");
+    callFX("out");
     doc.body.classList.add("flip-out");
     setTimeout(function () { location.href = flipTo; }, 700);
   }
@@ -399,6 +293,17 @@
     if (store) el.textContent = store.published(el.dataset.statPosts).length;
   });
 
+  /* 归档筛选条：由内容层渲染 → 写作台新增分类后自动出现 */
+  [].slice.call(doc.querySelectorAll("[data-filter-bar]")).forEach(function (bar) {
+    if (!store) return;
+    var face = bar.dataset.filterBar;
+    var cats = store.categories(face);
+    bar.innerHTML = '<button class="filter-chip is-active" data-filter="all">全部</button>' +
+      cats.map(function (c) {
+        return '<button class="filter-chip" data-filter="' + esc(c.name) + '">' + esc(c.name) + "</button>";
+      }).join("");
+  });
+
   /* 面首页 / 归档：文章卡片列表 */
   [].slice.call(doc.querySelectorAll("[data-post-list]")).forEach(function (host) {
     if (!store) return; /* 无内容层时保留静态 HTML（无 JS / 打开单个文件也正常） */
@@ -410,10 +315,11 @@
     }
     host.innerHTML = posts.map(function (p) {
       var fresh = p.createdAt && (Date.now() - p.createdAt) < 172800000;
-      var href = p.detail || "#";
-      var linkAttrs = p.detail ? "" : ' data-action="todo" data-msg="Demo：详情页在正式实现里由构建期生成"';
+      var href = p.detail || ("post.html?face=" + face + "&slug=" + encodeURIComponent(p.slug));
+      var linkAttrs = "";
       var tags = (p.tags || []).slice(0, 3).map(function (t) {
-        return '<span class="chip">' + esc(t) + "</span>";
+        return '<a class="chip chip--link" href="tags.html#tag-' +
+          encodeURIComponent(String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-")) + '">' + esc(t) + "</a>";
       }).join("");
       var meta = [];
       if (p.featured) {
@@ -448,10 +354,10 @@
     }
     host.innerHTML = years.map(function (y) {
       var rows = byYear[y].map(function (p) {
-        var attrs = p.detail ? "" : ' data-action="todo" data-msg="Demo：详情页在正式实现里由构建期生成"';
+        var href = p.detail || ("post.html?face=" + face + "&slug=" + encodeURIComponent(p.slug));
         return '<li class="archive-row" data-cat="' + esc(p.category) + '">' +
           '<time datetime="' + esc(p.date) + '">' + esc((p.date || "").slice(5)) + "</time>" +
-          '<a href="' + esc(p.detail || "#") + '"' + attrs + ">" + esc(p.title) + "</a>" +
+          '<a href="' + esc(href) + '">' + esc(p.title) + "</a>" +
           (p.category ? '<span class="chip chip--cat">' + esc(p.category) + "</span>" : "") +
           "</li>";
       }).join("");
@@ -493,9 +399,9 @@
           return '<h2 class="archive-year" id="cat-' + esc(c.slug) + '">' + esc(c.name) +
             " <small>" + posts.length + " 篇</small></h2>" +
             '<ul class="archive-list">' + posts.map(function (p) {
-              var attrs = p.detail ? "" : ' data-action="todo" data-msg="Demo：详情页在正式实现里由构建期生成"';
+              var phref = p.detail || ("post.html?face=" + cface + "&slug=" + encodeURIComponent(p.slug));
               return '<li class="archive-row"><time datetime="' + esc(p.date) + '">' + esc((p.date || "").slice(5)) + "</time>" +
-                '<a href="' + esc(p.detail || "#") + '"' + attrs + ">" + esc(p.title) + "</a></li>";
+                '<a href="' + esc(phref) + '">' + esc(p.title) + "</a></li>";
             }).join("") + "</ul>";
         }).join("");
       }
@@ -518,86 +424,4 @@
     }).join("");
   });
 
-  /* ---------- 入口页：四状态翻牌（PRD 4.3 的 Demo 实现） ---------- */
-  var stage = doc.querySelector(".stage");
-  if (stage) {
-    var cards = [].slice.call(stage.querySelectorAll(".entry-card"));
-    var hint = doc.querySelector(".entry-hint");
-    var state = 0; /* 0 并列 · 1 收拢 · 2/3 翻转入场 */
-
-    /* 上次访问标记 */
-    try {
-      var last = localStorage.getItem("uum-demo-last-face");
-      if (last) {
-        var badgeHost = stage.querySelector(".entry-card--" + last + " .name");
-        if (badgeHost) {
-          var b = doc.createElement("span");
-          b.className = "visited-badge";
-          b.textContent = "上次访问";
-          badgeHost.appendChild(b);
-        }
-      }
-    } catch (e) {}
-
-    function enter(target) {
-      try { localStorage.setItem("uum-demo-last-face", target); } catch (e) {}
-      var card = stage.querySelector(".entry-card.is-selected");
-      var rect = card.getBoundingClientRect();
-      var cx = rect.left + rect.width / 2;
-      var cy = rect.top + rect.height / 2;
-      var pal = PALETTES[target] || PALETTES.uu;
-      var accent = target === "mixt" ? "#378add" : "#ef9f27";
-      /* S2：翻转起手 —— 喷泉持续喷发 + 首发大爆发 + 双重冲击波 */
-      stage.classList.add("s2");
-      state = 2;
-      spawnFountain(cx, cy, pal, reducedMotion ? 0 : 860);
-      spawnParticles(cx, cy, pal, 40, 1.5);
-      spawnShockwave(cx, cy, accent, 0, 4.2);
-      spawnShockwave(cx, cy, accent, 180, 2.6);
-      setTimeout(function () {
-        /* S3：放大入场 —— 双连爆（错开 140ms）+ 全屏闪光 */
-        stage.classList.add("s3");
-        state = 3;
-        spawnParticles(cx, cy, pal, 50, 1.8);
-        setTimeout(function () {
-          spawnParticles(cx, cy, pal, 40, 1.3);
-        }, 140);
-        spawnShockwave(cx, cy, "#ffffff", 0, 4.6);
-        spawnFlash(accent);
-        setTimeout(function () { location.href = target + ".html"; }, reducedMotion ? 0 : 490);
-      }, reducedMotion ? 0 : 860);
-    }
-
-    stage.addEventListener("click", function (e) {
-      var card = e.target.closest(".entry-card");
-      if (state === 0) {
-        if (!card) return;
-        e.preventDefault();
-        cards.forEach(function (c) { c.classList.toggle("is-selected", c === card); });
-        stage.classList.add("s1");
-        state = 1;
-        if (hint) hint.textContent = "再点一次确认进入 · 按 Esc 返回";
-      } else if (state === 1) {
-        e.preventDefault();
-        if (card) {
-          enter(card.dataset.face);
-        } else {
-          /* 点击空白：回到 S0（360ms 反向） */
-          stage.classList.remove("s1");
-          cards.forEach(function (c) { c.classList.remove("is-selected"); });
-          state = 0;
-          if (hint) hint.textContent = "选择一张卡片，进入该作者的一面";
-        }
-      }
-    });
-
-    doc.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && state === 1) {
-        stage.classList.remove("s1");
-        cards.forEach(function (c) { c.classList.remove("is-selected"); });
-        state = 0;
-        if (hint) hint.textContent = "选择一张卡片，进入该作者的一面";
-      }
-    });
-  }
 })();

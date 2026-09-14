@@ -83,6 +83,178 @@
     }
   };
 
+
+  /* 部分种子文章的 Markdown 正文（演示动态详情页的渲染与目录） */
+  var BODIES = {
+    "mercury-hpcc-int-ns3": [
+      "## 复现目标",
+      "",
+      "把 HPCC 的 INT 反馈链路搬进 NS-3.17 的 master tree，先跑通单链路基线，再换真实流量分布。这篇只记录「跑起来」这一段：环境、编译、第一次出图。",
+      "",
+      "## 环境与依赖",
+      "",
+      "- Ubuntu 18.04 + Docker（宿主机不装任何仿真依赖）",
+      "- NS-3.17 + waf 1.7 + gcc-5 + Python 2（run.py 是 py2 语法）",
+      "- OURS 模拟器源码与 HPCC master tree 基线各一套",
+      "",
+      "## 关键改动",
+      "",
+      "HPCC 靠 INT 把链路利用率 U 带回发送端，再用 U 调整窗口。复现时最容易出错的是**反馈的时延**：",
+      "",
+      "```cpp",
+      "// 伪代码：INT 头携带的 U，回到发送端后才参与窗口更新",
+      "if (ack.int_valid) {",
+      "    u = ack.u;                      // 链路利用率",
+      "    w = (u < U_LOW) ? w * (1 + alpha) :",
+      "        (u > U_HIGH) ? w * (1 - beta) : w;",
+      "}",
+      "```",
+      "",
+      "> 注意：U 的采样窗口与窗口更新的时间尺度必须对齐，否则会出现「反馈振荡」——曲线看起来很公平，实际吞吐在抖。",
+      "",
+      "## 首次结果",
+      "",
+      "1. 单链路：吞吐达到链路容量，收敛时间与论文量级一致",
+      "2. 多链路：公平性指标偏乐观，怀疑是采样窗口偏小",
+      "3. 待办：换真实 AI 流量分布，跑三算法对比矩阵",
+      "",
+      "## 下一步",
+      "",
+      "把 PC4 拉进来做对照，并固定同一套流量分布与随机种子。"
+    ].join("\n"),
+
+    "muduo-event-loop": [
+      "## 问题",
+      "",
+      "`one loop per thread` 说起来一句话，落到代码里至少要回答三个问题：谁拥有 Poller？Channel 生命周期归谁？跨线程唤醒怎么做？",
+      "",
+      "## 三者的所有权",
+      "",
+      "- **EventLoop** 拥有 Poller 与唤醒用的 eventfd",
+      "- **Channel** 只是 fd 的「事件登记表」，不拥有 fd",
+      "- **线程** 可以没有 EventLoop，但一个 EventLoop 只属于一个线程",
+      "",
+      "```cpp",
+      "void EventLoop::loop() {",
+      "    while (!quit_) {",
+      "        activeChannels_.clear();",
+      "        pollReturnTime_ = poller_->poll(kPollTimeMs, &activeChannels_);",
+      "        for (auto* ch : activeChannels_) ch->handleEvent();",
+      "        doPendingFunctors();          // 跨线程任务在这里落地",
+      "    }",
+      "}",
+      "```",
+      "",
+      "## eventfd 的用途",
+      "",
+      "阻塞在 `poll()` 上的线程无法被普通变量唤醒。muduo 用 eventfd 往 poll 里塞一个可读事件 —— 于是「跨线程投递任务」退化成「唤醒 + 排空队列」两件小事。",
+      "",
+      "## 与 Asio 的差别",
+      "",
+      "Asio 把这一层抽象成 `io_context` + `strand`，不暴露 fd；muduo 则把 fd 与 Channel 摆在你面前。读 muduo 更容易看清「事件循环到底在转什么」。"
+    ].join("\n"),
+
+    "cpp20-coroutine-frame": [
+      "## 最小协程",
+      "",
+      "```cpp",
+      "task<void> f() {",
+      "    int local = 42;",
+      "    co_await std::suspend_always{};",
+      "    use(local);              // 恢复后 local 还在，它没在栈上",
+      "}",
+      "```",
+      "",
+      "## 帧里有什么",
+      "",
+      "用 `-fcoroutines` 编出来看汇编，协程帧至少包含：",
+      "",
+      "1. resume / destroy 函数指针（编译器生成）",
+      "2. promise 对象（你自己定义的那个）",
+      "3. 跨挂起点存活的局部变量与形参副本",
+      "",
+      "`co_await` 的第一个动作是把「返回地址」换成 `resume` 的地址 —— 所以「暂停即返回、恢复即跳回」在机器层面就是一次普通的函数调用与返回。",
+      "",
+      "> 踩坑：把大对象放进协程帧会让帧膨胀；能 `move` 进帧的就别让它留在栈上被整份拷贝。"
+    ].join("\n"),
+
+    "heap-techniques-compare": [
+      "## 为什么要做表格",
+      "",
+      "手法本身不难记，难记的是**适用版本与前置条件**。同一个名字在 2.27 能用、在 2.35 要换写法，光看 writeup 很容易踩空。",
+      "",
+      "## 对照表（节选）",
+      "",
+      "| 维度 | 老版本 | 新版本 |",
+      "| --- | --- | --- |",
+      "| 指针编码 | 明文 | safe-linking 混淆 |",
+      "| 结构校验 | 无 | key 字段 |",
+      "| 触发条件 | 单次写入 | 需配合二次分配 |",
+      "",
+      "## 判断顺序",
+      "",
+      "1. 先确认 glibc 版本（这决定一半以上的可用手法）",
+      "2. 再看可写入次数与可控长度",
+      "3. 最后才选手法，而不是反过来",
+      "",
+      "> 本文不含完整利用程序；所有地址与偏移已打码，仅保留判断思路（PRD 3.7）。"
+    ].join("\n"),
+
+    "ctf-pwn-walkthrough": [
+      "## 信息收集",
+      "",
+      "拿到二进制先做三件事：`checksec` 看保护、看菜单交互、找可疑的输入长度。这道题的线索是**长度校验写在拷贝之后**。",
+      "",
+      "## 判断链",
+      "",
+      "- 保护：NX 开、canary 开、PIE 开 → 先想办法泄露",
+      "- 交互：菜单有「查看」与「编辑」两个入口 → 大概率能给读原语",
+      "- 输入：编辑时长度可以写到分配大小之外 → 堆溢出",
+      "",
+      "## 打码后的关键片段",
+      "",
+      "```c",
+      "// 原题此处长度校验在 memcpy 之后",
+      "memcpy(dst, src, len);          // len 未与 capacity 比较",
+      "if (len > capacity) return -1;  // 校验来得太晚",
+      "```",
+      "",
+      "## 复盘",
+      "",
+      "1. 先泄露 libc 基址，再算 one_gadget 约束",
+      "2. 全程在自建容器里复现，版本固定",
+      "3. 结论：这类题的难点不是手法，而是**信息收集的完整度**"
+    ].join("\n"),
+
+    "pwn-env-docker": [
+      "## 为什么要固定环境",
+      "",
+      "同一个二进制在不同 glibc 下行为完全不同。复现别人的 writeup 时，第一件事不是看代码，而是**把版本对齐**。",
+      "",
+      "## 最小 Dockerfile",
+      "",
+      "```dockerfile",
+      "FROM ubuntu:22.04",
+      "RUN apt-get update && apt-get install -y gdb python3-pip patchelf",
+      "RUN pip3 install pwntools",
+      "WORKDIR /work",
+      "```",
+      "",
+      "## 三件事",
+      "",
+      "1. 固定 `libc.so.6` 与 `ld.so`，必要时用 patchelf 改 interp",
+      "2. 配好调试器插件，别在容器里现装",
+      "3. 关掉 ASLR 只在需要时，默认保持开启，才接近真实场景",
+      "",
+      "> 环境自建是合规要求的一部分：所有实验都在自己的容器里完成。"
+    ].join("\n")
+  };
+
+  /* 把正文挂到种子文章上（没有单独的 body 字段时） */
+  SEED.posts.forEach(function (p) {
+    if (!p.body && BODIES[p.slug]) p.body = BODIES[p.slug];
+  });
+
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
   function read() {

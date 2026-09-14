@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UU 的文章 · UU&amp;Mixt</title>
   <meta name="description" content="UU 的一面：C++ 后端、网络编程、源码阅读、科研复现与工程实践的技术笔记。">
-  <link rel="stylesheet" href="assets/demo.css?v=4">
+  <link rel="stylesheet" href="assets/demo.css?v=5">
   <script>
     /* 翻入预备：从另一面翻转跳来时，先隐藏页面避免闪帧（demo.js 接管后移除） */
     try {
@@ -45,9 +45,9 @@
         <a href="uu-about.html">关于</a>
       </nav>
       <div class="header-actions">
-        <button class="icon-btn" data-action="todo" data-msg="全站搜索将在 M6 提供：一次搜索覆盖两面，结果标识所属作者" aria-label="全站搜索" title="全站搜索（M6）">
+        <a class="icon-btn" href="search.html" aria-label="全站搜索" title="全站搜索：一次搜索覆盖两面">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        </button>
+        </a>
         <button class="icon-btn" data-action="toggle-mode" aria-label="切换明暗模式" title="切换明暗模式">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         </button>
@@ -67,7 +67,7 @@
     <div class="hero-bg" aria-hidden="true"></div>
     <div class="hero-veil" aria-hidden="true"></div>
     <div class="hero-inner">
-      <img src="assets/uu.svg" alt="UU 的头像" width="96" height="96">
+      <img src="assets/uu.jpg" alt="UU 的头像" width="96" height="96">
       <h1 class="hero-title">UU<span class="hero-tag">这一面</span></h1>
       <p class="hero-tagline">C++ 后端 · 网络编程 · 源码阅读 · 科研复现 · 工程实践</p>
     </div>
@@ -80,7 +80,7 @@
   <main class="page" id="main">
     <!-- 作者身份区（PRD 4.4：面首页必须项） -->
     <section class="face-hero" aria-label="作者信息">
-      <img src="assets/uu.svg" alt="UU 的头像" width="72" height="72">
+      <img src="assets/uu.jpg" alt="UU 的头像" width="72" height="72">
       <div class="who">
         <h1>UU <span class="face-tag">这一面</span></h1>
         <p class="bio">写 C++ 后端与网络编程，做过异步服务器与 Qt 客户端，也在复现 AI 集群的集合通信拥塞控制。落笔偏好可复现的细节与可验证的结论。</p>
@@ -209,7 +209,9 @@
       <nav class="footer-links" aria-label="站点级链接">
         <a href="#" data-action="todo" data-msg="RSS 将在 M6 提供（全站 + 双面单 feed）">RSS</a>
         <span class="sep">·</span>
-        <a href="#" data-action="todo" data-msg="全站搜索将在 M6 提供">全站搜索</a>
+        <a href="search.html">全站搜索</a>
+        <span class="sep">·</span>
+        <a href="tags.html">标签</a>
         <span class="sep">·</span>
         <a href="about.html">关于本站</a>
         <span class="sep">·</span>
@@ -226,7 +228,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
   </button>
 
-  <script src="assets/demo-store.js?v=4"></script>
-  <script src="assets/demo.js?v=4"></script>
+  <script src="assets/demo-store.js?v=5"></script>
+  <script src="assets/demo.js?v=5"></script>
 </body>
 </html>
