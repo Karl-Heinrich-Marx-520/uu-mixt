@@ -1328,50 +1328,44 @@ body.entry-has-bg .entry-veil { display: block; }
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-m);
 }
-/* 边界拖拽热区（左/右各一条，含可见的抓握提示） */
+/* 边界拖拽热区：**整条左/右边框**都可拖，中间带常驻可见的抓握条 */
 .frame-edge {
   position: absolute;
-  top: 50%;
-  width: 20px;
-  height: 74px;
-  transform: translateY(-50%);
+  top: 0;
+  bottom: 0;
+  width: 18px;
   cursor: col-resize;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-3);
-  font-size: 11px;
   user-select: none;
   touch-action: none;
   z-index: 6;
 }
-.frame-edge::before {
-  content: "";
-  position: absolute;
-  inset: 0 6px;
-  border-radius: 6px;
-  background: transparent;
-  transition: background var(--t-fast), border-color var(--t-fast);
-}
+.frame-edge--right { right: -9px; }
+.frame-edge--left { left: -9px; }
+/* 常驻抓握条（不悬停也看得见，颜色偏淡） */
 .frame-edge::after {
-  content: "⋮";
-  position: relative;
-  letter-spacing: 1px;
-  opacity: 0.9;
+  content: "";
+  width: 4px;
+  height: 64px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  opacity: 0.65;
+  transition: background var(--t-fast), opacity var(--t-fast), height var(--t-fast);
 }
-.frame-edge--right { right: -20px; }
-.frame-edge--left { left: -20px; }
-.frame-edge:hover::before,
-.frame-edge.is-dragging::before {
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-border);
+.frame-edge:hover::after,
+.frame-edge.is-dragging::after {
+  background: var(--accent);
+  opacity: 1;
+  height: 104px;
 }
 .frame-edge:hover,
 .frame-edge.is-dragging { color: var(--accent-deep); }
 /* 拖动中：整页禁用文本选择 */
 body.is-resizing { cursor: col-resize; user-select: none; }
-@media (max-width: 1020px) {
-  .frame-edge { display: none; }        /* 单栏断点下不提供拉宽 */
+@media (max-width: 860px) {
+  .frame-edge { display: none; }        /* 手机宽度下屏幕本来就不够，不提供拉宽 */
   .article-page .article-layout > article { padding: 22px 18px 20px; }
 }
 
