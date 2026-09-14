@@ -1198,7 +1198,7 @@ body[data-face="mixt"] { --face-bg-img: url("bg-mixt.jpg"); }
   background-image: var(--face-bg-img);
   background-size: cover;
   background-position: center;
-  filter: blur(26px) saturate(1.05);
+  filter: blur(26px) saturate(1.05) brightness(1.24);  /* 用户反馈：虚化背景同步提亮 */
   transform: scale(1.12); /* 抵消 blur 造成的边缘透明 */
 }
 .page-veil { z-index: -1; background: rgba(245, 246, 248, 0.7); }
@@ -1229,12 +1229,13 @@ body.has-hero .pager span { color: var(--on-bg-2); }
   background-image: var(--face-bg-img);
   background-size: cover;
   background-position: center;
+  filter: brightness(1.24) saturate(1.05);   /* 用户反馈：整体提亮 */
 }
 .hero-veil {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg,
-    rgba(8, 10, 18, 0.42) 0%, rgba(8, 10, 18, 0.3) 45%, rgba(8, 10, 18, 0.62) 100%);
+    rgba(8, 10, 18, 0.28) 0%, rgba(8, 10, 18, 0.3) 45%, rgba(8, 10, 18, 0.55) 100%);
 }
 .hero-inner { position: relative; z-index: 1; padding: 0 24px; }
 .hero-inner img {
@@ -1303,8 +1304,9 @@ body[data-face="shared"] {
   background-image: var(--entry-bg-img);
   background-size: cover;
   background-position: center;
+  filter: brightness(1.15);   /* 用户反馈：入口页背景提亮 */
 }
-.entry-veil { z-index: -1; background: rgba(245, 246, 248, 0.62); }
+.entry-veil { z-index: -1; background: rgba(245, 246, 248, 0.55); }
 html[data-mode="dark"] .entry-veil { background: rgba(13, 18, 29, 0.66); }
 /* 有背景图时，把次级文字压深一档，保证 WCAG AA（≥ 4.5:1） */
 body.entry-has-bg .entry-sub,
@@ -1453,7 +1455,7 @@ body.is-resizing { cursor: col-resize; user-select: none; }
   border-radius: 999px;
   color: var(--text-2);
 }
-.admin-shell { max-width: 1080px; }
+.admin-shell { max-width: 1160px; }
 .admin-layout {
   display: grid;
   grid-template-columns: 176px 1fr;
@@ -1532,11 +1534,15 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 }
 .admin-table td { padding: 11px 10px; border-bottom: 1px solid var(--border); }
 .admin-table tr:hover td { background: var(--surface-2); }
-.admin-table td:first-child { max-width: 480px; }
+.admin-table td { vertical-align: middle; }
+.admin-table td:first-child { max-width: 360px; }
 .admin-pill {
-  display: inline-block;
-  padding: 2px 9px;
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;             /* 与操作按钮同高：底边完全对齐 */
+  padding: 0 12px;
+  font-size: 0.78rem;
+  white-space: nowrap;      /* 状态文字不折行：折行会把行底边线撑乱 */
   border-radius: 999px;
   background: var(--bg-soft);
   color: var(--text-2);
@@ -1687,11 +1693,18 @@ body.is-resizing { cursor: col-resize; user-select: none; }
   padding: 11px 0;
   font: inherit;
   font-size: 0.94rem;
-  background: var(--accent-deep);
+  font-weight: 600;
+  background: linear-gradient(90deg, #d98c1f, #378add);  /* 双面品牌色：琥珀 → 蓝 */
   color: #fff;
   border: none;
   border-radius: 999px;
   cursor: pointer;
+  transition: filter var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+}
+.login-card .login-btn:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(55, 138, 221, 0.35);
 }
 .login-hint {
   margin-top: 18px;
@@ -1742,7 +1755,10 @@ html[data-mode="dark"] .login-error { color: #ff8a80; }
 .admin-panel.is-active { display: block; }
 .admin-row-actions { display: flex; gap: 8px; white-space: nowrap; }
 .admin-mini {
-  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 11px;
   font: inherit;
   font-size: 0.78rem;
   background: transparent;
@@ -1781,12 +1797,13 @@ html[data-mode="dark"] .login-error { color: #ff8a80; }
 .admin-cat-row:hover .admin-cat-arrow { color: var(--accent-deep); }
 .admin-cat-row.is-open .admin-cat-arrow { transform: rotate(90deg); color: var(--accent-deep); }
 .admin-cat-timeline {
-  display: block;
+  display: none;            /* 收起态；展开由 .is-open 控制（此前 display:block 会压过 hidden，导致收不起来） */
   grid-column: 1 / -1;
   margin-top: 12px;
   padding: 12px 4px 4px 14px;
   border-top: 1px dashed var(--border);
 }
+.admin-cat-row.is-open .admin-cat-timeline { display: block; }
 .admin-cat-timeline .archive-row a { font-size: 0.88rem; }
 .admin-cat-none { margin: 0; font-size: 0.84rem; color: var(--text-3); }
 .admin-cat-row {
