@@ -35,6 +35,9 @@
     toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
   }
 
+  /* 暴露给工作台（admin.html）等页面的内联脚本使用 */
+  window.uumToast = toast;
+
   /* ---------- 剪贴板（file:// 下降级 execCommand） ---------- */
   function copyText(text, okMsg) {
     function fallback() {
@@ -261,21 +264,81 @@
     }, { passive: true });
   }
 
-  /* ---------- TOC 滚动追踪 ---------- */
+  /* ---------- TOC：点击即时高亮 + 滚动位置追踪 ---------- */
   var tocLinks = [].slice.call(doc.querySelectorAll(".toc a"));
-  if (tocLinks.length && "IntersectionObserver" in window) {
-    var heads = tocLinks.map(function (a) { return doc.getElementById(a.getAttribute("href").slice(1)); })
+  if (tocLinks.length) {
+    var tocHeads = tocLinks
+      .map(function (a) { return doc.getElementById(a.getAttribute("href").slice(1)); })
       .filter(Boolean);
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (en.isIntersecting) {
-          tocLinks.forEach(function (a) {
-            a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id);
-          });
-        }
+
+    function setActive(id) {
+      tocLinks.forEach(function (a) {
+        a.classList.toggle("active", a.getAttribute("href") === "#" + id);
       });
-    }, { rootMargin: "-20% 0px -70% 0px" });
-    heads.forEach(function (h) { io.observe(h); });
+    }
+
+    /* 点击目录：立即高亮所点击项（平滑滚动期间逐步移交给追踪逻辑） */
+    tocLinks.forEach(function (a) {
+      a.addEventListener("click", function () {
+        setActive(a.getAttribute("href").slice(1));
+      });
+    });
+
+    /* 滚动追踪：取判读线（视口顶部下方 25%）上方最近的标题 */
+    var tocTicking = false;
+    function tocTrack() {
+      tocTicking = false;
+      var line = window.scrollY + window.innerHeight * 0.25;
+      var current = tocHeads.length ? tocHeads[0] : null;
+      for (var i = 0; i < tocHeads.length; i++) {
+        var top = tocHeads[i].getBoundingClientRect().top + window.scrollY;
+        if (top <= line) current = tocHeads[i];
+      }
+      if (current) setActive(current.id);
+    }
+    window.addEventListener("scroll", function () {
+      if (!tocTicking) {
+        tocTicking = true;
+        requestAnimationFrame(tocTrack);
+      }
+    }, { passive: true });
+    tocTrack();
+  }
+
+  /* ---------- 文章页：内容栏拖拽调宽（双击恢复默认） ---------- */
+  var articlePage = doc.querySelector(".article-page .page");
+  if (articlePage) {
+    var handle = doc.createElement("div");
+    handle.className = "width-handle";
+    handle.title = "拖动调整阅读宽度 · 双击恢复默认";
+    articlePage.appendChild(handle);
+    try {
+      var savedW = parseInt(localStorage.getItem("uum-demo-article-w"), 10);
+      if (savedW >= 680) articlePage.style.setProperty("--article-w", savedW + "px");
+    } catch (e) {}
+    var draggingW = false;
+    handle.addEventListener("pointerdown", function (e) {
+      draggingW = true;
+      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    });
+    handle.addEventListener("pointermove", function (e) {
+      if (!draggingW) return;
+      var rect = articlePage.getBoundingClientRect();
+      var w = Math.round(e.clientX - rect.left);
+      var maxW = Math.min(1400, window.innerWidth - 64);
+      w = Math.max(680, Math.min(w, maxW));
+      articlePage.style.setProperty("--article-w", w + "px");
+      try { localStorage.setItem("uum-demo-article-w", String(w)); } catch (err) {}
+    });
+    ["pointerup", "pointercancel"].forEach(function (ev) {
+      handle.addEventListener(ev, function () { draggingW = false; });
+    });
+    handle.addEventListener("dblclick", function () {
+      articlePage.style.removeProperty("--article-w");
+      try { localStorage.removeItem("uum-demo-article-w"); } catch (err) {}
+      toast("已恢复默认阅读宽度");
+    });
   }
 
   /* ---------- 归档分类筛选 ---------- */
