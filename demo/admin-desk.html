@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=5">
+  <link rel="stylesheet" href="assets/demo.css?v=4">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -39,7 +39,7 @@
 
   <main class="page admin-shell" id="main">
     <div class="admin-user">
-      <img data-user-avatar src="assets/uu.jpg" alt="">
+      <img data-user-avatar src="assets/uu.svg" alt="">
       <div>
         <b data-user-name>—</b>
         <span data-user-role>—</span>
@@ -123,11 +123,8 @@
               <input id="f-desc" type="text" placeholder="一句话摘要，构建期校验必填字段">
             </div>
             <div class="admin-field">
-              <label for="f-body">正文（Markdown）
-                <button class="admin-mini" type="button" data-action="toggle-preview" style="margin-left:8px">预览</button>
-              </label>
+              <label for="f-body">正文（Markdown）</label>
               <textarea id="f-body" rows="10" placeholder="## 背景&#10;&#10;为什么需要在收到 SIGTERM 时先停 accept……"></textarea>
-              <div class="md-preview" data-md-preview hidden></div>
             </div>
             <div class="admin-checks">
               <label><input type="checkbox" id="f-featured"> 置顶到面首页</label>
@@ -208,17 +205,16 @@
 
   </div><!-- /.page-card -->
 
-  <script src="assets/demo-md.js?v=5"></script>
-  <script src="assets/demo-store.js?v=5"></script>
-  <script src="assets/demo.js?v=5"></script>
+  <script src="assets/demo-store.js?v=4"></script>
+  <script src="assets/demo.js?v=4"></script>
   <script>
     /* 写作台本体：身份取自登录会话（或 ?face= 便捷入口），无权访问则退回登录页 */
     (function () {
       "use strict";
       var store = window.UUMStore;
       var FACE_META = {
-        uu: { name: "UU", avatar: "assets/uu.jpg", role: "管理 UU 面的文章与分类", home: "uu.html", cat: "uu-category.html" },
-        mixt: { name: "Mixt", avatar: "assets/mixt.jpg", role: "管理 Mixt 面的文章与分类", home: "mixt.html", cat: "mixt-category.html" }
+        uu: { name: "UU", avatar: "assets/uu.svg", role: "管理 UU 面的文章与分类", home: "uu.html", cat: "uu-category.html" },
+        mixt: { name: "Mixt", avatar: "assets/mixt.svg", role: "管理 Mixt 面的文章与分类", home: "mixt.html", cat: "mixt-category.html" }
       };
       var SESSION = "uum-demo-session";
 
@@ -329,7 +325,6 @@
             '<td class="admin-row-actions">' +
               '<button class="admin-mini" data-edit="' + p.id + '">编辑</button>' +
               '<button class="admin-mini" data-toggle="' + p.id + '">' + (p.draft ? "发布" : "转草稿") + "</button>" +
-              '<button class="admin-mini" data-export="' + p.id + '">导出</button>' +
               '<button class="admin-mini admin-mini--danger" data-del="' + p.id + '">删除</button>' +
             "</td></tr>";
         }).join("");
@@ -476,50 +471,6 @@
         fillCatOptions("");
       }
 
-      /* ---------- Markdown 预览 ---------- */
-      function renderPreview() {
-        var host = $("[data-md-preview]");
-        var src = $("#f-body").value;
-        host.innerHTML = src.trim()
-          ? window.UUMMD.render(src)
-          : '<p style="color:var(--text-3)">正文还是空的，左侧写点 Markdown 试试。</p>';
-      }
-      $("#f-body").addEventListener("input", function () {
-        if (!$("[data-md-preview]").hidden) renderPreview();
-      });
-
-      /* ---------- 导出为 Markdown（带 front-matter，可直接喂给正式构建） ---------- */
-      function frontMatter(p) {
-        var lines = ["---"];
-        lines.push("title: " + JSON.stringify(p.title));
-        lines.push("slug: " + p.slug);
-        lines.push("date: " + p.date);
-        lines.push("author: " + (p.face === "uu" ? "uu" : "mixt"));
-        lines.push("category: " + JSON.stringify(p.category || ""));
-        lines.push("tags: [" + (p.tags || []).map(function (t) { return JSON.stringify(t); }).join(", ") + "]");
-        lines.push("description: " + JSON.stringify(p.desc || ""));
-        lines.push("featured: " + (!!p.featured));
-        lines.push("draft: " + (!!p.draft));
-        lines.push("---");
-        return lines.join("\n");
-      }
-
-      function exportMarkdown(id) {
-        var p = store.getPost(id);
-        if (!p) return;
-        var text = frontMatter(p) + "\n\n" + (p.body || "<!-- 正文为空：在写作台里补上 Markdown -->") + "\n";
-        var name = "src/content/" + p.face + "/" + p.slug + ".md";
-        var blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
-        var a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = p.slug + ".md";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-        msg($("[data-post-msg]"), "已导出 " + p.slug + ".md（对应正式实现里的 " + name + "）");
-      }
-
       /* ---------- 事件委托 ---------- */
       document.addEventListener("click", function (e) {
         var el = e.target.closest("[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat]");
@@ -527,13 +478,6 @@
         if (el.dataset.action === "logout") {
           try { localStorage.removeItem(SESSION); } catch (err) {}
           location.href = "admin.html";
-          return;
-        }
-        if (el.dataset.action === "toggle-preview") {
-          var pv = $("[data-md-preview]");
-          pv.hidden = !pv.hidden;
-          el.textContent = pv.hidden ? "预览" : "收起预览";
-          if (!pv.hidden) renderPreview();
           return;
         }
         if (el.dataset.action === "new-post") { openEditor(null); return; }
@@ -564,7 +508,6 @@
           }
           return;
         }
-        if (el.dataset.export) { exportMarkdown(el.dataset.export); return; }
         if (el.dataset.edit) { openEditor(el.dataset.edit); return; }
         if (el.dataset.toggle) {
           var p = store.getPost(el.dataset.toggle);

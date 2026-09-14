@@ -28,10 +28,6 @@ python -m http.server 8080
 | `uu-category.html` | `/uu/categories/` | UU 分类总览：5 个分类卡片 + 各分类文章列表 |
 | `mixt-category.html` | `/mixt/categories/` | Mixt 分类页：**空分类降级态**（PRD 验收项 7） |
 | `about.html` | `/about/` | 关于本站：双面结构、两位作者、运转方式、技术与备案说明 |
-| `post.html` | `/uu/posts/<slug>/`、`/mixt/posts/<slug>/` | **动态文章详情页**：按 `?face=&slug=` 从内容层取文章，渲染 Markdown 正文、自动生成目录、上下篇；Mixt 面自动带合规声明 |
-| `search.html` | `/search/` | **全站搜索**：一次搜索覆盖两面，结果标识作者（PRD 验收项 9） |
-| `tags.html` | `/tags/` | **共享标签池**：标签按两面汇总，每个标签下列出两面用到它的文章 |
-| `mixt-archive.html` | `/mixt/writing/` | Mixt 面归档（与 UU 面镜像） |
 | `uu-about.html` | `/uu/about/` | UU 作者页（面导航「关于」）：方向、在做什么、本面分类索引、技术栈 |
 | `mixt-about.html` | `/mixt/about/` | Mixt 作者页（同构镜像） |
 | `admin.html` | `/admin/` | **写作台登录页**：输入密码 → 记住身份 → 跳转到独立写作台 |
@@ -44,9 +40,6 @@ Demo 自带一个**本地内容层**（`assets/demo-store.js`，数据存 localS
 | 能力 | 说明 |
 |---|---|
 | 提交即发布 | 写作台保存（非草稿）→ 面首页、归档、分类页立刻出现；新发布文章带「新发布」徽章 48 小时 |
-| 动态详情页 | 写作台发布 → 面页卡片 → `post.html?face=&slug=` 看到自己写的 Markdown 正文（含自动目录与上下篇）；两篇精修示例仍走静态 `uu-post.html` / `mixt-post.html` |
-| 导出可交付 | 写作台每行「导出」下载带 front-matter 的 `.md`（title/slug/date/author/category/tags/description/featured/draft），**可直接放进正式 Astro 的 `src/content/<face>/`** |
-| 写时预览 | 正文支持 Markdown 预览（与文章页共用同一套渲染器 `assets/demo-md.js`） |
 | slug 自动生成 | 作者不写 URL：英文标题转 kebab-case，中文标题用 `post-日期-随机` 兜底（正式实现接中文转拼音）；同面内自动去重；已发布文章的 slug 冻结不回改 |
 | 两把密码 | 登录页按密码区分身份：UU `uu2026` / Mixt `mixt2026`；登录后**跳转到独立页面** `admin-desk.html`，作者字段锁定，只能管自己那一面 |
 | 直接进工作台 | `admin-desk.html?face=uu`（或 `?face=mixt`）；无身份时自动退回登录页 |
@@ -78,8 +71,6 @@ Demo 自带一个**本地内容层**（`assets/demo-store.js`，数据存 localS
 9. **入口页背景图（已接入）**：三张背景图已齐——UU 面 `assets/bg-uu.jpg`、Mixt 面 `assets/bg-mixt.jpg`、入口页 `assets/bg-entry.jpg`（AI 生成的晨昏线天空，左琥珀对应 UU、右深蓝对应 Mixt，已去水印并压至 224KB）。换图只需改 `demo.css` 里对应的 CSS 变量。
 10. **背景图必须用同目录相对路径**：`demo.css` 位于 `assets/` 内，写 `url("assets/x.jpg")` 会被解析成 `/assets/assets/x.jpg` → 404（本 Demo 踩过，见提交 `c10cd1e`）。正确写法是 `url("x.jpg")`。
 10.1 **文章正文方框与拖边界**：正文被方框框住，**整条左/右边框都可拖**（热区 18px 宽、与方框同高，中间有一条常驻可见的抓握条，悬停变主题色并加长）。容器居中，故边界每移动 1px 宽度变化 2px；双击恢复默认 900px，宽度存 localStorage；≤860px 隐藏。
-10.3 **首屏 JS 预算（实测）**：面首页 = `demo-store.js` + `demo.js` ≈ **27.9 KB**（未压缩，gzip 9.7 KB）✓ 达标（PRD < 30KB）；入口页 = `demo.js` + `demo-entry.js` ≈ 25.3 KB（gzip 8.2 KB），仍高于 PRD 给入口页的 ≤15KB —— 那是给正式实现留的指标，Demo 未追求。
-10.4 **脚本分工**：`demo-entry.js` 只含入口页特效（粒子/喷泉/冲击波/闪光/高光/四状态机），只有 `index.html` 加载；面页不为此付出体积。面页调用特效时经 `window.UUMFX` 做存在性保护。
 10.2 **静态资源带版本号**（`demo.css?v=3` 等）：改样式/脚本后如果浏览器仍显示旧效果，先硬刷新（Ctrl+F5）；版本号是防缓存的兜底手段，下次大改记得把 `v=3` 往上加。
 11. **关于本站的入口（待 UU 确认）**：PRD v1.2 写的是「入口仅由入口页底部一行小字进入」。Demo 里除了入口页小字，**两面页脚的站点级链接也放了入口**——按字面执行 PRD 应删掉页脚那条。留待 UU 裁决。
 12. **Demo 的持久化范围**：写作台的数据存在**浏览器 localStorage**（键 `uum-demo-store-v1`），换浏览器/清缓存即回到初始数据。真实实现是 M5 的 Decap CMS + GitHub OAuth，提交 Markdown 进私有仓库。密码同样是前端硬编码的 Demo 值，**不具备任何安全性**，正式实现必须走 OAuth。
