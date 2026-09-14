@@ -493,9 +493,9 @@
           return '<h2 class="archive-year" id="cat-' + esc(c.slug) + '">' + esc(c.name) +
             " <small>" + posts.length + " 篇</small></h2>" +
             '<ul class="archive-list">' + posts.map(function (p) {
-              var attrs = p.detail ? "" : ' data-action="todo" data-msg="Demo：详情页在正式实现里由构建期生成"';
+              var href = p.detail || ("post.html?face=" + cface + "&slug=" + encodeURIComponent(p.slug));
               return '<li class="archive-row"><time datetime="' + esc(p.date) + '">' + esc((p.date || "").slice(5)) + "</time>" +
-                '<a href="' + esc(p.detail || "#") + '"' + attrs + ">" + esc(p.title) + "</a></li>";
+                '<a href="' + esc(href) + '">' + esc(p.title) + "</a></li>";
             }).join("") + "</ul>";
         }).join("");
       }
