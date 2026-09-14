@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-mode="light">
+<html lang="zh-CN" data-mode="dark" data-default-mode="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登录 · 写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台登录：两位作者各用一个密码，验证通过后进入各自的写作台。">
-  <link rel="stylesheet" href="assets/demo.css?v=3">
+  <link rel="stylesheet" href="assets/demo.css?v=4">
+  <!-- 登录页默认暗色（data-default-mode），但仍可手动切换 -->
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -37,7 +38,7 @@
     </div>
   </header>
 
-  <main class="page admin-shell" id="main">
+  <main class="page admin-shell login-page" id="main">
     <section class="login-wrap">
       <form class="login-card" data-login-form>
         <h1>登录写作台</h1>
@@ -70,6 +71,8 @@
 
   </div><!-- /.page-card -->
 
+  <script src="assets/demo-store.js?v=4"></script>
+  <script src="assets/demo.js?v=4"></script>
   <script>
     /* 登录页：校验密码 → 记住身份 → 跳转到独立的写作台页面 */
     (function () {

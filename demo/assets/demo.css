@@ -1773,6 +1773,17 @@ html[data-mode="dark"] .login-error { color: #ff8a80; }
 .admin-hint { font-size: 0.82rem; color: var(--text-3); margin: 0 0 14px; line-height: 1.7; }
 .admin-saved-badge { font-size: 0.76rem; color: var(--text-3); }
 
+
+/* 登录页：暗色门面（默认 data-mode=dark，可用右上角按钮切回浅色） */
+.login-page { padding-top: 8vh; }
+.login-page .login-card { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+html[data-mode="dark"] .login-page .login-card {
+  border-color: var(--border-strong);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+}
+html[data-mode="dark"] body[data-page="admin"] { background: var(--bg); }
+html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
+
 /* ---------- 14. 响应式 ---------- */
 @media (max-width: 1020px) {
   .article-layout { grid-template-columns: 1fr; }
