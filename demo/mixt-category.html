@@ -28,7 +28,7 @@
         <a href="mixt.html">首页</a>
         <a href="#" data-action="todo" data-msg="Mixt 面的归档页未在本 Demo 中制作，结构与 UU 面对称">归档</a>
         <a href="mixt-category.html" aria-current="page">分类</a>
-        <a href="#" data-action="todo" data-msg="作者页将在 M4（页面完备）实现">关于</a>
+        <a href="mixt-about.html">关于</a>
       </nav>
       <div class="header-actions">
         <button class="icon-btn" data-action="todo" data-msg="全站搜索将在 M6 提供：一次搜索覆盖两面，结果标识所属作者" aria-label="全站搜索" title="全站搜索（M6）">
@@ -49,17 +49,20 @@
   </header>
 
   <main class="page" id="main">
-    <h1 style="font-size:1.5rem;margin:6px 0 22px">分类 <small style="font-size:.85rem;color:var(--text-3);font-weight:400">0 个分类</small></h1>
+    <h1 style="font-size:1.5rem;margin:6px 0 22px">分类 <small style="font-size:.85rem;color:var(--text-3);font-weight:400" data-cat-counter>加载中…</small></h1>
 
-    <!-- 空分类降级（PRD 验收项 7）：不渲染分类导航，给出空状态说明 -->
-    <div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-      </svg>
-      <h2>这里还没有分类</h2>
-      <p>按 PRD 3.5，Mixt 面的分类由 Mixt 本人经网页入口（写作台的「分类」）自行添加，工程侧不预置任何分类。</p>
-      <p>分类出现后，这里会自动生成分类导航与分类页；文章页也会显示所属分类标签。</p>
+    <div class="cat-grid" data-cat-grid="mixt"></div>
+
+    <div data-cat-empty hidden>
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        <h2>这里还没有分类</h2>
+        <p>按 PRD 3.5，Mixt 面的分类由 Mixt 本人经写作台自行添加，工程侧不预置任何分类。</p>
+        <p>添加分类后，这里会自动出现分类导航与列表；文章页也会显示所属分类标签。</p>
+      </div>
     </div>
+
+    <div data-cat-lists="mixt"></div>
 
     <div class="notice notice--info">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 12v4"/></svg>
@@ -90,6 +93,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
   </button>
 
+  <script src="assets/demo-store.js"></script>
   <script src="assets/demo.js"></script>
 </body>
 </html>

@@ -42,7 +42,7 @@
         <a href="uu.html" aria-current="page">首页</a>
         <a href="uu-archive.html">归档</a>
         <a href="uu-category.html">分类</a>
-        <a href="#" data-action="todo" data-msg="作者页将在 M4（页面完备）实现">关于</a>
+        <a href="uu-about.html">关于</a>
       </nav>
       <div class="header-actions">
         <button class="icon-btn" data-action="todo" data-msg="全站搜索将在 M6 提供：一次搜索覆盖两面，结果标识所属作者" aria-label="全站搜索" title="全站搜索（M6）">
@@ -86,14 +86,14 @@
         <p class="bio">写 C++ 后端与网络编程，做过异步服务器与 Qt 客户端，也在复现 AI 集群的集合通信拥塞控制。落笔偏好可复现的细节与可验证的结论。</p>
       </div>
       <div class="face-stats" aria-label="文章统计">
-        <div><b>7</b><span>文章</span></div>
+        <div><b data-stat-posts="uu">0</b><span>文章</span></div>
         <div><b>5</b><span>分类</span></div>
         <div><b>18</b><span>标签</span></div>
       </div>
     </section>
 
     <h2 class="section-title">最新文章</h2>
-    <div class="post-list">
+    <div class="post-list" data-post-list="uu">
 
       <a class="post-card" href="uu-post.html">
         <div class="post-meta">
@@ -226,6 +226,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
   </button>
 
+  <script src="assets/demo-store.js"></script>
   <script src="assets/demo.js"></script>
 </body>
 </html>

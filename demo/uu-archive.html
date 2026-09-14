@@ -28,7 +28,7 @@
         <a href="uu.html">首页</a>
         <a href="uu-archive.html" aria-current="page">归档</a>
         <a href="uu-category.html">分类</a>
-        <a href="#" data-action="todo" data-msg="作者页将在 M4（页面完备）实现">关于</a>
+        <a href="uu-about.html">关于</a>
       </nav>
       <div class="header-actions">
         <button class="icon-btn" data-action="todo" data-msg="全站搜索将在 M6 提供：一次搜索覆盖两面，结果标识所属作者" aria-label="全站搜索" title="全站搜索（M6）">
@@ -49,7 +49,7 @@
   </header>
 
   <main class="page" id="main">
-    <h1 style="font-size:1.5rem;margin:6px 0 22px">归档 <small style="font-size:.85rem;color:var(--text-3);font-weight:400">共 7 篇 · 按年份倒序</small></h1>
+    <h1 style="font-size:1.5rem;margin:6px 0 22px">归档 <small style="font-size:.85rem;color:var(--text-3);font-weight:400" data-archive-counter>按年份倒序</small></h1>
 
     <div class="filter-bar" role="group" aria-label="分类筛选">
       <button class="filter-chip is-active" data-filter="all">全部</button>
@@ -60,48 +60,9 @@
       <button class="filter-chip" data-filter="工程实践">工程实践</button>
     </div>
 
-    <h2 class="archive-year">2026 <small>5 篇</small></h2>
-    <ul class="archive-list">
-      <li class="archive-row" data-cat="工程实践">
-        <time datetime="2026-09-05">09-05</time>
-        <a href="uu-post.html">用 Boost.Asio 搭一个可优雅退出的异步 TCP 服务器</a>
-        <span class="chip chip--cat">工程实践</span>
-      </li>
-      <li class="archive-row" data-cat="科研复现">
-        <time datetime="2026-08-28">08-28</time>
-        <a href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇">Mercury 复现笔记（一）：把 HPCC 的 INT 反馈链路跑进 NS-3.17</a>
-        <span class="chip chip--cat">科研复现</span>
-      </li>
-      <li class="archive-row" data-cat="源码阅读">
-        <time datetime="2026-08-16">08-16</time>
-        <a href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇">muduo 源码阅读：EventLoop 怎么兑现 one loop per thread</a>
-        <span class="chip chip--cat">源码阅读</span>
-      </li>
-      <li class="archive-row" data-cat="C++">
-        <time datetime="2026-08-02">08-02</time>
-        <a href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇">co_await 发生时，栈到底去了哪里：C++20 协程帧的布局拆解</a>
-        <span class="chip chip--cat">C++</span>
-      </li>
-      <li class="archive-row" data-cat="网络编程">
-        <time datetime="2026-07-19">07-19</time>
-        <a href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇">从三次握手到 epoll：一次服务端 accept 的完整路径</a>
-        <span class="chip chip--cat">网络编程</span>
-      </li>
-    </ul>
-
-    <h2 class="archive-year">2025 <small>2 篇</small></h2>
-    <ul class="archive-list">
-      <li class="archive-row" data-cat="C++">
-        <time datetime="2025-12-30">12-30</time>
-        <a href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇">Effective Modern C++ 精读：条款 14 与 lambda 的捕获陷阱</a>
-        <span class="chip chip--cat">C++</span>
-      </li>
-      <li class="archive-row" data-cat="工程实践">
-        <time datetime="2025-11-11">11-11</time>
-        <a href="#" data-action="todo" data-msg="文章详情页 Demo 仅制作了置顶一篇">给 Qt 客户端配一个 INI 配置层：QSettings 的正确姿势</a>
-        <span class="chip chip--cat">工程实践</span>
-      </li>
-    </ul>
+    <div data-archive="uu">
+      <!-- 无 JS 时保留为空；内容由 assets/demo-store.js + demo.js 渲染 -->
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -127,6 +88,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
   </button>
 
+  <script src="assets/demo-store.js"></script>
   <script src="assets/demo.js"></script>
 </body>
 </html>
