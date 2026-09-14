@@ -1535,7 +1535,17 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .admin-table td { padding: 11px 10px; border-bottom: 1px solid var(--border); }
 .admin-table tr:hover td { background: var(--surface-2); }
 .admin-table td { vertical-align: middle; }
+.admin-table td { vertical-align: middle; }
 .admin-table td:first-child { max-width: 360px; }
+/* 状态 / 操作 合并列：徽章居左、按钮居右、整行不折行——底边只剩一条线，无从错位 */
+.admin-status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  white-space: nowrap;
+}
+.admin-status-actions .admin-row-actions { display: inline-flex; gap: 6px; }
 .admin-pill {
   display: inline-flex;
   align-items: center;

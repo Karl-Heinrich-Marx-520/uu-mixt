@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>tcache 机制分析：从 glibc 2.27 到 2.42 的攻与防 · Mixt 的文章 · UU&amp;Mixt</title>
   <meta name="description" content="梳理 tcache_entry 结构、key 字段的 double free 检测与 safe-linking 指针保护在各版本的演进，用伪代码与调试记录还原检测思路。">
-  <link rel="stylesheet" href="assets/demo.css?v=6">
+  <link rel="stylesheet" href="assets/demo.css?v=7">
 </head>
 <body data-face="mixt" data-flip-to="uu.html" class="article-page">
 
@@ -56,7 +56,7 @@
           <span class="chip chip--cat">堆利用（示例分类）</span>
           <h1>tcache 机制分析：从 glibc 2.27 到 2.42 的攻与防</h1>
           <div class="article-meta">
-            <span class="author"><img src="assets/mixt.svg" alt="" width="26" height="26">Mixt</span>
+            <span class="author"><img src="assets/mixt.jpg" alt="" width="26" height="26">Mixt</span>
             <span class="dot" aria-hidden="true">|</span>
             <time datetime="2026-09-01">2026-09-01</time>
             <span class="dot" aria-hidden="true">|</span>
@@ -178,6 +178,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
   </button>
 
-  <script src="assets/demo.js?v=6"></script>
+  <script src="assets/demo.js?v=7"></script>
 </body>
 </html>

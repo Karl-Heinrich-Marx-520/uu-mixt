@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=6">
+  <link rel="stylesheet" href="assets/demo.css?v=7">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -39,7 +39,7 @@
 
   <main class="page admin-shell" id="main">
     <div class="admin-user">
-      <img data-user-avatar src="assets/uu.svg" alt="">
+      <img data-user-avatar src="assets/uu.jpg" alt="">
       <div>
         <b data-user-name>—</b>
         <span data-user-role>—</span>
@@ -84,7 +84,7 @@
           </div>
           <table class="admin-table">
             <thead>
-              <tr><th>标题</th><th>分类</th><th>日期</th><th>状态</th><th>操作</th></tr>
+              <tr><th>标题</th><th>分类</th><th>日期</th><th>状态 / 操作</th></tr>
             </thead>
             <tbody data-post-rows></tbody>
           </table>
@@ -206,16 +206,16 @@
 
   </div><!-- /.page-card -->
 
-  <script src="assets/demo-store.js?v=6"></script>
-  <script src="assets/demo.js?v=6"></script>
+  <script src="assets/demo-store.js?v=7"></script>
+  <script src="assets/demo.js?v=7"></script>
   <script>
     /* 写作台本体：身份取自登录会话（或 ?face= 便捷入口），无权访问则退回登录页 */
     (function () {
       "use strict";
       var store = window.UUMStore;
       var FACE_META = {
-        uu: { name: "UU", avatar: "assets/uu.svg", role: "管理 UU 面的文章与分类", home: "uu.html", cat: "uu-category.html" },
-        mixt: { name: "Mixt", avatar: "assets/mixt.svg", role: "管理 Mixt 面的文章与分类", home: "mixt.html", cat: "mixt-category.html" }
+        uu: { name: "UU", avatar: "assets/uu.jpg", role: "管理 UU 面的文章与分类", home: "uu.html", cat: "uu-category.html" },
+        mixt: { name: "Mixt", avatar: "assets/mixt.jpg", role: "管理 Mixt 面的文章与分类", home: "mixt.html", cat: "mixt-category.html" }
       };
       var SESSION = "uum-demo-session";
 
@@ -311,7 +311,7 @@
         $("[data-post-total]").textContent = posts.length;
         var host = $("[data-post-rows]");
         if (!posts.length) {
-          host.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-3)">还没有文章，点右上角「新建文章」开始。</td></tr>';
+          host.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-3)">还没有文章，点右上角「新建文章」开始。</td></tr>';
           return;
         }
         host.innerHTML = posts.map(function (p) {
@@ -319,11 +319,13 @@
             "<td>" + escapeHtml(p.title) + "</td>" +
             "<td>" + escapeHtml(p.category || "—") + "</td>" +
             "<td>" + escapeHtml(p.date) + "</td>" +
-            "<td>" + statusPill(p) + "</td>" +
-            '<td class="admin-row-actions">' +
-              '<button class="admin-mini" data-edit="' + p.id + '">编辑</button>' +
-              '<button class="admin-mini" data-toggle="' + p.id + '">' + (p.draft ? "发布" : "转草稿") + "</button>" +
-              '<button class="admin-mini admin-mini--danger" data-del="' + p.id + '">删除</button>' +
+            '<td class="admin-status-actions">' +
+              statusPill(p) +
+              '<span class="admin-row-actions">' +
+                '<button class="admin-mini" data-edit="' + p.id + '">编辑</button>' +
+                '<button class="admin-mini" data-toggle="' + p.id + '">' + (p.draft ? "发布" : "转草稿") + "</button>" +
+                '<button class="admin-mini admin-mini--danger" data-del="' + p.id + '">删除</button>' +
+              "</span>" +
             "</td></tr>";
         }).join("");
       }
