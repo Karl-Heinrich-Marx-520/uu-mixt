@@ -155,6 +155,7 @@
 | 3 | 本机 `core.autocrlf=true`，与 Linux 服务器混用会产生整文件级假 diff | 已用 `.gitattributes` 统一为仓库内 LF；若出现整文件 diff 先查换行符 | 2026-09-12 |
 | 4 | Git Bash 的 curl 访问 GitHub 报 SSL 错误（exit 35） | 改用 Python（自带证书链）或直接 `git push`（libcurl 正常） | 2026-09-13 |
 | 5 | `git commit` 含中文信息在 Windows 上可能出现编码问题 | 已验证正常（UTF-8）；若乱码检查 `i18n.commitEncoding` | 2026-09-12 |
+| 6 | 访问 GitHub 间歇性中断：代理返回 502（CONNECT tunnel failed）、直连超时，且 curl 报 SSL exit 35 | **本地提交不会丢**。间隔几分钟重试 `git push origin main`；不要为连不上而改网络配置或换协议 | 2026-09-14 |
 | 6 | 无头 Chrome 连不上本地 `http.server`（沙箱隔离，拿到的是 Chrome 错误页） | 截图与 DOM 校验统一走 `file://` + `--allow-file-access-from-files`（Demo 已做 file:// 兼容） | 2026-09-13 |
 | 7 | `--dump-dom` 在 load 事件后立即输出，`setTimeout` 里的结果拿不到 | 探针结果写进 `document.title`，并加 `--virtual-time-budget=2000` 让虚拟时间跑完 | 2026-09-14 |
 | 8 | CSS 给元素写了 `display:block` 会覆盖 HTML `hidden` 属性（特异性高于 UA 样式） | 用 `hidden` 控制显隐的元素，不要同时手写 display；显隐一律走类名 | 2026-09-14 |
