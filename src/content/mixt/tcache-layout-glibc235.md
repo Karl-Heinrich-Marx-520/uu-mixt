@@ -7,7 +7,7 @@ author: mixt
 category: 堆利用
 tags: [pwn, glibc, tcache]
 featured: true
-draft: false
+draft: true
 ---
 ## 从一个结构体开始
 
@@ -32,3 +32,4 @@ struct tcache_entry {
 ## 正文待补
 
 （本文为初始内容，由 UU 代为迁移；Mixt 本人可经写作台继续修订与补充。）
+
