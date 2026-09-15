@@ -14,7 +14,10 @@ ExecStart=/srv/uum/bin/uum-server -config /etc/uum/config.json
 EnvironmentFile=-/etc/uum/pet.env
 Restart=on-failure
 RestartSec=3
-MemoryMax=120M
+# 构建子进程（node 堆上限 1536MB）也在本 cgroup 内：上限须容纳构建峰值，
+# 否则 OOM 连坐杀掉整个服务（2026-09-15 实测 120M 被秒杀）。MemoryHigh 先软限。
+MemoryHigh=1200M
+MemoryMax=1500M
 
 # 加固：/srv/uum 整树可写（工作副本、主库、dist、锁/日志），其余只读
 # （决策 7.24 实测：只放行 work+repo.git 时，uum-rebuild.sh 写锁/日志/dist 全被
