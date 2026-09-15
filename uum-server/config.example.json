@@ -9,6 +9,7 @@
     "authorName": "UU&Mixt 写作台",
     "authorEmail": "desk@uuandmixt.com"
   },
+  "rebuildScript": "/srv/uum/bin/uum-rebuild.sh",
   "tokens": [
     { "hash": "用 `uum-server -hash <明文token>` 生成后粘贴（UU）", "label": "UU", "face": "uu" },
     { "hash": "同上（Mixt）", "label": "Mixt", "face": "mixt" }

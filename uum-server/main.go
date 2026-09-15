@@ -102,6 +102,9 @@ func loadConfig(p string) (*Config, error) {
 			PerTokenPerMin: 6, // 比写接口更严（决策 7.23 正式版接线）
 			MaxBodyRunes:   6000,
 		},
+		// 决策 7.24：rebuildScript 缺省值——mock 冒烟不执行真脚本，缺了它
+		// 只有真实模式首build才暴露（exec.Command("") 必败），2026-09-15 验收补
+		RebuildScript: "/srv/uum/bin/uum-rebuild.sh",
 	}
 	if err := json.Unmarshal(raw, cfg); err != nil {
 		return nil, err
