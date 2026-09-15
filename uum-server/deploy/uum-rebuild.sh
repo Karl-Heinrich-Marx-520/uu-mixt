@@ -33,6 +33,16 @@ while :; do
   log "---- rebuild start ----"
   cd "$WORK" || { log "FATAL: work 目录不可达"; FAIL=1; break; }
 
+  # 同步主库：写作台提交与外部 push（如 UU 本地推 server）都先落在 bare 主库，
+  # 工作副本不自动跟进——构建前必须对齐 origin/main，否则永远构建旧内容
+  # （2026-09-15 验收实测：work 滞后导致前台拿不到新前端与新提交）
+  if git fetch origin "+refs/heads/main:refs/heads/main" >>"$LOG" 2>&1 \
+     && git reset --hard origin/main >>"$LOG" 2>&1; then
+    log "work 已对齐主库 $(git rev-parse --short HEAD)"
+  else
+    log "WARN: work 同步主库失败，沿用当前工作副本构建"
+  fi
+
   export ASTRO_TELEMETRY_DISABLED=1
   export NODE_OPTIONS="--max-old-space-size=1536"
 
