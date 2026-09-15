@@ -5,6 +5,7 @@
  */
 import Layout from "../../components/Layout.astro";
 import { categories, categoryCount, published } from "../../lib/content-layer";
+import author from "../../config/author-mixt.json";
 
 const face = "mixt" as const;
 const cats = categories(face);
@@ -37,8 +38,8 @@ const stack = ["PWN", "glibc", "gdb / pwndbg", "IDA", "Python", "Docker", "Linux
     <img src="/assets/avatars/mixt.jpg" alt="Mixt 的头像">
     <div>
       <h1>Mixt</h1>
-      <p class="author-dir">PWN · 二进制安全 · CTF</p>
-      <p class="author-bio">主攻 PWN 二进制安全。写漏洞分析、利用技巧与 CTF writeup，关注机制层面「为什么可行」与「什么条件下失效」。所有内容遵守合规措辞规则：自建环境、伪代码与打码、不提供可直接复用的完整利用程序。</p>
+      <p class="author-dir">{author.tags.join(" · ")}</p>
+      <p class="author-bio">{author.bio}</p>
     </div>
   </section>
 

@@ -71,6 +71,10 @@ import "../../styles/admin.css";
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           分类
         </button>
+        <button class="admin-side-item" type="button" data-panel="tagpool">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24H4a2 2 0 0 0-2 2v5.59a2 2 0 0 0 .59 1.41l9.58 9.59a2 2 0 0 0 2.83 0l5.59-5.59a2 2 0 0 0 0-2.83z"/><circle cx="6.91" cy="7.85" r="1.4" fill="currentColor" stroke="none"/></svg>
+          标签池
+        </button>
         <button class="admin-side-item" type="button" data-panel="friends">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
           友链
@@ -78,6 +82,10 @@ import "../../styles/admin.css";
         <button class="admin-side-item" type="button" data-panel="media">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
           媒体
+        </button>
+        <button class="admin-side-item" type="button" data-panel="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.5-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.5l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4z"/></svg>
+          设置
         </button>
       </aside>
 
@@ -114,16 +122,23 @@ import "../../styles/admin.css";
               <select id="f-cat"></select>
             </div>
             <div class="admin-field">
-              <label for="f-tags">标签（逗号分隔，进入全站共享标签池，最多 5 个）</label>
-              <input id="f-tags" type="text" placeholder="boost-beast, http, graceful-shutdown">
+              <label for="f-tags"><em class="admin-ai-badge">AI 托管</em>标签（逗号分隔，进入全站共享标签池，最多 5 个，留空保存时自动选取）</label>
+              <input id="f-tags" type="text" placeholder="留空 = AI 读正文自动选取；或手填如 boost-beast, http">
             </div>
             <div class="admin-field">
-              <label for="f-desc">description（列表页与搜索结果使用，60–120 字符，必填）</label>
-              <input id="f-desc" type="text" placeholder="一句话摘要，构建期会校验长度">
+              <label for="f-desc"><em class="admin-ai-badge">AI 托管</em>description（列表页与搜索结果使用，≤120 字符，留空自动生成）</label>
+              <input id="f-desc" type="text" placeholder="留空 = AI 读正文自动生成一句话摘要">
             </div>
             <div class="admin-field">
               <label for="f-body">正文（Markdown）</label>
               <textarea id="f-body" rows="10" placeholder="## 背景&#10;&#10;正文……"></textarea>
+            </div>
+            <div class="admin-ai-row">
+              <button type="button" class="admin-btn admin-btn--ghost admin-btn--ai" data-action="ai-assist">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>
+                <span data-ai-label>AI 生成摘要与标签</span>
+              </button>
+              <span class="admin-ai-note">读完正文自动提炼一句话摘要与最多 5 个标签，只填空字段，生成后仍可手动修改。</span>
             </div>
             <div class="admin-checks">
               <label><input type="checkbox" id="f-featured"> 置顶到面首页</label>
@@ -164,6 +179,33 @@ import "../../styles/admin.css";
             </div>
             <p class="admin-toastline" data-cat-msg aria-live="polite"></p>
           </form>
+        </div>
+
+        <!-- 标签池：全站共享数据（PRD 3.5 标签共享 · 决策 7.23，两位作者都可维护） -->
+        <div class="admin-panel" data-panel-body="tagpool">
+          <p class="admin-hint">
+            标签池是<strong>全站共享数据</strong>（与友链同类，两位作者都可维护）。
+            文章标签已交给 AI 托管（保存文章时自动入池），这里用来<strong>修正 AI 的选择</strong>：
+            重命名会同步更新所有文章（新名已存在则并入）；删除会从文章里移除；新增的标签先进池，等下篇文章挂靠。
+            变更由服务端一次性提交进仓库（跨面的文章也会同步更新，提交记录里记着是你发起的）。
+          </p>
+          <div class="admin-toolbar">
+            <p class="admin-hint" style="margin:0">共 <b data-tagpool-total>0</b> 个标签 · 括号内为使用它的文章数</p>
+            <div class="admin-tagpool-add">
+              <input id="tp-new" type="text" placeholder="新标签名，如 grpc" aria-label="新标签名">
+              <button class="admin-new" type="button" data-action="add-tag">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                添加
+              </button>
+            </div>
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr><th>标签</th><th>使用</th><th>操作</th></tr>
+            </thead>
+            <tbody data-tagpool-rows></tbody>
+          </table>
+          <p class="admin-toastline" data-tagpool-msg aria-live="polite"></p>
         </div>
 
         <!-- 友链：站点级共享数据（入口页卡组的数据源，PRD E8 · 决策 7.16） -->
@@ -228,6 +270,29 @@ import "../../styles/admin.css";
           </label>
           <div class="admin-media-list" data-media-list></div>
         </div>
+
+        <!-- 设置：个人简介与个人标签（决策 7.21，存 src/config/author-<面>.json，只能改自己那面） -->
+        <div class="admin-panel" data-panel-body="settings">
+          <form class="admin-editor" data-bio-editor aria-label="个人简介编辑" novalidate>
+            <h2>个人简介</h2>
+            <p class="admin-hint" style="margin:0 0 14px">
+              展示在自己那一面的侧栏与作者页。保存即提交进仓库（<code data-author-file>src/config/author-.json</code>），
+              由部署方构建上线后可见，不影响已发布文章。
+            </p>
+            <div class="admin-field">
+              <label for="s-bio">简介文案（<span data-bio-count>0</span> / 200 字，必填）</label>
+              <textarea id="s-bio" rows="4" placeholder="一两句话介绍自己写什么、怎么写。例如：写 C++ 后端与网络编程，落笔偏好可复现的细节与可验证的结论。"></textarea>
+            </div>
+            <div class="admin-field">
+              <label for="s-tags">个人标签（逗号分隔，展示在作者页姓名下方，≤ 6 个）</label>
+              <input id="s-tags" type="text" placeholder="例如：C++ 后端, 网络编程, 科研复现">
+            </div>
+            <div class="admin-editor-actions" style="justify-content:flex-start">
+              <button type="button" class="admin-btn admin-btn--primary" data-action="save-bio">保存简介与标签</button>
+            </div>
+            <p class="admin-toastline" data-bio-msg aria-live="polite"></p>
+          </form>
+        </div>
       </section>
     </div>
   </main>
@@ -247,7 +312,7 @@ import "../../styles/admin.css";
   </div><!-- /.page-card -->
 
   <script is:inline src="/scripts/core.js"></script>
-  <script is:inline src="/scripts/admin/server.js?v=1"></script>
-  <script is:inline src="/scripts/admin/desk.js?v=2"></script>
+  <script is:inline src="/scripts/admin/server.js?v=2"></script>
+  <script is:inline src="/scripts/admin/desk.js?v=3"></script>
 </body>
 </html>

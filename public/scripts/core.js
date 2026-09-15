@@ -53,4 +53,36 @@
     e.preventDefault();
     toast(el.dataset.msg || "该功能将在后续里程碑实现");
   });
+
+  /* ---------- 点击复制（邮箱等，决策 7.22）：Clipboard API 优先，execCommand 降级 ---------- */
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+  function legacyCopy(text) {
+    var ta = doc.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    doc.body.appendChild(ta);
+    var ok = false;
+    try { ta.select(); ok = doc.execCommand("copy"); } catch (e) { ok = false; }
+    doc.body.removeChild(ta);
+    return ok;
+  }
+  doc.addEventListener("click", function (e) {
+    var el = e.target.closest('[data-action="copy-mail"]');
+    if (!el) return;
+    e.preventDefault();
+    var mail = el.dataset.mail || "";
+    if (!mail) return;
+    copyText(mail).then(function (ok) {
+      toast(ok ? (el.dataset.okmsg || "已复制：" + mail) : "复制失败，请手动复制：" + mail);
+    });
+  });
 })();

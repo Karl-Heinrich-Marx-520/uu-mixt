@@ -1984,6 +1984,38 @@ html[data-mode="dark"] .login-error { color: #ff8a80; }
 .admin-hint { font-size: 0.82rem; color: var(--text-3); margin: 0 0 14px; line-height: 1.7; }
 .admin-saved-badge { font-size: 0.76rem; color: var(--text-3); }
 
+/* AI 托管徽标与助手行（写作台文章表单） */
+.admin-field label em.admin-ai-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 8px;
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  vertical-align: 1px;
+}
+.admin-ai-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 2px 0 6px; }
+.admin-ai-note { font-size: 0.78rem; color: var(--text-3); }
+.admin-btn--ai { display: inline-flex; align-items: center; gap: 7px; border-style: dashed; }
+.admin-btn--ai svg { width: 15px; height: 15px; }
+.admin-btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
+
+/* 标签池面板：新增行横排 */
+.admin-tagpool-add { display: inline-flex; gap: 8px; align-items: center; }
+.admin-tagpool-add input {
+  width: 180px;
+  padding: 7px 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--text-1);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+}
+
 
 /* 登录页：暗色门面（默认 data-mode=dark，可用右上角按钮切回浅色） */
 .login-page { padding-top: 8vh; }

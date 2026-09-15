@@ -2,11 +2,14 @@
    UU&Mixt · 写作台工作台逻辑（/admin/desk/）
    交互与 demo/admin-desk.html 一致（AGENTS「正式开发 = 按 Demo 接线」）：
      · 文章：列表（状态与操作合并列）/ 新建 / 编辑 / 删除 / 发布↔转草稿
+       + AI 托管摘要与标签（决策 7.20：留空保存时服务端自动补全，只填空字段）
      · 分类：自维护（增改删 + 添加入口 + 表单收起）+ 点击展开时间线 + 改名同步文章字段
+     · 标签池：全站共享（决策 7.23）读汇总 + 增/改名/删除，级联由服务端单次提交完成
      · 友链：站点级共享数据（src/data/friends.json，两位作者都可维护，决策 7.16）
      · 媒体：真实上传图片到 public/images/<face>/，生成正文引用代码
+     · 设置：个人简介与个人标签（决策 7.21，src/config/author-<face>.json，只能改自己那面）
    面（face）只来自会话，接口不接受 face 参数 —— 技术强制"只管自己那一面"
-   （友链除外：站点级数据，同标签池先例）。
+   （友链/标签池除外：站点级数据，同决策 7.16/7.23 先例）。
    ========================================================================== */
 
 (function () {
@@ -24,6 +27,7 @@
   var AUTHOR = FACE === "uu" ? "UU" : "Mixt";
   var CONTENT_DIR = "src/content/" + FACE;
   var CATEGORY_FILE = "src/config/categories-" + FACE + ".json";
+  var AUTHOR_FILE = "src/config/author-" + FACE + ".json"; /* 个人简介与标签（决策 7.21，只能改自己那面） */
   var FRIENDS_FILE = "src/data/friends.json";   /* 友链：站点级共享数据，两位作者都可维护（决策 7.16） */
   var IMAGE_DIR = "public/images/" + FACE;
   var META = {
@@ -100,7 +104,11 @@
   }
 
   /* ---------- 状态 ---------- */
-  var state = { posts: [], categories: [], friends: [], editing: null, slugDraft: "" };
+  var state = {
+    posts: [], categories: [], friends: [], editing: null, slugDraft: "",
+    author: null, authorSha: null,        /* 设置面板：author-<face>.json（决策 7.21） */
+    tagStats: [], tagPool: [],            /* 标签池面板：全站汇总 + 池（决策 7.23） */
+  };
   /* slugDraft：文章的 URL 短名（PRD 4.1）。界面上不提供填写项 → 用内部状态承载，
      由标题自动生成（英文 kebab / 中文日期兜底 / 同面去重）。 */
 
@@ -224,7 +232,7 @@
   function validatePost(data) {
     if (!data.title) return "标题为必填字段。";
     if (data.title.length > 60) return "标题不能超过 60 字符（当前 " + data.title.length + "）。";
-    if (data.description.length < 60) return "description 至少 60 字符（当前 " + data.description.length + "）。";
+    if (!data.description) return "description 为空：AI 补全失败时请手动填写。";
     if (data.description.length > 120) return "description 不能超过 120 字符（当前 " + data.description.length + "）。";
     if (data.tags.length > 5) return "标签最多 5 个（当前 " + data.tags.length + "）。";
     if (!data.category) return "分类必填：本面还没有分类时，请先到「分类」添加。";
@@ -247,6 +255,18 @@
       body: $("#f-body").value,
     };
     if (!data.slug) data.slug = autoSlugNow();
+    /* AI 兜底（决策 7.20）：desc/tags 留空时保存前自动补全——只接管空字段，绝不覆盖已填 */
+    if (!data.description || !data.tags.length) {
+      msg(out, "AI 正在阅读正文，补全摘要与标签…");
+      try {
+        var ai = await GH.assist(data.title, data.body);
+        if (!data.description && ai.description) data.description = ai.description;
+        if (!data.tags.length && Array.isArray(ai.tags) && ai.tags.length) data.tags = ai.tags;
+      } catch (e) {
+        msg(out, "AI 补全失败：" + e.message + "（可手动填写摘要与标签后重试）");
+        return;
+      }
+    }
     var bad = validatePost(data);
     if (bad) { msg(out, bad); return; }
 
@@ -447,6 +467,158 @@
     }
   }
 
+  /* ---------- AI 摘要与标签助手（决策 7.20：服务端持 Key 转发，Key 不进前端） ----------
+     只接管空字段，绝不覆盖已填；失败给中文指引，手动填写兜底。 */
+  function aiBusy(on) {
+    var btn = $('[data-action="ai-assist"]');
+    var label = $("[data-ai-label]");
+    if (!btn || !label) return;
+    btn.disabled = on;
+    label.textContent = on ? "AI 正在阅读正文…" : "AI 生成摘要与标签";
+  }
+
+  async function aiAssist() {
+    var title = $("#f-title").value.trim();
+    var body = $("#f-body").value;
+    if (!title) { toast("先填标题，再让 AI 生成"); return; }
+    if (!body.trim()) { toast("正文还是空的，AI 没东西可读"); return; }
+    aiBusy(true);
+    try {
+      var ai = await GH.assist(title, body);
+      if (!$("#f-desc").value.trim() && ai.description) $("#f-desc").value = ai.description;
+      if (!$("#f-tags").value.trim() && Array.isArray(ai.tags) && ai.tags.length) {
+        $("#f-tags").value = ai.tags.join(", ");
+      }
+      toast("已生成（只填空字段），可以手动微调");
+    } catch (e) {
+      toast("AI 生成失败：" + e.message);
+    } finally {
+      aiBusy(false);
+    }
+  }
+
+  /* ---------- 设置：个人简介与个人标签（决策 7.21，author-<面>.json） ----------
+     读改写整个 JSON + sha 乐观锁，保存即提交进仓库（构建后线上可见）。 */
+  function syncBioCount() {
+    var cnt = $("[data-bio-count]");
+    if (cnt) cnt.textContent = $("#s-bio").value.length;
+  }
+
+  async function loadBio() {
+    var r = await GH.readFile(AUTHOR_FILE);
+    state.author = r ? JSON.parse(r.content) : { bio: "", tags: [] };
+    state.authorSha = r ? r.sha : null;
+    $("#s-bio").value = state.author.bio || "";
+    $("#s-tags").value = (state.author.tags || []).join(", ");
+    syncBioCount();
+  }
+
+  async function saveBio() {
+    var out = $("[data-bio-msg]");
+    var bio = $("#s-bio").value.trim();
+    var tags = $("#s-tags").value.split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+    if (!bio) { msg(out, "简介必填——面页侧栏与作者页都展示它。"); return; }
+    if (bio.length > 200) { msg(out, "简介不超过 200 字（当前 " + bio.length + "）。"); return; }
+    if (tags.length > 6) { msg(out, "个人标签最多 6 个（当前 " + tags.length + "）。"); return; }
+    try {
+      msg(out, "正在提交到仓库…");
+      var text = JSON.stringify({ bio: bio, tags: tags }, null, 2) + "\n";
+      var r = await GH.writeFile(AUTHOR_FILE, text, "config(" + FACE + "): 更新个人简介与标签", state.authorSha);
+      state.authorSha = (r && r.content && r.content.sha) || state.authorSha;
+      state.author = { bio: bio, tags: tags };
+      msg(out, "简介与标签已提交进仓库 → 由部署方构建后线上可见。");
+    } catch (e) {
+      msg(out, "提交失败：" + e.message);
+      try { await loadBio(); } catch (e2) {}   /* 写失败以仓库为准回滚本地态 */
+    }
+  }
+
+  /* ---------- 标签池（站点级共享，决策 7.23）：汇总 + 增/改/删 ----------
+     池与文章的级联改写全部由服务端一次提交完成（跨面文章同步更新，
+     审计尾注 Author-Face 记发起者）；前端只做校验与确认交互。 */
+  function tagUseCount(name) {
+    var s = state.tagStats.filter(function (x) { return x.name === name; })[0];
+    return s ? s.count : 0;
+  }
+
+  async function loadTags() {
+    var r = await GH.getTags();
+    state.tagStats = Array.isArray(r.tags) ? r.tags : [];
+    state.tagPool = Array.isArray(r.pool) ? r.pool : [];
+    renderTagPool();
+  }
+
+  function renderTagPool() {
+    var total = $("[data-tagpool-total]");
+    if (total) total.textContent = state.tagPool.length;
+    var host = $("[data-tagpool-rows]");
+    if (!host) return;
+    if (!state.tagPool.length) {
+      host.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-3)">标签池还是空的——保存文章时 AI 选的标签会自动入池，也可以在上方手动添加。</td></tr>';
+      return;
+    }
+    host.innerHTML = state.tagPool.map(function (t) {
+      return "<tr>" +
+        '<td><code class="admin-friend-host">' + esc(t) + "</code></td>" +
+        "<td>" + tagUseCount(t) + " 篇</td>" +
+        '<td class="admin-status-actions"><span class="admin-row-actions">' +
+          '<button class="admin-mini" data-rename-tag="' + esc(t) + '">改名</button>' +
+          '<button class="admin-mini admin-mini--danger" data-del-tag="' + esc(t) + '">删除</button>' +
+        "</span></td></tr>";
+    }).join("");
+  }
+
+  async function addPoolTag() {
+    var out = $("[data-tagpool-msg]");
+    var input = $("#tp-new");
+    var tag = input.value.trim();
+    if (!tag) { msg(out, "先输入新标签名。"); return; }
+    if (tag.length > 24) { msg(out, "标签名不超过 24 字（当前 " + tag.length + "）。"); return; }
+    try {
+      var r = await GH.addTag(tag);
+      msg(out, r.exists ? "「" + tag + "」已在标签池里。" : "已把「" + tag + "」加入标签池（待下篇文章挂靠）。");
+      input.value = "";
+      await loadTags();
+    } catch (e) {
+      msg(out, "提交失败：" + e.message);
+    }
+  }
+
+  async function renamePoolTag(from) {
+    var out = $("[data-tagpool-msg]");
+    var to = window.prompt("把标签「" + from + "」改名为：", from);
+    if (to === null) return;
+    to = to.trim();
+    if (!to) { msg(out, "新标签名不能为空。"); return; }
+    if (to === from) { msg(out, "新旧标签名相同。"); return; }
+    if (to.length > 24) { msg(out, "标签名不超过 24 字（当前 " + to.length + "）。"); return; }
+    try {
+      var r = await GH.renameTag(from, to);
+      msg(out, r.posts
+        ? "已改名并同步更新 " + r.posts + " 篇文章" + (r.merged ? "（新名已存在，旧名文章并入新名）" : "") + "；构建后生效。"
+        : (r.merged ? "两处标签池已合并。" : "已改名（该标签暂无文章使用）。"));
+      await loadTags();
+    } catch (e) {
+      msg(out, "提交失败：" + e.message);
+    }
+  }
+
+  async function removePoolTag(tag) {
+    var out = $("[data-tagpool-msg]");
+    var n = tagUseCount(tag);
+    var warn = "删除标签「" + tag + "」？" +
+      (n ? "它会同时从 " + n + " 篇文章里移除（服务端一次提交完成）。" : "它目前没有被任何文章使用。") +
+      " 此操作不可撤销。";
+    if (!window.confirm(warn)) return;
+    try {
+      var r = await GH.removeTag(tag);
+      msg(out, r.posts ? "已删除，从 " + r.posts + " 篇文章中移除；构建后生效。" : "已从标签池移除。");
+      await loadTags();
+    } catch (e) {
+      msg(out, "提交失败：" + e.message);
+    }
+  }
+
   /* ---------- 媒体（真实上传 + 引用生成） ---------- */
   function insertMediaRow(name, dataUrl, reference) {
     var list = $("[data-media-list]");
@@ -484,7 +656,7 @@
   /* ---------- 事件 ---------- */
   doc.addEventListener("click", function (e) {
     var el = e.target.closest(
-      "[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat],[data-edit-friend],[data-del-friend],[data-media-copy]"
+      "[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat],[data-edit-friend],[data-del-friend],[data-media-copy],[data-rename-tag],[data-del-tag]"
     );
     if (!el) return;
 
@@ -493,6 +665,11 @@
       location.href = "/admin/";
       return;
     }
+    if (el.dataset.action === "ai-assist") { aiAssist(); return; }
+    if (el.dataset.action === "save-bio") { saveBio(); return; }
+    if (el.dataset.action === "add-tag") { addPoolTag(); return; }
+    if (el.dataset.renameTag) { renamePoolTag(el.dataset.renameTag); return; }
+    if (el.dataset.delTag) { removePoolTag(el.dataset.delTag); return; }
     if (el.dataset.action === "new-post") { resetEditor(); $("[data-editor]").hidden = false; fillCategoryOptions(""); $("#f-title").focus(); return; }
     if (el.dataset.action === "cancel-edit") { resetEditor(); return; }
     if (el.dataset.action === "save-post") { savePost(); return; }
@@ -611,6 +788,7 @@
     if (state.editing) return;                 /* 编辑时 slug 冻结（PRD 4.1） */
     autoSlugNow();
   });
+  $("#s-bio").addEventListener("input", syncBioCount);   /* 简介实时字数（决策 7.21） */
   $("#media-input").addEventListener("change", function () {
     var files = [].slice.call(this.files || []);
     this.value = "";
@@ -619,6 +797,8 @@
 
   /* ---------- 启动 ---------- */
   renderIdentity();
+  var authorFileEl = $("[data-author-file]");
+  if (authorFileEl) authorFileEl.textContent = AUTHOR_FILE;
   (async function init() {
     try {
       /* 顺序敏感：文章先于分类——分类面板的时间线与「N 篇」徽章要按 state.posts 统计 */
@@ -631,9 +811,19 @@
       msg($("[data-post-msg]"), "加载失败：" + e.message);
     }
     try {
+      await loadBio();                               /* 设置面板加载失败不阻断其他面板 */
+    } catch (e) {
+      msg($("[data-bio-msg]"), "简介加载失败：" + e.message);
+    }
+    try {
       await loadFriends();                           /* 友链失败不阻断文章/分类 */
     } catch (e) {
       msg($("[data-friend-msg]"), "友链加载失败：" + e.message);
+    }
+    try {
+      await loadTags();                              /* 标签池失败不阻断其他面板 */
+    } catch (e) {
+      msg($("[data-tagpool-msg]"), "标签池加载失败：" + e.message);
     }
   })();
 })();

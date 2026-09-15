@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -76,6 +77,8 @@ func allowedPath(face, clean string, isDir bool) bool {
 		return true
 	case clean == "src/config/categories-"+face+".json":
 		return true
+	case clean == "src/config/author-"+face+".json": // 作者简介与个人标签（决策 7.21，只能改自己那面）
+		return true
 	case clean == "src/data/friends.json": // 站点级共享数据（决策 7.16）
 		return true
 	case strings.HasPrefix(clean, imagesDir+"/"):
@@ -108,6 +111,14 @@ type Store interface {
 	// Write 返回 (新 blob sha, 短 commit 号, 告警, 错误)；overwrite=true 且 sha 为空时允许覆盖已存在文件（媒体面板不跟踪图片 sha）
 	Write(face, rel string, data []byte, msg, sha string, overwrite bool) (string, string, string, error)
 	Delete(face, rel string, msg, sha string) (string, string, error)
+
+	// ---------- 标签池（站点级共享，决策 7.23；只经 /api/tags/* 端点触达，不走 /api/write） ----------
+	// ScanTags 全站文章标签：map[仓库相对路径]tags（两面都扫；只认单行 tags: [a, b] 格式）
+	ScanTags() (map[string][]string, error)
+	// ReadTagPool 标签池（src/config/tag-pool.json）；文件不存在视为空池
+	ReadTagPool() ([]string, error)
+	// ApplyTagChange 原子应用一次标签变更（池 + 全站文章级联，单次提交；face 仅入审计尾注）
+	ApplyTagChange(op TagOp, msg, face string) (TagResult, string, error)
 }
 
 /* ---------- MockStore：内存实现（-mock 自测） ---------- */
@@ -190,6 +201,57 @@ func (m *MockStore) Delete(face, rel string, msg, sha string) (string, string, e
 	}
 	delete(m.data, rel)
 	return "mock", "", nil
+}
+
+/* ---------- MockStore：标签池（与 GitStore 同语义，不碰 git） ---------- */
+
+func mockScanTags(data map[string][]byte) map[string][]string {
+	out := map[string][]string{}
+	for k, v := range data {
+		if strings.HasPrefix(k, "src/content/") && strings.HasSuffix(k, ".md") {
+			if tags, ok := parseFrontmatterTags(string(v)); ok {
+				out[k] = tags
+			}
+		}
+	}
+	return out
+}
+
+func (m *MockStore) ScanTags() (map[string][]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return mockScanTags(m.data), nil
+}
+
+func (m *MockStore) ReadTagPool() ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return mockReadTagPool(m.data)
+}
+
+func mockReadTagPool(data map[string][]byte) ([]string, error) {
+	raw, ok := data[TagPoolFile]
+	if !ok {
+		return []string{}, nil
+	}
+	return unmarshalTagPool(raw)
+}
+
+func (m *MockStore) ApplyTagChange(op TagOp, msg, face string) (TagResult, string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	pool, err := mockReadTagPool(m.data)
+	if err != nil {
+		return TagResult{}, "", err
+	}
+	newPool, changed, res := computeTagChange(pool, mockScanTags(m.data), op)
+	for rel, tags := range changed {
+		m.data[rel] = []byte(replaceFrontmatterTags(string(m.data[rel]), tags))
+	}
+	if !equalStrings(pool, newPool) {
+		m.data[TagPoolFile] = marshalTagPool(newPool)
+	}
+	return res, "mock", nil
 }
 
 /* ---------- GitStore：服务器 git 工作副本 ---------- */
@@ -315,7 +377,7 @@ func (g *GitStore) Write(face, rel string, data []byte, msg, sha string, overwri
 	if err := os.WriteFile(full, data, 0o644); err != nil {
 		return "", "", "", err
 	}
-	commit, warning, err := g.commit(rel, msg, face)
+	commit, warning, err := g.commit(msg, face, rel)
 	return gitBlobHash(data), commit, warning, err
 }
 
@@ -339,15 +401,122 @@ func (g *GitStore) Delete(face, rel string, msg, sha string) (string, string, er
 	if err := os.Remove(full); err != nil {
 		return "", "", err
 	}
-	return g.commit(rel, msg, face)
+	return g.commit(msg, face, rel)
+}
+
+/* ---------- GitStore：标签池（站点级共享，决策 7.23） ----------
+   ScanTags 只扫两面文章目录（与 Astro glob '*.md' 同口径：非递归）；
+   ApplyTagChange 在同一把锁下读-改-写全部受影响文件，一次 git add + 单次提交。 */
+
+func (g *GitStore) collectMarkdown() (map[string][]byte, error) {
+	out := map[string][]byte{}
+	for _, face := range []string{"uu", "mixt"} {
+		dir := filepath.Join(g.repoPath, "src", "content", face)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		for _, e := range entries {
+			if e.IsDir() || e.Type()&os.ModeSymlink != 0 || !strings.HasSuffix(e.Name(), ".md") {
+				continue
+			}
+			b, err := os.ReadFile(filepath.Join(dir, e.Name()))
+			if err != nil {
+				continue
+			}
+			out["src/content/"+face+"/"+e.Name()] = b
+		}
+	}
+	return out, nil
+}
+
+func (g *GitStore) ScanTags() (map[string][]string, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	files, err := g.collectMarkdown()
+	if err != nil {
+		return nil, err
+	}
+	out := map[string][]string{}
+	for rel, b := range files {
+		if tags, ok := parseFrontmatterTags(string(b)); ok {
+			out[rel] = tags
+		}
+	}
+	return out, nil
+}
+
+func (g *GitStore) ReadTagPool() ([]string, error) {
+	b, err := os.ReadFile(filepath.Join(g.repoPath, filepath.FromSlash(TagPoolFile)))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+	return unmarshalTagPool(b)
+}
+
+func (g *GitStore) ApplyTagChange(op TagOp, msg, face string) (TagResult, string, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	pool, err := g.ReadTagPool() // 不加锁的内部读，安全（本方法已持锁）
+	if err != nil {
+		return TagResult{}, "", err
+	}
+	files, err := g.collectMarkdown()
+	if err != nil {
+		return TagResult{}, "", err
+	}
+	postTags := map[string][]string{}
+	for rel, b := range files {
+		if tags, ok := parseFrontmatterTags(string(b)); ok {
+			postTags[rel] = tags
+		}
+	}
+	newPool, changed, res := computeTagChange(pool, postTags, op)
+
+	var touched []string
+	if !equalStrings(pool, newPool) {
+		poolPath := filepath.Join(g.repoPath, filepath.FromSlash(TagPoolFile))
+		if err := os.MkdirAll(filepath.Dir(poolPath), 0o755); err != nil {
+			return TagResult{}, "", err
+		}
+		if err := os.WriteFile(poolPath, marshalTagPool(newPool), 0o644); err != nil {
+			return TagResult{}, "", err
+		}
+		touched = append(touched, TagPoolFile)
+	}
+	for rel, tags := range changed {
+		full, err := g.abs(rel)
+		if err != nil {
+			return TagResult{}, "", err
+		}
+		if err := os.WriteFile(full, []byte(replaceFrontmatterTags(string(files[rel]), tags)), 0o644); err != nil {
+			return TagResult{}, "", err
+		}
+		touched = append(touched, rel)
+	}
+	if len(touched) == 0 { // 幂等：标签不存在/无变化 → 不产生空提交
+		return res, "", nil
+	}
+	commit, warning, err := g.commit(msg, face, touched...)
+	if warning != "" {
+		log.Printf("[tags] push warning: %s", warning)
+	}
+	return res, commit, err
 }
 
 /*
-commit 提交单路径变更并推送到主库（origin = /srv/uum/repo.git）。
+commit 提交一批路径变更并推送到主库（origin = /srv/uum/repo.git）。
 
 	推送失败不阻塞作者（内容已落工作副本），以 warning 字段返回，日志可见。
+	多路径（标签池级联改名）共用一次提交，保证原子性。
 */
-func (g *GitStore) commit(rel, msg, face string) (string, string, error) {
+func (g *GitStore) commit(msg, face string, rels ...string) (string, string, error) {
 	msg = strings.TrimSpace(strings.ReplaceAll(msg, "\r", ""))
 	if msg == "" {
 		msg = "content: 写作台更新"
@@ -357,7 +526,8 @@ func (g *GitStore) commit(rel, msg, face string) (string, string, error) {
 	}
 	full := msg + "\n\nVia: 写作台\nAuthor-Face: " + face
 
-	if _, err := g.git("add", "--", rel); err != nil {
+	args := append([]string{"add", "--"}, rels...)
+	if _, err := g.git(args...); err != nil {
 		return "", "", fmt.Errorf("git add 失败：%w", err)
 	}
 	out, err := g.git("commit", "-m", full)

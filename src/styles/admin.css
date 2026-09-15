@@ -411,3 +411,37 @@ html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
   font-weight: 700;
 }
 .admin-friend-host { font-size: 0.78rem; color: var(--text-3); }
+
+/* ==========================================================================
+   AI 托管徽标 + 摘要助手行（决策 7.20 正式版接线，与 demo/admin-desk 同款）
+   ========================================================================== */
+.admin-field label em.admin-ai-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 8px;
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+}
+
+.admin-ai-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 2px 0 6px; }
+.admin-ai-note { font-size: 0.78rem; color: var(--text-3); }
+.admin-btn--ai { display: inline-flex; align-items: center; gap: 7px; border-style: dashed; }
+.admin-btn--ai svg { width: 15px; height: 15px; }
+.admin-btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
+
+/* 标签池面板：新增行横排 */
+.admin-tagpool-add { display: inline-flex; gap: 8px; align-items: center; }
+.admin-tagpool-add input {
+  width: 180px;
+  padding: 7px 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--text-1);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+}
