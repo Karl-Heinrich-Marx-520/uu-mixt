@@ -149,6 +149,7 @@
 .pet-drawer-who { flex: 1; }
 .pet-drawer-who b { display: block; font-size: 0.9rem; }
 .pet-drawer-who span { font-size: 0.72rem; color: var(--text-3); }
+.pet-clear,
 .pet-close {
   border: none;
   background: transparent;
@@ -158,6 +159,8 @@
   padding: 4px 8px;
   border-radius: 8px;
 }
+.pet-clear { font-size: 0.85rem; }
+.pet-clear:hover,
 .pet-close:hover { color: var(--text-1); background: var(--bg-soft); }
 
 .pet-log {
@@ -193,6 +196,24 @@
 .pet-msg a { color: var(--accent-deep); font-weight: 600; }
 .pet-msg .pet-note { display: block; margin-top: 6px; font-size: 0.76rem; color: var(--text-3); }
 .pet-typing { letter-spacing: 3px; color: var(--text-3); }
+/* 打字机输出中：光标闪烁；完成后由 pet.js 移除 pet-typer 类 */
+.pet-typer::after {
+  content: "▌";
+  margin-left: 2px;
+  color: var(--accent-deep);
+  animation: pet-caret 0.9s steps(2) infinite;
+}
+@keyframes pet-caret { 50% { opacity: 0; } }
+/* 回答来源小标（v8）：LLM 轨道标「AI · 供应商」，规则轨道标「小鹿本地」 */
+.pet-via {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.66rem;
+  color: var(--text-3);
+  text-align: right;
+  user-select: none;
+  -webkit-user-select: none;
+}
 
 .pet-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 0; }
 .pet-chips button {

@@ -1,12 +1,18 @@
 /* ==========================================================================
-   UU&Mixt · pet.js —— 桌宠「小鹿」（PRD E1，规则引擎版；自 demo/assets/pet.js v7 接线）
+   UU&Mixt · pet.js —— 桌宠「小鹿」（PRD E1 · v8 对话引擎：规则+LLM 双轨）
    交互规格（UU 2026-09-14 规格 · 2026-09-15 增补拖动 · demo 验收基准，勿改）：
      · 像素鹿常驻左下角，可按住拖到屏幕任意位置（位置记忆，刷新不丢）；
      · 点击（位移 < 6px 视为点击）打开对话栏；对话栏手动拖放优先，否则四向跟随小鹿
        （上 → 右 → 左 → 下）；拖小鹿 = 回到跟随，拖对话栏 = 固定并记忆；
-     · 回答严格限制在博客范围内：规则式检索本站内容，检索不到即明示
-       「超出博客范围」并给建议问法——E1 后续换 LLM 转发端点（docs/06）时
-       只改 respond()，范围约束与拒答话术全部保留。
+     · 回答严格限制在博客范围内：范围约束与拒答话术在规则引擎与服务端 system 双层保留。
+   对话引擎 v8（2026-09-15，决策 7.18）：
+     · 双轨：优先请求自家 /api/chat（LLM 转发，供应商在服务端可插拔，前端零感知）；
+       未配置 / 超时 / 失败 → 无感回落本地规则引擎（本站内容检索 + 可爱风短答）；
+     · RAG 前置：把 /search-index.json 中与提问相关的文章摘录（Top-4）拼进请求，
+       让 LLM「懂本站」；LLM 答案逐字打字机输出，规则答案保留即时显示（含链接）；
+     · 多轮记忆：会话历史存 sessionStorage（关标签页即清，隐私友好），LLM 携带最近
+       8 条做上下文；对话栏右上角可一键清空；
+     · LLM 标识：AI 生成回答带「AI · 供应商名」小标（合规），规则回答标「小鹿本地」。
    与 demo 的差异（接线层，交互零改动）：
      · 数据源：demo 用 UUMStore(localStorage)；正式站用构建期生成的全站文章索引
        /search-index.json（决策 7.13 产物复用），异步预热后按 published(face) 语义供给；
@@ -24,7 +30,7 @@
   /* ---------- 内容层适配（demo 接线点：UUMStore → 构建期索引） ----------
      语义对齐 demo：published(face) → [{ slug, title, detail }]（时间倒序）。
      索引含每篇正文摘录，体积不小且桌宠不在关键路径 —— 页面空闲后预热，
-     未就绪时文章类问题走规则兜底，不阻塞寒暄。 */
+     未就绪时文章类问题走规则兜底，不阻塞寒暄。v8 起另暴露 raw() 供 RAG 检索。 */
   var store = (function () {
     var cache = null;
     var warming = false;
@@ -48,6 +54,7 @@
           return { slug: p.slug, title: p.title, detail: p.url };
         });
       },
+      raw: function () { warm(); return cache; },  /* v8：RAG 用全量索引 */
     };
   })();
 
@@ -80,6 +87,7 @@
     '<div class="pet-drawer-head">' +
       '<img src="/images/pet.png" alt="" width="34" height="44">' +
       '<div class="pet-drawer-who"><b>小鹿</b><span>博客向导 · 只聊这个站里的事</span></div>' +
+      '<button class="pet-clear" type="button" aria-label="清空对话" title="清空对话">🧹</button>' +
       '<button class="pet-close" type="button" aria-label="收起对话">✕</button>' +
     "</div>" +
     '<div class="pet-log" data-pet-log aria-live="polite"></div>' +
@@ -87,6 +95,8 @@
       '<button type="button" data-q="最近更新了什么文章？">最近更新</button>' +
       '<button type="button" data-q="UU 是谁？">UU 是谁</button>' +
       '<button type="button" data-q="Mixt 写什么？">Mixt 写什么</button>' +
+      '<button type="button" data-q="有哪些分类？">有哪些分类</button>' +
+      '<button type="button" data-q="建站进展如何？">建站进展</button>' +
     "</div>" +
     '<form class="pet-input" data-pet-form>' +
       '<input type="text" placeholder="问我这个博客里的事…" aria-label="向小鹿提问">' +
@@ -278,7 +288,37 @@
   head.addEventListener("pointerup", endDrawerDrag);
   head.addEventListener("pointercancel", endDrawerDrag);
 
-  /* ---------- 回答引擎：范围 = 本站内容（E1 LLM 版的范围约束与此一致） ---------- */
+  /* ================== 对话引擎 v8：规则 + LLM 双轨 ==================
+     轨道① LLM：POST /api/chat（自家转发端点，供应商在服务端 config 里插拔，
+             前端只认 OpenAI 兼容 messages 形状，换 DeepSeek/OpenAI/Kimi/GLM/Qwen/
+             本地 Ollama 均不改前端）。检索到的站内资料随消息下发（前端 RAG）。
+     轨道② 规则：端点不可用 / 超时 / 出错时无感回落——本站检索 + 可爱风短答。
+     两轨共用：会话历史（sessionStorage）、打字机（LLM）/即时（规则，含 <a>）。 */
+
+  /* ---------- 会话历史（sessionStorage：关标签页即清） ---------- */
+  var HIST_KEY = "uum-pet-history";
+  var history = [];                                /* [{ role: "user"|"pet", text }] 纯文本 */
+  (function restoreHistory() {
+    try {
+      var raw = sessionStorage.getItem(HIST_KEY);
+      if (raw) {
+        var arr = JSON.parse(raw);
+        if (Array.isArray(arr)) history = arr.slice(-24).filter(function (m) {
+          return m && typeof m.text === "string" && (m.role === "user" || m.role === "pet");
+        });
+      }
+    } catch (e) {}
+  })();
+  function saveHistory() {
+    try { sessionStorage.setItem(HIST_KEY, JSON.stringify(history.slice(-24))); } catch (e) {}
+  }
+  function pushHistory(role, text) {
+    history.push({ role: role, text: text });
+    if (history.length > 24) history = history.slice(-24);
+    saveHistory();
+  }
+
+  /* ---------- 可爱风：规则引擎 ---------- */
   function links(posts) {
     return posts.slice(0, 3).map(function (p) {
       var face = p.face || "uu";
@@ -286,6 +326,16 @@
       var href = p.detail || ("/" + face + "/posts/" + encodeURIComponent(p.slug) + "/");
       return '<a href="' + href + '">' + p.title + "</a>";
     });
+  }
+
+  /* 随机语气小尾巴：约 55% 的回答带一个，可爱但不油 */
+  var TAILS = ["~", "！", "哦～", "呀", "🦌", "～"];
+  function cute(text) {
+    if (Math.random() < 0.55) {
+      var t = TAILS[Math.floor(Math.random() * TAILS.length)];
+      return text + t;
+    }
+    return text;
   }
 
   function answer(q) {
@@ -303,42 +353,136 @@
       });
       all.sort(function (a, b) { return (b.slug || "").localeCompare(a.slug || ""); });
       if (all.length) {
-        return "最近的两面更新在这里（点标题直达）：\n" + links(all).join("<br>") +
-          '<br><span class="pet-note">完整列表看两面的「归档」或「分类」页。</span>';
+        return "最近两面的更新都在这儿，点标题直达：" +
+          links(all).join("<br>") +
+          '<br><span class="pet-note">想看全的？两面都有「归档」和「分类」页哦。</span>';
       }
     }
+    if (/分类|归档|标签/.test(q)) {
+      return "两面的分类各自独立（Mixt 面由本人打理），「归档」按年份倒序～右上角翻面按钮可以在两面之间切换。";
+    }
     if (/uu/.test(s) && !/mixt/.test(s)) {
-      return "UU 是这一面的作者：C++ 后端与网络编程方向，写异步服务器、源码阅读和科研复现。去 <a href=\"/uu/\">UU 的一面</a> 看全部文章。";
+      return "UU 是这一面的作者：写 C++ 后端与网络编程，异步服务器、源码阅读、科研复现都在这里。去 <a href=\"/uu/\">UU 的一面</a> 看看吧！";
     }
     if (/mixt/.test(s)) {
-      return "Mixt 是另一面的作者：PWN 与二进制安全方向，写漏洞分析与 CTF 复盘（文首都带合规声明）。去 <a href=\"/mixt/\">Mixt 的一面</a> 看全部文章。";
+      return "Mixt 是另一面的作者：搞 PWN 和二进制安全，写漏洞分析与 CTF 复盘（文首都带合规声明）。去 <a href=\"/mixt/\">Mixt 的一面</a> 逛逛～";
     }
     if (/友链|朋友|交换|链接/.test(q)) {
-      return "友链卡片在入口页，点牌堆它们会连成一排带倾斜的卡链，悬停可看介绍。";
+      return "友链卡片在入口页！点牌堆它们会连成一排带倾斜的卡链，悬停还能看介绍～";
     }
-    if (/备案|服务器|域名|上线|部署/.test(q)) {
-      return "域名 uuandmixt.com 已注册，ICP 备案审核中（通过前用 IP:8080 预览）。上线后这里会有正式备案号。";
+    if (/备案|服务器|域名|上线|部署|进展|建站/.test(q)) {
+      return "域名 uuandmixt.com 已经注册好啦，ICP 备案审核中——通过之前用 IP:8080 预览。上线后这里会挂上正式备案号！";
     }
-    if (/你是谁|你是什么|能做|会什么/.test(q)) {
-      return "我是小鹿，这个博客的向导。我知道两面所有文章、两位作者和建站状态——超出博客范围的问题我会直接说不懂。";
+    if (/你是谁|你是什么|能做|会什么|名字/.test(q)) {
+      return "我是小鹿呀，这个博客的向导 🦌 两面的文章、两位作者、建站状态我都知道——博客之外的我可不会哦。";
     }
-    if (/你好|您好|hi|hello|在吗|嗨/.test(s)) {
-      return "你好呀！可以问我「最近更新了什么」，或者聊聊 UU 和 Mixt 都在写什么。";
+    if (/你好|您好|hi|hello|在吗|嗨|早上好|下午好|晚上好|哈喽/.test(s)) {
+      var hi = ["你好呀！想问「最近更新了什么」，还是聊聊 UU / Mixt 在写什么？",
+                "嗨～我在呢！博客里的事随便问！",
+                "哈喽！今天想看点什么？最新的文章我都能找到～"];
+      return hi[Math.floor(Math.random() * hi.length)];
     }
-    if (/分类|归档|标签/.test(q)) {
-      return "两面的分类各自独立（Mixt 面由本人维护），「归档」按年份倒序。右上角翻面按钮可以在两面之间切换。";
+    if (/谢谢|感谢|thanks|thank/.test(s)) {
+      return "不客气！随时来找我玩～";
     }
     /* 范围兜底：明确拒答 */
-    return "这个问题超出我的博客范围啦。你可以问我：最近更新的文章、UU / Mixt 在写什么、分类与归档怎么用、建站进展。";
+    return "这个问题超出我的博客范围啦。可以问我：最近更新的文章、UU / Mixt 在写什么、分类与归档、建站进展～";
+  }
+
+  /* ---------- RAG：站内资料检索（前端完成，随消息下发） ----------
+     打分：标题命中 ×5 + 标签/分类 ×3 + 摘要 ×2 + 正文 ×1；取 Top-4。 */
+  function bigrams(str) {
+    var out = [];
+    var clean = (str || "").replace(/[^\u4e00-\u9fa5a-zA-Z0-9]+/g, " ").trim();
+    if (!clean) return out;
+    var parts = clean.split(/\s+/);
+    parts.forEach(function (w) {
+      if (w.length <= 2) { out.push(w); return; }
+      for (var i = 0; i < w.length - 1; i++) out.push(w.slice(i, i + 2));
+    });
+    return out;
+  }
+  function ragContext(q) {
+    var posts = store.raw();
+    if (!posts || !posts.length) return "";
+    var terms = bigrams(q);
+    if (!terms.length) return "";
+    var scored = posts.map(function (p) {
+      var title = p.title || "", desc = p.description || "", tags = (p.tags || []).join(" "),
+          cat = p.category || "", text = (p.text || "").slice(0, 1200);
+      var sc = 0;
+      terms.forEach(function (t) {
+        if (t.length < 2) return;
+        if (title.indexOf(t) >= 0) sc += 5;
+        if (tags.indexOf(t) >= 0) sc += 3;
+        if (cat.indexOf(t) >= 0) sc += 3;
+        if (desc.indexOf(t) >= 0) sc += 2;
+        if (text.indexOf(t) >= 0) sc += 1;
+      });
+      return { p: p, sc: sc };
+    }).filter(function (x) { return x.sc >= 5; })
+      .sort(function (a, b) { return b.sc - a.sc; })
+      .slice(0, 4);
+    if (!scored.length) return "";
+    return scored.map(function (x) {
+      var p = x.p;
+      return "《" + p.title + "》（" + p.author + " · " + (p.date || "") +
+        (p.category ? " · 分类：" + p.category : "") + "）：" +
+        (p.description || (p.text || "").slice(0, 120)) + "…";
+    }).join("\n");
+  }
+
+  /* ---------- LLM 轨道：/api/chat（供应商可插拔，见 pet-server/README） ---------- */
+  var CHAT_ENDPOINT = "/api/chat";
+  var LLM_TIMEOUT = 9000;        /* 单次请求超时 */
+  var llm = { down: false, fails: 0, retryAt: 0 };   /* 连续失败 2 次静默降级，每 5 分钟重探 */
+  function askLLM(q) {
+    if (llm.down && Date.now() < llm.retryAt) return Promise.resolve(null);
+    var rag = ragContext(q);
+    var content = q + (rag ? "\n\n【站内资料】\n" + rag + "\n（回答可引用上面的文章名与作者）" : "");
+    var msgs = history.slice(-8).map(function (m) {
+      return { role: m.role === "user" ? "user" : "assistant", content: m.text };
+    });
+    msgs.push({ role: "user", content: content });
+    var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, LLM_TIMEOUT) : null;
+    return fetch(CHAT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: msgs }),
+      signal: ctrl ? ctrl.signal : undefined,
+    }).then(function (r) {
+      if (timer) clearTimeout(timer);
+      if (!r.ok) throw new Error("http " + r.status);
+      return r.json();
+    }).then(function (d) {
+      llm.fails = 0; llm.down = false;
+      var text = d && typeof d.reply === "string" ? d.reply.trim() : "";
+      if (!text) throw new Error("empty");
+      /* 兜底截断：max_tokens 已限，这里防异常长答（约 160 字） */
+      if (text.length > 170) text = text.slice(0, 168) + "…";
+      return { text: text, via: d.via || "AI", model: d.model || "" };
+    }).catch(function () {
+      if (timer) clearTimeout(timer);
+      llm.fails++;
+      if (llm.fails >= 2) { llm.down = true; llm.retryAt = Date.now() + 5 * 60 * 1000; }
+      return null;                                 /* 降级信号：respond 回落规则轨道 */
+    });
   }
 
   /* ---------- 气泡：向对话记录追加消息（who = "pet" | "me"） ----------
      html=true 仅用于站内固定文案（含 <a>/<br>）；用户输入一律纯文本防注入。 */
-  function bubble(text, who, html) {
+  function bubble(text, who, html, via) {
     var m = doc.createElement("div");
     m.className = "pet-msg pet-msg--" + (who === "me" ? "me" : "pet");
     if (html) m.innerHTML = text;
     else m.textContent = text;
+    if (via) {
+      var tag = doc.createElement("span");
+      tag.className = "pet-via";
+      tag.textContent = via;
+      m.appendChild(tag);
+    }
     log.appendChild(m);
     log.scrollTop = log.scrollHeight;
     return m;
@@ -352,18 +496,87 @@
     return t;
   }
 
+  /* ---------- 打字机（LLM 轨道：纯文本逐字输出） ---------- */
+  var busy = false;                                /* 防并发：回答中禁发下一条 */
+  var typerTimer = null;                           /* 清空对话时需要能停掉进行中的打字 */
+  function typewriter(text, done) {
+    var m = doc.createElement("div");
+    m.className = "pet-msg pet-msg--pet pet-typer";
+    log.appendChild(m);
+    var i = 0;
+    var step = Math.max(1, Math.round(text.length / 60));   /* 长答加速：约 60 步内打完 */
+    typerTimer = setInterval(function () {
+      i += step;
+      m.textContent = text.slice(0, i);
+      log.scrollTop = log.scrollHeight;
+      if (i >= text.length) {
+        clearInterval(typerTimer);
+        typerTimer = null;
+        m.classList.remove("pet-typer");
+        var tag = doc.createElement("span");
+        tag.className = "pet-via";
+        tag.textContent = lastVia;
+        m.appendChild(tag);
+        if (done) done();
+      }
+    }, 22);
+  }
+  var lastVia = "AI";
+
+  /* ---------- 双轨 respond ---------- */
   function respond(q) {
+    if (busy) return;
+    busy = true;
+    pushHistory("user", q);
     playAction("is-nod");                          /* 回答时点头 */
     var t = typing();
-    setTimeout(function () {
+    var fallbackDelay = 420 + Math.random() * 380; /* 规则轨道保留自然延迟 */
+    var fell = false;
+    function ruleFallback() {
+      if (fell) return;
+      fell = true;
+      var text = cute(answer(q));
       t.remove();
-      bubble(answer(q), "pet", true);
-    }, 420 + Math.random() * 380);
+      bubble(text, "pet", true, "小鹿本地");
+      pushHistory("pet", text.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " "));
+      busy = false;
+    }
+    var started = Date.now();
+    askLLM(q).then(function (res) {
+      if (res) {
+        var wait = Math.max(0, 500 - (Date.now() - started));  /* 太快也缓一缓，像在思考 */
+        setTimeout(function () {
+          t.remove();
+          lastVia = res.via || "AI";
+          typewriter(res.text, function () {
+            pushHistory("pet", res.text);
+            busy = false;
+          });
+          playAction("is-hop");
+        }, wait);
+      } else {
+        var left = Math.max(0, fallbackDelay - (Date.now() - started));
+        setTimeout(ruleFallback, left);
+      }
+    });
   }
 
+  var GREETINGS = [
+    "嗨，我是小鹿 🦌 这个博客有什么想了解的，尽管问；博客之外的我可不会哦。",
+    "嗨呀，我是小鹿～最近两面都有更新，要带你看看吗？",
+    "我是小鹿！文章、作者、建站进展都可以问我～",
+  ];
   function greet() {
     if (log.children.length) return;
-    bubble("嗨，我是小鹿 🦌 这个博客有什么想了解的，尽管问；博客之外的我可不会哦。", "pet", false);
+    bubble(GREETINGS[Math.floor(Math.random() * GREETINGS.length)], "pet", false);
+  }
+
+  /* 历史重放：会话内刷新/重开对话栏时恢复之前聊过的内容（打字机不做，直接上屏） */
+  function replayHistory() {
+    history.forEach(function (m) {
+      if (m.role === "user") bubble(m.text, "me");
+      else bubble(m.text, "pet", false, "小鹿");
+    });
   }
 
   function setOpen(on) {
@@ -376,6 +589,7 @@
       stopStroll();                                /* 滑行中开聊天框：就地停步，再定位对话栏 */
       playAction("is-hop");                        /* 打开聊天框：开心跳一下 */
       placeDrawer();
+      replayHistory();                             /* 先恢复历史（有则 greet 自然跳过） */
       greet();
       setTimeout(function () { input.focus(); }, 80);
     }
@@ -391,11 +605,20 @@
   });
   form.addEventListener("submit", function (e) {
     e.preventDefault();
+    if (busy) return;                              /* 回答中：先等小鹿说完 */
     var q = input.value.trim();
     if (!q) return;
     bubble(q, "me");
     input.value = "";
     respond(q);
+  });
+  drawer.querySelector(".pet-clear").addEventListener("click", function () {
+    if (typerTimer) { clearInterval(typerTimer); typerTimer = null; }
+    busy = false;
+    history = [];
+    saveHistory();
+    log.innerHTML = "";
+    greet();
   });
   [].forEach.call(drawer.querySelectorAll("[data-pet-chips] button"), function (b) {
     b.addEventListener("click", function () {

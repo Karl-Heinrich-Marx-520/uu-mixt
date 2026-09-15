@@ -1,0 +1,12 @@
+{
+  "listen": "127.0.0.1:8787",
+  "baseUrl": "https://api.deepseek.com",
+  "model": "deepseek-chat",
+  "apiKeyEnv": "UUM_LLM_KEY",
+  "timeoutSec": 30,
+  "maxTokens": 300,
+  "temperature": 0.8,
+  "perIPPerMin": 10,
+  "dailyQuota": 500,
+  "cacheTTLMin": 60
+}
