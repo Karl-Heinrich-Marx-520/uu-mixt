@@ -1,10 +1,5 @@
 [
   {
-    "slug": "stack-fmt",
-    "name": "栈与格式化字符串",
-    "desc": "栈帧布局、canary、ROP 链构造与格式化字符串的读写原语。"
-  },
-  {
     "slug": "ctf",
     "name": "CTF",
     "desc": "CTF pwn 题的完整思路复盘：从信息收集到利用链的组织。"
