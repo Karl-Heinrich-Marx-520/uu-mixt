@@ -446,6 +446,14 @@
     });
   }
 
+  /* 个人标签：作者页方向行（「C++ 后端 · 网络编程」），写作台「设置」维护 */
+  if (store && (doc.body.dataset.face === "uu" || doc.body.dataset.face === "mixt")) {
+    [].slice.call(doc.querySelectorAll("[data-author-dir]")).forEach(function (el) {
+      var tags = store.authorTags(doc.body.dataset.face);
+      if (tags.length) el.textContent = tags.join(" · ");
+    });
+  }
+
   /* ---------- 首页侧栏：统计 + 网站信息（内容层实时更新） ---------- */
   function countTags(posts) {
     var tags = {};

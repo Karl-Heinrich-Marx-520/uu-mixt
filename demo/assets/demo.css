@@ -2003,6 +2003,19 @@ html[data-mode="dark"] .login-error { color: #ff8a80; }
 .admin-btn--ai svg { width: 15px; height: 15px; }
 .admin-btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
 
+/* 标签池面板：新增行横排 */
+.admin-tagpool-add { display: inline-flex; gap: 8px; align-items: center; }
+.admin-tagpool-add input {
+  width: 180px;
+  padding: 7px 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--text-1);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+}
+
 
 /* 登录页：暗色门面（默认 data-mode=dark，可用右上角按钮切回浅色） */
 .login-page { padding-top: 8vh; }

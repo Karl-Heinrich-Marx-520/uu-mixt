@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=17">
+  <link rel="stylesheet" href="assets/demo.css?v=18">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -61,6 +61,10 @@
         <button class="admin-side-item" type="button" data-panel="categories">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           分类
+        </button>
+        <button class="admin-side-item" type="button" data-panel="tagpool">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24H4a2 2 0 0 0-2 2v5.59a2 2 0 0 0 .59 1.41l9.58 9.59a2 2 0 0 0 2.83 0l5.59-5.59a2 2 0 0 0 0-2.83z"/><circle cx="6.91" cy="7.85" r="1.4" fill="currentColor" stroke="none"/></svg>
+          标签池
         </button>
         <button class="admin-side-item" type="button" data-panel="friends">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
@@ -174,6 +178,32 @@
           </form>
         </div>
 
+        <!-- 标签池面板：全站共享（PRD 3.5 标签共享），两作者均可维护 -->
+        <div class="admin-panel" data-panel-body="tagpool">
+          <p class="admin-hint">
+            标签池是<strong>全站共享数据</strong>（与友链同类，两位作者都可维护）。
+            文章标签已交给 AI 托管（保存文章时自动入池），这里用来<strong>修正 AI 的选择</strong>：
+            重命名会同步更新所有文章（新名已存在则并入）；删除会从文章里移除；新增的标签先进池，等下篇文章挂靠。
+          </p>
+          <div class="admin-toolbar">
+            <p class="admin-hint" style="margin:0">共 <b data-tagpool-total>0</b> 个标签 · 括号内为使用它的文章数</p>
+            <div class="admin-tagpool-add">
+              <input id="tp-new" type="text" placeholder="新标签名，如 grpc" aria-label="新标签名">
+              <button class="admin-new" type="button" data-action="add-tag">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                添加
+              </button>
+            </div>
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr><th>标签</th><th>使用</th><th>操作</th></tr>
+            </thead>
+            <tbody data-tagpool-rows></tbody>
+          </table>
+          <p class="admin-toastline" data-tagpool-msg aria-live="polite"></p>
+        </div>
+
         <!-- 友链面板：站点级共享数据（入口页卡组的数据源，PRD E8） -->
         <div class="admin-panel" data-panel-body="friends">
           <p class="admin-hint">
@@ -253,8 +283,12 @@
               <label for="s-bio">简介文案（<span data-bio-count>0</span> / 200 字）</label>
               <textarea id="s-bio" rows="4" placeholder="一两句话介绍自己写什么、怎么写。例如：写 C++ 后端与网络编程，落笔偏好可复现的细节与可验证的结论。"></textarea>
             </div>
+            <div class="admin-field">
+              <label for="s-tags">个人标签（逗号分隔，展示在作者页姓名下方，≤ 6 个）</label>
+              <input id="s-tags" type="text" placeholder="例如：C++ 后端, 网络编程, 科研复现">
+            </div>
             <div class="admin-editor-actions" style="justify-content:flex-start">
-              <button type="button" class="admin-btn admin-btn--primary" data-action="save-bio">保存简介</button>
+              <button type="button" class="admin-btn admin-btn--primary" data-action="save-bio">保存简介与标签</button>
             </div>
           </form>
 
@@ -284,8 +318,8 @@
 
   </div><!-- /.page-card -->
 
-  <script src="assets/demo-store.js?v=10"></script>
-  <script src="assets/demo.js?v=12"></script>
+  <script src="assets/demo-store.js?v=11"></script>
+  <script src="assets/demo.js?v=13"></script>
   <script>
     /* 写作台本体：身份取自登录会话（或 ?face= 便捷入口），无权访问则退回登录页 */
     (function () {
@@ -713,7 +747,7 @@
 
       /* ---------- 事件委托 ---------- */
       document.addEventListener("click", function (e) {
-        var el = e.target.closest("[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat],[data-edit-friend],[data-del-friend]");
+        var el = e.target.closest("[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat],[data-edit-friend],[data-del-friend],[data-rename-tag],[data-del-tag]");
         if (!el) return;
         if (el.dataset.action === "logout") {
           try { localStorage.removeItem(SESSION); } catch (err) {}
@@ -725,6 +759,31 @@
         if (el.dataset.action === "save-post") { savePost(); return; }
         if (el.dataset.action === "ai-assist") { aiAssist(false); return; }
         if (el.dataset.action === "save-bio") { saveBio(); return; }
+        if (el.dataset.action === "add-tag") { addPoolTag(); return; }
+        if (el.dataset.renameTag) {
+          var oldName = el.dataset.renameTag;
+          var newName = window.prompt("把标签「" + oldName + "」重命名为：（会同步更新所有文章）", oldName);
+          if (newName === null) return;   /* 取消 */
+          newName = newName.trim();
+          if (!newName) { msg($("[data-tagpool-msg]"), "标签名不能为空。"); return; }
+          var r = store.renameTag(oldName, newName);
+          msg($("[data-tagpool-msg]"), r.posts
+            ? "已重命名为「" + newName + "」" + (r.merged ? "（与已有标签合并）" : "") + "，同步更新 " + r.posts + " 篇文章。"
+            : "「" + oldName + "」已并入「" + newName + "」。");
+          renderTagPool();
+          return;
+        }
+        if (el.dataset.delTag) {
+          var delName = el.dataset.delTag;
+          var cnt = store.tagPool().filter(function (t) { return t.name === delName; })[0];
+          var n = cnt ? cnt.count : 0;
+          if (window.confirm("删除标签「" + delName + "」？" + (n ? "会从 " + n + " 篇文章中移除。" : "（池内待用，无文章挂靠）"))) {
+            var removed = store.removeTag(delName);
+            msg($("[data-tagpool-msg]"), removed ? "已删除，从 " + removed + " 篇文章中移除。" : "已从标签池移除。");
+            renderTagPool();
+          }
+          return;
+        }
         if (el.dataset.action === "save-cat") { saveCat(); return; }
         if (el.dataset.action === "cancel-cat") { resetCatForm(); msg($("[data-cat-msg]"), ""); return; }
         if (el.dataset.action === "new-cat") {
@@ -759,6 +818,7 @@
             renderPosts();
             renderCats();
             renderFriends();
+            renderTagPool();
             resetEditor();
             resetCatForm();
             resetFriendForm();
@@ -831,11 +891,12 @@
         }
       });
 
-      /* ---------- 个人简介（面页侧栏 + 作者页共用） ---------- */
+      /* ---------- 个人简介与个人标签（面页侧栏 + 作者页共用） ---------- */
       var bioInput = $("#s-bio");
+      var tagsInput = $("#s-tags");
       function refreshBio() {
-        if (!bioInput) return;
-        bioInput.value = store.authorBio(face);
+        if (bioInput) bioInput.value = store.authorBio(face);
+        if (tagsInput) tagsInput.value = store.authorTags(face).join(", ");
         syncBioCount();
       }
       function syncBioCount() {
@@ -852,10 +913,48 @@
         var out = $("[data-settings-msg]");
         if (!bio) { msg(out, "简介不能为空——侧栏和作者页都会展示它。"); bioInput.focus(); return; }
         if (bio.length > 200) { msg(out, "简介不超过 200 字（当前 " + bio.length + "）。"); bioInput.focus(); return; }
+        var tags = tagsInput.value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
+        if (tags.length > 6) { msg(out, "个人标签最多 6 个（当前 " + tags.length + "）。"); tagsInput.focus(); return; }
         store.setAuthorBio(face, bio);
+        store.setAuthorTags(face, tags);
         syncBioCount();
         msg(out, "已保存——打开 " + meta.home + " 或作者页立即可见。");
-        window.uumToast("个人简介已更新");
+        window.uumToast("个人简介与标签已更新");
+      }
+
+      /* ---------- 标签池（全站共享；重命名/删除同步全部文章） ---------- */
+      function renderTagPool() {
+        var list = store.tagPool();
+        var total = $("[data-tagpool-total]");
+        if (total) total.textContent = list.length;
+        var host = $("[data-tagpool-rows]");
+        if (!host) return;
+        if (!list.length) {
+          host.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-3)">标签池为空。写文章时 AI 会自动生成标签入池，也可以在上方手动添加。</td></tr>';
+          return;
+        }
+        host.innerHTML = list.map(function (t) {
+          var use = t.count ? t.count + " 篇" : '<span style="color:var(--text-3)">池内待用</span>';
+          return "<tr>" +
+            '<td><code class="admin-friend-host">' + escapeHtml(t.name) + "</code></td>" +
+            "<td>" + use + "</td>" +
+            '<td class="admin-status-actions"><span class="admin-row-actions">' +
+              '<button class="admin-mini" data-rename-tag="' + escapeHtml(t.name) + '">重命名</button>' +
+              '<button class="admin-mini admin-mini--danger" data-del-tag="' + escapeHtml(t.name) + '">删除</button>' +
+            "</span></td></tr>";
+        }).join("");
+      }
+
+      function addPoolTag() {
+        var input = $("#tp-new");
+        var name = input.value.trim();
+        var out = $("[data-tagpool-msg]");
+        if (!name) { msg(out, "先输入标签名。"); input.focus(); return; }
+        if (name.length > 24) { msg(out, "标签不超过 24 字（当前 " + name.length + "）。"); input.focus(); return; }
+        if (!store.addPoolTag(name)) { msg(out, "「" + name + "」已在标签池里。"); return; }
+        input.value = "";
+        msg(out, "已加入标签池——下篇文章挂靠后开始计数。");
+        renderTagPool();
       }
 
       /* ---------- 媒体：图片引用库（localStorage 持久化，列出全部已收录） ----------
@@ -959,6 +1058,7 @@
       renderCats();
       renderPosts();
       renderFriends();
+      renderTagPool();
       resetEditor();
       resetCatForm();
       renderMedia();

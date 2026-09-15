@@ -13,6 +13,8 @@
 
   var SEED = {
     version: VERSION,
+    /* 标签池：写作台「标签池」面板维护的池内预置标签（暂无文章挂靠的也算在池里） */
+    pool: [],
     posts: [
       { id: "uu-1", face: "uu", title: "用 Boost.Asio 搭一个可优雅退出的异步 TCP 服务器",
         slug: "asio-graceful-shutdown", date: "2026-09-05", category: "工程实践",
@@ -84,8 +86,10 @@
     /* 作者简介：写作台「设置」可改，面页侧栏与作者页动态读取。
        正式实现里简介落在仓库的作者配置中（构建期渲染进侧栏与作者页）。 */
     authors: {
-      uu: { bio: "写 C++ 后端与网络编程，做过异步服务器与 Qt 客户端，也在复现 AI 集群的集合通信拥塞控制。落笔偏好可复现的细节与可验证的结论——不写「应该可以」，写「我实测是」。" },
-      mixt: { bio: "主攻 PWN 二进制安全。写漏洞分析、利用技巧与 CTF writeup，关注机制层面「为什么可行」与「什么条件下失效」。所有内容遵守合规措辞规则：自建环境、伪代码与打码、不提供可直接复用的完整利用程序。" }
+      uu: { bio: "写 C++ 后端与网络编程，做过异步服务器与 Qt 客户端，也在复现 AI 集群的集合通信拥塞控制。落笔偏好可复现的细节与可验证的结论——不写「应该可以」，写「我实测是」。",
+             tags: ["C++ 后端", "网络编程", "科研复现"] },
+      mixt: { bio: "主攻 PWN 二进制安全。写漏洞分析、利用技巧与 CTF writeup，关注机制层面「为什么可行」与「什么条件下失效」。所有内容遵守合规措辞规则：自建环境、伪代码与打码、不提供可直接复用的完整利用程序。",
+              tags: ["PWN", "二进制安全", "CTF"] }
     },
     /* 友链 = 站点级共享数据（入口页卡组展示，两位作者均可维护；PRD E8）
        数据形态：名称 / 地址 / 头像（可选，缺省用站名首字）/ 简介 */
@@ -305,6 +309,8 @@
     if (!d.friends) { d.friends = clone(SEED.friends); write(d); }
     /* 旧存档惰性迁移：补作者简介（写作台设置面板可改） */
     if (!d.authors) { d.authors = clone(SEED.authors); write(d); }
+    /* 旧存档惰性迁移：补标签池（写作台「标签池」面板维护的池内预置标签） */
+    if (!d.pool) { d.pool = []; write(d); }
     return d;
   }
 
@@ -450,6 +456,73 @@
       return Object.keys(set).sort().map(function (t) { return { name: t, count: set[t] }; });
     },
 
+    /** 标签池管理（写作台「标签池」面板）：池 = 文章标签并集 + 池内预置（暂无文章使用） */
+    tagPool: function () {
+      var d = db();
+      var set = {};
+      d.posts.forEach(function (p) {
+        (p.tags || []).forEach(function (t) { set[t] = (set[t] || 0) + 1; });
+      });
+      (d.pool || []).forEach(function (t) { if (!(t in set)) set[t] = 0; });
+      return Object.keys(set).sort().map(function (t) { return { name: t, count: set[t] }; });
+    },
+    /** 新增池内预置标签（暂无文章挂靠）；已存在（池或文章）返回 false */
+    addPoolTag: function (name) {
+      var t = String(name || "").trim();
+      if (!t) return false;
+      var d = db();
+      if (!d.pool) d.pool = [];
+      var exists = d.pool.indexOf(t) !== -1 || d.posts.some(function (p) { return (p.tags || []).indexOf(t) !== -1; });
+      if (exists) return false;
+      d.pool.push(t);
+      write(d);
+      return true;
+    },
+    /** 重命名标签：同步全部文章（含草稿）；新名已存在（池或文章）则合并。返回 {posts, merged} */
+    renameTag: function (oldName, newName) {
+      var from = String(oldName || "").trim();
+      var to = String(newName || "").trim();
+      if (!from || !to || from === to) return { posts: 0, merged: false };
+      var d = db();
+      if (!d.pool) d.pool = [];
+      var toExists = d.pool.indexOf(to) !== -1 ||
+        d.posts.some(function (p) { return (p.tags || []).indexOf(to) !== -1; });
+      var n = 0;
+      d.posts.forEach(function (p) {
+        var tags = p.tags || [];
+        if (tags.indexOf(from) === -1) return;
+        if (tags.indexOf(to) !== -1) {
+          p.tags = tags.filter(function (t) { return t !== from; });   /* 同篇已双标签：只移除旧名 */
+        } else {
+          tags[tags.indexOf(from)] = to;
+          p.tags = tags;
+        }
+        n++;
+      });
+      var pi = d.pool.indexOf(from);
+      if (pi !== -1) {
+        d.pool.splice(pi, 1);                              /* 旧名从池移除 */
+        if (!toExists && n === 0) d.pool.push(to);         /* 纯池内改名：无文章挂靠且新名未占用 */
+      }
+      write(d);
+      return { posts: n, merged: toExists };
+    },
+    /** 删除标签：从所有文章与池中移除。返回受影响文章数 */
+    removeTag: function (name) {
+      var t = String(name || "").trim();
+      if (!t) return 0;
+      var d = db();
+      var n = 0;
+      d.posts.forEach(function (p) {
+        if ((p.tags || []).indexOf(t) === -1) return;
+        p.tags = p.tags.filter(function (x) { return x !== t; });
+        n++;
+      });
+      if (d.pool) d.pool = d.pool.filter(function (x) { return x !== t; });
+      write(d);
+      return n;
+    },
+
     /** 作者简介：面页侧栏与作者页展示，写作台「设置」维护 */
     authorBio: function (face) {
       var a = db().authors && db().authors[face];
@@ -460,6 +533,20 @@
       if (!d.authors) d.authors = clone(SEED.authors);
       if (!d.authors[face]) d.authors[face] = { bio: "" };
       d.authors[face].bio = String(bio || "").trim();
+      write(d);
+    },
+    /** 个人标签：作者页方向行展示（如「C++ 后端 · 网络编程」），写作台「设置」维护 */
+    authorTags: function (face) {
+      var seed = SEED.authors[face];
+      var a = db().authors && db().authors[face];
+      if (a && a.tags) return a.tags.slice();
+      return seed ? seed.tags.slice() : [];
+    },
+    setAuthorTags: function (face, tags) {
+      var d = db();
+      if (!d.authors) d.authors = clone(SEED.authors);
+      if (!d.authors[face]) d.authors[face] = { bio: "" };
+      d.authors[face].tags = (tags || []).map(function (t) { return String(t).trim(); }).filter(Boolean);
       write(d);
     },
 
