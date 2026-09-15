@@ -120,6 +120,15 @@ check "delete 正确 sha → 200" 200 "$code" '"ok"'
 req DELETE "/api/file?path=src/content/mixt/hello.md&sha=$HELLO_SHA&message=m" "$MIXT_TOKEN"
 check "delete 已删除 → 404" 404 "$code" "404"
 
+echo "=== 6.5 手动触发构建（决策 7.24；mock 假状态 2 秒转 done）==="
+req POST /api/rebuild "$MIXT_TOKEN"
+check "rebuild 触发 → 200 started" 200 "$code" '"started"'
+sleep 3
+req GET /api/rebuild "$UU_TOKEN"
+check "rebuild 状态（跨 token 可查）→ 200 完成 exit=0" 200 "$code" '"exitCode":0'
+req GET /api/rebuild ""
+check "rebuild 状态未登录 → 401" 401 "$code" "凭据无效"
+
 echo "=== 7. 桌宠路由（无 Key 上游 → 502 优雅报错）==="
 req POST /api/pet/chat "" '{"messages":[{"role":"user","content":"你好呀"}]}'
 check "pet/chat → 502 小鹿走神" 502 "$code" "小鹿走神"

@@ -66,7 +66,8 @@ type Config struct {
 	MaxImageMB     int          `json:"maxImageMB"`     // 图片上限
 	Git            GitConfig    `json:"git"`
 	Pet            PetConfig    `json:"pet"`
-	Assist         AssistConfig `json:"assist"` // 写作台 AI 摘要助手（决策 7.20）
+	Assist         AssistConfig `json:"assist"`     // 写作台 AI 摘要助手（决策 7.20）
+	RebuildScript  string       `json:"rebuildScript"` // 手动触发的服务器端构建脚本（决策 7.24）
 }
 
 func loadConfig(p string) (*Config, error) {
@@ -153,6 +154,8 @@ type server struct {
 	petClient *http.Client  // 桌宠：上游 HTTP（显式直连，不吃环境代理）
 
 	assistClient *http.Client // 写作台 AI 摘要：上游 HTTP（同 petClient 纪律，超时更长）
+
+	rb rebuildState // 手动触发的服务器端构建状态（决策 7.24，见 rebuild.go）
 }
 
 /* 鉴权：Authorization: Bearer <token> → sha256 → 查表（恒定时间比较） */
@@ -505,6 +508,7 @@ func main() {
 			Transport: &http.Transport{Proxy: nil},
 		},
 	}
+	s.rb.init()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/verify", s.handleVerify)
 	mux.HandleFunc("/api/list", s.handleList)
@@ -516,6 +520,7 @@ func main() {
 	mux.HandleFunc("/api/tags/add", s.handleTagsAdd)
 	mux.HandleFunc("/api/tags/rename", s.handleTagsRename)
 	mux.HandleFunc("/api/tags/remove", s.handleTagsRemove)
+	mux.HandleFunc("/api/rebuild", s.handleRebuild)
 	mux.HandleFunc("/api/pet/chat", s.handlePetChat)
 	mux.HandleFunc("/api/chat", s.handlePetChat) // 兼容别名：pet.js 切到 /api/pet/chat 后移除
 	mux.HandleFunc("/healthz", s.handleHealth)

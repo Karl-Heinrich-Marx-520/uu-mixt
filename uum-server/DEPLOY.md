@@ -2,8 +2,8 @@
 
 > | 项 | 值 |
 > |---|---|
-> | 服务 | 写作台写入 API（verify/list/read/write/delete）+ AI 摘要助手（/api/assist）+ 标签池（/api/tags、/api/tags/add\|rename\|remove）+ 桌宠 LLM 转发（/api/pet/chat），同进程 |
-> | 依据 | docs/09（T5-1/T5-3 · 决策 7.19；§8.2 正式版接线 · 决策 7.20-7.23）/ 决策 7.18 / docs/06 §4 |
+> | 服务 | 写作台写入 API（verify/list/read/write/delete）+ AI 摘要助手（/api/assist）+ 标签池（/api/tags、/api/tags/add\|rename\|remove）+ 桌宠 LLM 转发（/api/pet/chat）+ **构建发布（/api/rebuild，决策 7.24）**，同进程 |
+> | 依据 | docs/09（T5-1/T5-3 · 决策 7.19；§8.2 正式版接线 · 决策 7.20-7.23；§8.3 构建发布 · 决策 7.24）/ 决策 7.18 / docs/06 §4 |
 > | 形态 | Go 标准库零依赖单二进制，内存 < 50MB，只监听 `127.0.0.1:8787` |
 > | 分工 | 本页所有命令 **由 master 在服务器上执行**（UI agent 不持有 SSH 凭据） |
 
@@ -137,11 +137,51 @@ systemctl show uum-server -p EnvironmentFiles
 升级后新功能验收：写作台设置面板改简介保存 → 仓库出现 `config(uu): 更新个人简介与标签` 提交；
 文章表单留空 description 保存 → 出现 AI 生成摘要；标签池面板改名 → 全站文章 frontmatter 一次提交同步。
 
+## 8.2 构建发布功能部署（master 执行 · 决策 7.24）
+
+新增 `/api/rebuild` 端点（写作台手动触发服务器端构建）+ 服务器构建脚本 + 加固版镜像脚本。
+**config.json 无需新增字段**（`rebuildScript` 缺省即 `/srv/uum/bin/uum-rebuild.sh`）。本服务器实际
+路径为 `ExecStart=/srv/uum/bin/uum-server`、运行用户 `uum`（下例按此写，其他机器按 unit 校正）。
+
+```bash
+# 1. 上传三个文件（本地 uum-server/ 目录）
+scp uum-server-linux-amd64 root@47.116.143.98:/tmp/uum-server-new
+scp deploy/uum-rebuild.sh deploy/uum-mirror.sh root@47.116.143.98:/tmp/
+
+# 2. 服务器上安装并重启
+sudo systemctl stop uum-server
+sudo install -m 755 -o uum -g uum /tmp/uum-server-new /srv/uum/bin/uum-server
+sudo install -m 755 -o uum -g uum /tmp/uum-rebuild.sh /srv/uum/bin/uum-rebuild.sh
+sudo install -m 755 -o uum -g uum /tmp/uum-mirror.sh  /srv/uum/bin/uum-mirror.sh  # 加固版覆盖旧版
+sudo systemctl start uum-server
+curl -s http://127.0.0.1:8787/healthz    # uptime 重新起算
+
+# 3. 构建环境自检（本机 2026-09-15 已核：Node v22.23.2 / swap 2.0Gi，缺了再装）
+node -v        # 期望 v22.x（NodeSource）
+free -h        # swap ≥ 2G —— 2C2G 构建防 OOM 的保险
+#   缺 Node：curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash - && sudo apt-get install -y nodejs
+#   缺 swap：fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile（并写入 fstab）
+
+# 4. 首次构建（让 Mixt 已删文章立即从前台消失——本次 bug 的原始诉求；也可直接在写作台点按钮）
+sudo -u uum /srv/uum/bin/uum-rebuild.sh && tail -15 /srv/uum/rebuild.log
+#   期望日志尾：rebuild OK -> /srv/uum/dist（首次会多一步 npm install，约 1-3 分钟）
+```
+
+**验收点**：
+
+- [ ] 写作台侧边菜单出现「构建发布」→ 点击 → confirm → 按钮进构建态 → 数分钟后提示「构建完成（N 秒）：前台已更新」
+- [ ] 构建后打开 `IP:8080` 内容页：Mixt 已删的文章与分类不再出现（原 bug 闭环）
+- [ ] 带 token `GET /api/rebuild` 返回 `exitCode:0`；无 token 401；一分钟内第三笔 429（每面限频 2 次/分）
+- [ ] 失败演练（可选）：故意构造非法内容触发 → 前台保持旧版不空白，`/srv/uum/rebuild.log` 尾有 FAILED
+- [ ] `sudo -u uum /srv/uum/bin/uum-mirror.sh` 手动跑一次成功（加固版行为：push 前先判断分叉，绝不强推）
+
 ## 9. 故障与回滚
 
 | 情形 | 处置 |
 |---|---|
-| uum-server 挂了 | 站点与访客完全不受影响；`systemctl status uum-server` 看日志；写作台不可写而已 |
+| uum-server 挂了 | 站点与访客完全不受影响；`systemctl status uum-server` 看日志；写作台不可写、构建按钮不可用而已 |
+| **构建失败（决策 7.24）** | **旧 dist 自动保留，前台不空白**；看 `/srv/uum/rebuild.log` 定位（npm / build / check-pages 三段各有 FAILED 标记）；修复后重新点「构建发布」 |
+| 依赖升级后构建异常 | `rm -rf /srv/uum/work/node_modules` 后再触发一次（重建依赖） |
 | 主库磁盘损坏 | GitHub 镜像即灾备：重新 `git clone --mirror` GitHub → 恢复（≤24h 数据差） |
-| 镜像滞后 | 主库为准；`uum-mirror.sh` 手动补跑 |
+| 镜像分叉告警 | mirror.sh 检测到主库与 GitHub 互无祖先时放弃推送（绝不强推）；人工确认保留哪条线后合并，再手动补跑 |
 | token 疑似泄露 | `/etc/uum/config.json` 删该条 hash + 重启；重发新 token |
