@@ -454,6 +454,34 @@
     });
   }
 
+  /* 在做什么：作者页条目（小标题 + 一句描述），写作台「设置」维护。
+     store 有条目时整组覆盖渲染；列表为空保留 HTML 静态内容作 no-JS 兜底。 */
+  if (store && (doc.body.dataset.face === "uu" || doc.body.dataset.face === "mixt")) {
+    [].slice.call(doc.querySelectorAll("[data-doing]")).forEach(function (el) {
+      var doing = store.authorDoing(doc.body.dataset.face);
+      if (!doing.length) return;
+      el.innerHTML = doing.map(function (x) {
+        var t = doc.createElement("b"); t.textContent = x.t;
+        var s = doc.createElement("span"); s.textContent = x.d;
+        var w = doc.createElement("div"); w.className = "author-fact";
+        w.appendChild(t); w.appendChild(s);
+        return w.outerHTML;
+      }).join("");
+    });
+  }
+
+  /* 技术栈：作者页 chips，写作台「设置」维护；为空保留静态兜底 */
+  if (store && (doc.body.dataset.face === "uu" || doc.body.dataset.face === "mixt")) {
+    [].slice.call(doc.querySelectorAll("[data-stack]")).forEach(function (el) {
+      var stack = store.authorStack(doc.body.dataset.face);
+      if (!stack.length) return;
+      el.innerHTML = stack.map(function (t) {
+        var c = doc.createElement("span"); c.className = "chip"; c.textContent = t;
+        return c.outerHTML;
+      }).join("");
+    });
+  }
+
   /* ---------- 首页侧栏：统计 + 网站信息（内容层实时更新） ---------- */
   function countTags(posts) {
     var tags = {};

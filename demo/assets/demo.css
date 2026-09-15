@@ -1682,6 +1682,15 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 .admin-checks label { display: inline-flex; align-items: center; gap: 7px; }
 .admin-note { font-size: 0.8rem; color: var(--text-3); margin: 14px 0 0; }
 .admin-editor-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+/* 「在做什么」条目行（写作台设置面板；输入框复用 .admin-field input 基础样式） */
+.admin-doing-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.admin-doing-row .admin-doing-t { flex: 0 0 32%; min-width: 0; }
+.admin-doing-row .admin-doing-d { flex: 1 1 auto; min-width: 0; }
+.admin-doing-row .admin-doing-x {
+  flex: 0 0 36px; padding: 0; border: 1px solid var(--border); background: transparent;
+  color: var(--text-2); border-radius: 8px; font-size: 1.05rem; line-height: 1; cursor: pointer;
+}
+.admin-doing-row .admin-doing-x:hover { color: #a32d2d; border-color: #a32d2d; }
 .admin-btn {
   padding: 8px 18px;
   font: inherit;

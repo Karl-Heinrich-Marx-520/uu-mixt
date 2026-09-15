@@ -83,13 +83,27 @@
       ],
       mixt: []
     },
-    /* 作者简介：写作台「设置」可改，面页侧栏与作者页动态读取。
-       正式实现里简介落在仓库的作者配置中（构建期渲染进侧栏与作者页）。 */
+    /* 作者简介 / 在做什么 / 技术栈：写作台「设置」可改，作者页与面页动态读取。
+       正式实现里这些落在仓库的作者配置中（构建期渲染）。 */
     authors: {
       uu: { bio: "写 C++ 后端与网络编程，做过异步服务器与 Qt 客户端，也在复现 AI 集群的集合通信拥塞控制。落笔偏好可复现的细节与可验证的结论——不写「应该可以」，写「我实测是」。",
-             tags: ["C++ 后端", "网络编程", "科研复现"] },
+             tags: ["C++ 后端", "网络编程", "科研复现"],
+             doing: [
+               { t: "异步网络服务", d: "基于 Boost.Asio / Beast 的 HTTP 与 TCP 服务，关注优雅退出、线程模型与错误处理路径。" },
+               { t: "拥塞控制科研", d: "复现数据中心集合通信的拥塞控制方案（INT 反馈、窗口与速率调整），在 NS-3 上跑对比实验。" },
+               { t: "桌面客户端",   d: "Qt + CMake 的客户端工程，含配置层、单例网络管理器与深色主题界面。" },
+               { t: "源码阅读",     d: "带着问题读 muduo、Asio 等工业级库，重点看所有权关系与生命周期边界。" }
+             ],
+             stack: ["C++17/20", "Boost.Asio", "Boost.Beast", "muduo", "Qt", "CMake", "Linux", "NS-3", "Nginx", "Astro"] },
       mixt: { bio: "主攻 PWN 二进制安全。写漏洞分析、利用技巧与 CTF writeup，关注机制层面「为什么可行」与「什么条件下失效」。所有内容遵守合规措辞规则：自建环境、伪代码与打码、不提供可直接复用的完整利用程序。",
-              tags: ["PWN", "二进制安全", "CTF"] }
+              tags: ["PWN", "二进制安全", "CTF"],
+              doing: [
+                { t: "堆与分配器",   d: "glibc malloc 的实现细节：chunk 布局、tcache / fastbin 行为与各版本的保护机制差异。" },
+                { t: "利用手法拆解", d: "把常见手法按适用版本、前置条件与代价做成对照表，说明各自在什么场景下会失效。" },
+                { t: "CTF 复盘",     d: "记录从信息收集到偏移计算的完整判断链，地址与细节全部打码，只留思路。" },
+                { t: "可复现环境",   d: "用容器固定 glibc 版本与调试器配置，让每次实验都能在同一套环境里复现。" }
+              ],
+              stack: ["PWN", "glibc", "gdb / pwndbg", "IDA", "Python", "Docker", "Linux", "CTF"] }
     },
     /* 友链 = 站点级共享数据（入口页卡组展示，两位作者均可维护；PRD E8）
        数据形态：名称 / 地址 / 头像（可选，缺省用站名首字）/ 简介 */
@@ -547,6 +561,36 @@
       if (!d.authors) d.authors = clone(SEED.authors);
       if (!d.authors[face]) d.authors[face] = { bio: "" };
       d.authors[face].tags = (tags || []).map(function (t) { return String(t).trim(); }).filter(Boolean);
+      write(d);
+    },
+    /** 在做什么：作者页条目（标题 + 一句描述），写作台「设置」维护；旧档读 SEED 兜底 */
+    authorDoing: function (face) {
+      var seed = SEED.authors[face];
+      var a = db().authors && db().authors[face];
+      var src = (a && a.doing) ? a.doing : (seed && seed.doing ? seed.doing : []);
+      return src.map(function (x) { return { t: x.t, d: x.d }; });
+    },
+    setAuthorDoing: function (face, list) {
+      var d = db();
+      if (!d.authors) d.authors = clone(SEED.authors);
+      if (!d.authors[face]) d.authors[face] = { bio: "" };
+      d.authors[face].doing = (list || []).map(function (x) {
+        return { t: String(x.t || "").trim(), d: String(x.d || "").trim() };
+      }).filter(function (x) { return x.t && x.d; });
+      write(d);
+    },
+    /** 技术栈：作者页 chips，写作台「设置」维护；旧档读 SEED 兜底 */
+    authorStack: function (face) {
+      var seed = SEED.authors[face];
+      var a = db().authors && db().authors[face];
+      if (a && a.stack) return a.stack.slice();
+      return seed ? seed.stack.slice() : [];
+    },
+    setAuthorStack: function (face, list) {
+      var d = db();
+      if (!d.authors) d.authors = clone(SEED.authors);
+      if (!d.authors[face]) d.authors[face] = { bio: "" };
+      d.authors[face].stack = (list || []).map(function (t) { return String(t).trim(); }).filter(Boolean);
       write(d);
     },
 

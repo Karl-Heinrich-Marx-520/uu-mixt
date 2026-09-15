@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=19">
+  <link rel="stylesheet" href="assets/demo.css?v=20">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -275,7 +275,7 @@
         <div class="admin-panel" data-panel-body="settings">
           <p class="admin-hint">Demo 数据保存在浏览器本地（localStorage）。正式实现里文章是仓库中的 Markdown 文件，提交即触发构建。</p>
 
-          <!-- 个人简介：面页侧栏与作者页共用（PRD 4.4 作者身份区） -->
+          <!-- 个人简介 / 在做什么 / 技术栈：面页侧栏与作者页共用（PRD 4.4 作者身份区） -->
           <form class="admin-editor" data-bio-editor aria-label="个人简介编辑" novalidate>
             <h2>个人简介</h2>
             <p class="admin-hint" style="margin:0 0 14px">展示在自己那一面的侧栏与作者页。保存后打开面页立即可见，不需要重新发布文章。</p>
@@ -287,8 +287,17 @@
               <label for="s-tags">个人标签（逗号分隔，展示在作者页姓名下方，≤ 6 个）</label>
               <input id="s-tags" type="text" placeholder="例如：C++ 后端, 网络编程, 科研复现">
             </div>
+            <div class="admin-field">
+              <label>在做什么（作者页条目，≤ 8 条；每条 = 小标题 + 一句描述）</label>
+              <div data-doing-list></div>
+              <button type="button" class="admin-btn admin-btn--ghost" data-action="add-doing" style="margin-top:8px">+ 添加一条</button>
+            </div>
+            <div class="admin-field">
+              <label for="s-stack">技术栈（逗号分隔，作者页 chips，≤ 15 个）</label>
+              <input id="s-stack" type="text" placeholder="例如：C++17/20, Boost.Asio, NS-3">
+            </div>
             <div class="admin-editor-actions" style="justify-content:flex-start">
-              <button type="button" class="admin-btn admin-btn--primary" data-action="save-bio">保存简介与标签</button>
+              <button type="button" class="admin-btn admin-btn--primary" data-action="save-bio">保存以上设置</button>
             </div>
           </form>
 
@@ -332,8 +341,8 @@
 
   </div><!-- /.page-card -->
 
-  <script src="assets/demo-store.js?v=11"></script>
-  <script src="assets/demo.js?v=13"></script>
+  <script src="assets/demo-store.js?v=12"></script>
+  <script src="assets/demo.js?v=14"></script>
   <script>
     /* 写作台本体：身份取自登录会话（或 ?face= 便捷入口），无权访问则退回登录页 */
     (function () {
@@ -773,6 +782,7 @@
         if (el.dataset.action === "save-post") { savePost(); return; }
         if (el.dataset.action === "ai-assist") { aiAssist(false); return; }
         if (el.dataset.action === "save-bio") { saveBio(); return; }
+        if (el.dataset.action === "add-doing") { addDoingRow("", ""); return; }
         if (el.dataset.action === "site-rebuild") { siteRebuild(); return; }
         if (el.dataset.action === "add-tag") { addPoolTag(); return; }
         if (el.dataset.renameTag) {
@@ -906,17 +916,55 @@
         }
       });
 
-      /* ---------- 个人简介与个人标签（面页侧栏 + 作者页共用） ---------- */
+      /* ---------- 个人简介 / 在做什么 / 技术栈（面页侧栏 + 作者页共用） ---------- */
       var bioInput = $("#s-bio");
       var tagsInput = $("#s-tags");
+      var stackInput = $("#s-stack");
+      var doingList = $("[data-doing-list]");
       function refreshBio() {
         if (bioInput) bioInput.value = store.authorBio(face);
         if (tagsInput) tagsInput.value = store.authorTags(face).join(", ");
+        if (stackInput) stackInput.value = store.authorStack(face).join(", ");
+        renderDoingRows(store.authorDoing(face));
         syncBioCount();
       }
       function syncBioCount() {
         var cnt = $("[data-bio-count]");
         if (cnt) cnt.textContent = bioInput.value.trim().length;
+      }
+      /* 「在做什么」条目行：小标题 + 一句描述 + 删除；空行允许（保存时丢弃全空行） */
+      function addDoingRow(t, d) {
+        if (!doingList) return;
+        if (doingList.querySelectorAll(".admin-doing-row").length >= 8) {
+          window.uumToast("「在做什么」最多 8 条");
+          return;
+        }
+        var row = document.createElement("div");
+        row.className = "admin-doing-row";
+        row.innerHTML =
+          '<input class="admin-doing-t" maxlength="24" placeholder="小标题（≤ 24 字）" aria-label="条目小标题">' +
+          '<input class="admin-doing-d" maxlength="120" placeholder="一句描述（≤ 120 字）" aria-label="条目描述">' +
+          '<button type="button" class="admin-doing-x" data-del-doing aria-label="删除这一条" title="删除这一条">×</button>';
+        row.querySelector(".admin-doing-t").value = t || "";
+        row.querySelector(".admin-doing-d").value = d || "";
+        row.querySelector("[data-del-doing]").addEventListener("click", function () { row.remove(); });
+        doingList.appendChild(row);
+      }
+      function renderDoingRows(list) {
+        if (!doingList) return;
+        doingList.innerHTML = "";
+        (list || []).forEach(function (x) { addDoingRow(x.t, x.d); });
+      }
+      function collectDoing() {
+        var out = [], partial = false;
+        if (!doingList) return { list: out, partial: partial };
+        [].forEach.call(doingList.querySelectorAll(".admin-doing-row"), function (row) {
+          var t = row.querySelector(".admin-doing-t").value.trim();
+          var d = row.querySelector(".admin-doing-d").value.trim();
+          if (t && d) out.push({ t: t, d: d });
+          else if (t || d) partial = true;      /* 半空行：提示补全而不是静默丢弃 */
+        });
+        return { list: out, partial: partial };
       }
       if (bioInput) {
         bioInput.addEventListener("input", syncBioCount);
@@ -930,11 +978,19 @@
         if (bio.length > 200) { msg(out, "简介不超过 200 字（当前 " + bio.length + "）。"); bioInput.focus(); return; }
         var tags = tagsInput.value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
         if (tags.length > 6) { msg(out, "个人标签最多 6 个（当前 " + tags.length + "）。"); tagsInput.focus(); return; }
+        var doing = collectDoing();
+        if (doing.partial) { msg(out, "「在做什么」有只填了一半的条目：小标题和描述要成对填写（或整行删掉）。"); return; }
+        if (doing.list.length > 8) { msg(out, "「在做什么」最多 8 条（当前 " + doing.list.length + "）。"); return; }
+        var stack = stackInput.value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
+        if (stack.length > 15) { msg(out, "技术栈最多 15 个（当前 " + stack.length + "）。"); stackInput.focus(); return; }
         store.setAuthorBio(face, bio);
         store.setAuthorTags(face, tags);
+        store.setAuthorDoing(face, doing.list);
+        store.setAuthorStack(face, stack);
+        renderDoingRows(store.authorDoing(face));   /* 回写规范化结果（全空行被丢弃） */
         syncBioCount();
         msg(out, "已保存——打开 " + meta.home + " 或作者页立即可见。");
-        window.uumToast("个人简介与标签已更新");
+        window.uumToast("个人设置已更新");
       }
 
       /* ---------- 构建发布（决策 7.24 demo 模拟：交互与正式版一致，2 秒模拟构建） ---------- */
