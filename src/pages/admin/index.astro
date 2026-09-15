@@ -1,8 +1,9 @@
 ---
 /**
  * 写作台登录门（/admin/，[写作台]）
- * 后端选型 B：作者粘贴各自 fine-grained PAT（Contents: Read and write，仅本仓库）。
- * 身份由 GET /user 判定 → 映射到 uu / mixt；未授权账号拒绝进入。
+ * 后端选型 D：服务器写入 API（docs/09 T5-2 · 决策 7.19）。
+ * 作者粘贴 master 私下发放的写作台 token，登录验证在服务器端完成
+ * （POST /api/verify → {login, face}），与 GitHub 彻底解耦。
  */
 import "../../styles/tokens.css";
 import "../../styles/base.css";
@@ -52,25 +53,22 @@ import "../../styles/admin.css";
         <h1>登录写作台</h1>
         <p class="sub">用你自己的凭据登录，进入后只能管理自己那一面的文章与分类。</p>
 
-        <label for="login-token">GitHub 凭据（Fine-grained PAT）</label>
-        <input id="login-token" type="password" autocomplete="off" placeholder="github_pat_..." data-login-input>
+        <label for="login-token">写作台凭据（master 私下发放的 token）</label>
+        <input id="login-token" type="password" autocomplete="off" placeholder="粘贴 master 发给你的 token" data-login-input>
         <button class="login-btn" type="submit">进入写作台</button>
         <p class="login-error" data-login-error role="alert"></p>
 
         <div class="login-hint">
-          <b>UU（仓库所有者）· 用 Fine-grained token</b><br>
-          Settings → Developer settings → <b>Fine-grained tokens</b> → Generate new token<br>
-          Resource owner = 你自己 · Repository access 只选 <code>uu-mixt</code> ·
-          Permissions → <code>Contents: Read and write</code><br>
+          <b>凭据从哪里来？</b><br>
+          写作台 token 由 master 生成后<b>线下私下发放</b>（不进仓库、不进聊天记录截图）。<br>
+          token 只存在你自己的浏览器；丢失或疑似泄露 → 找 master 吊销重发，即时生效。<br>
           <br>
-          <b>Mixt（仓库协作者）· 只能用 Classic token</b><br>
-          Settings → Developer settings → <b>Tokens (classic)</b> → Generate new token →
-          勾选 <code>repo</code><br>
-          原因：GitHub 官方限制——fine-grained token 不支持"仓库协作者"身份
-          （见 Fine-grained PAT limitations）。代价：classic token 会覆盖你名下所有仓库，
-          请设置过期时间并妥善保管。<br>
+          <b>登录失败分三种，提示会告诉你属于哪种：</b><br>
+          · <b>网络失败</b>——无法连接本站服务，稍后重试；<br>
+          · <b>凭据无效（401）</b>——token 不正确或已被吊销，找 master 核对；<br>
+          · <b>越权（403）</b>——非授权作者或路径越界。<br>
           <br>
-          凭据只存在你自己的浏览器，不进仓库、不进构建产物。<br>
+          凭据不进仓库、不进构建产物；服务端只存 token 的 SHA-256 哈希。<br>
           自测：在地址后加 <code>?mock=1</code> 可用内存假后端走通全流程。
         </div>
       </form>
@@ -90,7 +88,7 @@ import "../../styles/admin.css";
   </div><!-- /.page-card -->
 
   <script is:inline src="/scripts/core.js"></script>
-  <script is:inline src="/scripts/admin/gh.js"></script>
+  <script is:inline src="/scripts/admin/server.js?v=1"></script>
   <script>
     (function () {
       "use strict";

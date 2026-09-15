@@ -1,5 +1,8 @@
 /* ==========================================================================
    UU&Mixt · 写作台后端层（后端选型 B：GitHub Contents API 直提）
+   ⚠️ 已废弃（2026-09-15）：国内网络 api.github.com 不可达导致登录 Failed to fetch，
+      写作台传输层已切换为 server.js（服务器写入 API，docs/09 T5-2 · 决策 7.19）。
+      本文件保留作接口语义参照，不再被任何页面加载；后续批次清理。
    —— 纯前端调用 GitHub REST API，不引入任何服务器端常驻服务（PRD 6.1）。
    身份与权限：
      · 作者各自粘贴自己的 fine-grained PAT（Contents: Read and write，仅本仓库）

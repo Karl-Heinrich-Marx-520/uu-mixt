@@ -107,7 +107,7 @@
   /* ---------- 身份 ---------- */
   function renderIdentity() {
     $("[data-user-name]").textContent = META.name;
-    $("[data-user-role]").textContent = META.role + (GH.isMock() ? "（自测 mock 模式）" : "· 已连接 GitHub");
+    $("[data-user-role]").textContent = META.role + (GH.isMock() ? "（自测 mock 模式）" : "· 已连接本站服务");
     $("[data-user-avatar]").src = META.avatar;
     doc.body.dataset.face = FACE;                 /* 主题色跟随作者 */
     var homeLink = doc.querySelector("[data-face-home]");
