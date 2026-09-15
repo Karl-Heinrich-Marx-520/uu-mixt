@@ -81,6 +81,12 @@
       ],
       mixt: []
     },
+    /* 作者简介：写作台「设置」可改，面页侧栏与作者页动态读取。
+       正式实现里简介落在仓库的作者配置中（构建期渲染进侧栏与作者页）。 */
+    authors: {
+      uu: { bio: "写 C++ 后端与网络编程，做过异步服务器与 Qt 客户端，也在复现 AI 集群的集合通信拥塞控制。落笔偏好可复现的细节与可验证的结论——不写「应该可以」，写「我实测是」。" },
+      mixt: { bio: "主攻 PWN 二进制安全。写漏洞分析、利用技巧与 CTF writeup，关注机制层面「为什么可行」与「什么条件下失效」。所有内容遵守合规措辞规则：自建环境、伪代码与打码、不提供可直接复用的完整利用程序。" }
+    },
     /* 友链 = 站点级共享数据（入口页卡组展示，两位作者均可维护；PRD E8）
        数据形态：名称 / 地址 / 头像（可选，缺省用站名首字）/ 简介 */
     friends: [
@@ -297,6 +303,8 @@
     if (!d) { d = clone(SEED); write(d); return d; }
     /* 旧存档惰性迁移：补 friends 集合（不丢弃用户已有文章/分类，VERSION 不动） */
     if (!d.friends) { d.friends = clone(SEED.friends); write(d); }
+    /* 旧存档惰性迁移：补作者简介（写作台设置面板可改） */
+    if (!d.authors) { d.authors = clone(SEED.authors); write(d); }
     return d;
   }
 
@@ -440,6 +448,19 @@
         (p.tags || []).forEach(function (t) { set[t] = (set[t] || 0) + 1; });
       });
       return Object.keys(set).sort().map(function (t) { return { name: t, count: set[t] }; });
+    },
+
+    /** 作者简介：面页侧栏与作者页展示，写作台「设置」维护 */
+    authorBio: function (face) {
+      var a = db().authors && db().authors[face];
+      return a ? (a.bio || "") : "";
+    },
+    setAuthorBio: function (face, bio) {
+      var d = db();
+      if (!d.authors) d.authors = clone(SEED.authors);
+      if (!d.authors[face]) d.authors[face] = { bio: "" };
+      d.authors[face].bio = String(bio || "").trim();
+      write(d);
     },
 
     reset: function () { write(clone(SEED)); },

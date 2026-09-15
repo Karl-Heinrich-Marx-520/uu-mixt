@@ -246,6 +246,11 @@
       copyText(pre.innerText, "代码已复制");
       return;
     }
+    if (action === "copy-mail") {
+      var mail = el.dataset.mail || "";
+      copyText(mail, el.dataset.okmsg || ("已复制：" + mail));
+      return;
+    }
     if (action === "todo") {
       e.preventDefault();
       toast(el.dataset.msg || "该功能在后续里程碑实现，本 Demo 未包含");
@@ -431,6 +436,15 @@
   [].slice.call(doc.querySelectorAll("[data-stat-posts]")).forEach(function (el) {
     if (store) el.textContent = store.published(el.dataset.statPosts).length;
   });
+
+  /* 作者简介：写作台「设置」改完 → 面页侧栏 / 作者页立即同步。
+     HTML 里的静态文本是 no-JS 兜底；store 有值时以内容层为准。 */
+  if (store && (doc.body.dataset.face === "uu" || doc.body.dataset.face === "mixt")) {
+    [].slice.call(doc.querySelectorAll("[data-bio]")).forEach(function (el) {
+      var bio = store.authorBio(doc.body.dataset.face);
+      if (bio) el.textContent = bio;
+    });
+  }
 
   /* ---------- 首页侧栏：统计 + 网站信息（内容层实时更新） ---------- */
   function countTags(posts) {

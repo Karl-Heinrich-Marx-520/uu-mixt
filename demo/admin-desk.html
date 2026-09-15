@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=16">
+  <link rel="stylesheet" href="assets/demo.css?v=17">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -115,16 +115,23 @@
               <select id="f-cat"></select>
             </div>
             <div class="admin-field">
-              <label for="f-tags">标签（逗号分隔，进入全站共享标签池）</label>
-              <input id="f-tags" type="text" placeholder="boost-beast, http, graceful-shutdown">
+              <label for="f-tags">标签 <em class="admin-ai-badge">AI 托管</em>（留空保存时自动选取，也可手动微调）</label>
+              <input id="f-tags" type="text" placeholder="留空 = AI 读正文自动选取；或手填如 boost-beast, http">
             </div>
             <div class="admin-field">
-              <label for="f-desc">description（列表页与搜索结果使用，必填）</label>
-              <input id="f-desc" type="text" placeholder="一句话摘要，构建期校验必填字段">
+              <label for="f-desc">摘要 description <em class="admin-ai-badge">AI 托管</em>（列表页与搜索结果使用，留空自动生成）</label>
+              <input id="f-desc" type="text" placeholder="留空 = AI 读正文自动生成一句话摘要">
             </div>
             <div class="admin-field">
               <label for="f-body">正文（Markdown）</label>
               <textarea id="f-body" rows="10" placeholder="## 背景&#10;&#10;为什么需要在收到 SIGTERM 时先停 accept……"></textarea>
+            </div>
+            <div class="admin-ai-row">
+              <button type="button" class="admin-btn admin-btn--ghost admin-btn--ai" data-action="ai-assist">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>
+                <span data-ai-label>AI 生成摘要与标签</span>
+              </button>
+              <span class="admin-ai-note">读完正文自动提炼一句话摘要与最多 5 个标签，生成后仍可手动修改。</span>
             </div>
             <div class="admin-checks">
               <label><input type="checkbox" id="f-featured"> 置顶到面首页</label>
@@ -237,6 +244,20 @@
         <!-- 设置面板 -->
         <div class="admin-panel" data-panel-body="settings">
           <p class="admin-hint">Demo 数据保存在浏览器本地（localStorage）。正式实现里文章是仓库中的 Markdown 文件，提交即触发构建。</p>
+
+          <!-- 个人简介：面页侧栏与作者页共用（PRD 4.4 作者身份区） -->
+          <form class="admin-editor" data-bio-editor aria-label="个人简介编辑" novalidate>
+            <h2>个人简介</h2>
+            <p class="admin-hint" style="margin:0 0 14px">展示在自己那一面的侧栏与作者页。保存后打开面页立即可见，不需要重新发布文章。</p>
+            <div class="admin-field">
+              <label for="s-bio">简介文案（<span data-bio-count>0</span> / 200 字）</label>
+              <textarea id="s-bio" rows="4" placeholder="一两句话介绍自己写什么、怎么写。例如：写 C++ 后端与网络编程，落笔偏好可复现的细节与可验证的结论。"></textarea>
+            </div>
+            <div class="admin-editor-actions" style="justify-content:flex-start">
+              <button type="button" class="admin-btn admin-btn--primary" data-action="save-bio">保存简介</button>
+            </div>
+          </form>
+
           <div class="author-links" data-settings-links></div>
           <div class="admin-editor-actions" style="justify-content:flex-start;margin-top:20px">
             <button type="button" class="admin-btn admin-btn--ghost" data-action="export-data">导出本面数据（JSON）</button>
@@ -263,8 +284,8 @@
 
   </div><!-- /.page-card -->
 
-  <script src="assets/demo-store.js?v=9"></script>
-  <script src="assets/demo.js?v=11"></script>
+  <script src="assets/demo-store.js?v=10"></script>
+  <script src="assets/demo.js?v=12"></script>
   <script>
     /* 写作台本体：身份取自登录会话（或 ?face= 便捷入口），无权访问则退回登录页 */
     (function () {
@@ -446,7 +467,10 @@
         var desc = $("#f-desc").value.trim();
         var out = $("[data-post-msg]");
         if (!title) { msg(out, "标题为必填字段。"); $("#f-title").focus(); return; }
-        if (!desc) { msg(out, "description 为必填字段（构建期校验同样会拦）。"); $("#f-desc").focus(); return; }
+        /* 摘要与标签交给 AI：留空则保存前自动补齐（正式版 = 保存前调 uum-server /api/assist），
+           不再限制字数下限（此前「至少 60 字」的校验随 AI 托管一并取消）。 */
+        if (!desc || !$("#f-tags").value.trim()) aiAssist(true);
+        desc = $("#f-desc").value.trim();
         var slug = autoSlug(title, editingId);  /* URL 全自动生成，作者不用管 */
         var data = {
           face: face,
@@ -472,6 +496,76 @@
         resetEditor();
         renderPosts();
         renderCats();
+      }
+
+      /* ---------- AI 助手：摘要与标签（Demo 为本地模拟） ----------
+         正式实现：uum-server 新增 POST /api/assist（鉴权同写接口，token 推导 face），
+         服务端持 LLM Key 转发 DeepSeek，传 {face, title, body} 返回 {desc, tags}；
+         Key 绝不进前端（PRD 铁律 5）。此处用本地规则模拟同等交互形态：
+         读标题 + 正文 → 提炼一句话摘要（取首个实质段落，截 72 字）与关键词标签（≤5 个）。 */
+      var AI_DELAY = 900;
+
+      function aiBusy(on) {
+        var btn = document.querySelector("[data-action='ai-assist']");
+        if (btn) btn.disabled = on;
+        var label = $("[data-ai-label]");
+        if (label) label.textContent = on ? "AI 正在阅读正文…" : "AI 生成摘要与标签";
+      }
+
+      function genDesc(title, body) {
+        var lines = String(body || "").split(/\n+/);
+        for (var i = 0; i < lines.length; i++) {
+          var s = lines[i].trim();
+          if (!s || /^#/.test(s) || /^>/.test(s) || /^[-*|]/.test(s) || /^```/.test(s) || /^!?\[/.test(s)) continue;
+          s = s.replace(/[*`]/g, "");
+          return s.length > 72 ? s.slice(0, 72) + "……" : s;
+        }
+        return "围绕「" + (title || "本文") + "」的实现要点与踩坑记录，含完整过程与验证方式。";
+      }
+
+      function genTags(title, body) {
+        var dict = {
+          "c++": "cpp", "asio": "boost-asio", "beast": "boost-beast", "epoll": "epoll",
+          "tcp": "tcp", "http": "http", "协程": "cpp20-协程", "coroutine": "cpp20-协程",
+          "muduo": "muduo", "lambda": "lambda", "qt": "qt", "qsettings": "qt",
+          "ns-3": "ns-3", "ns3": "ns-3", "hpcc": "hpcc", "拥塞控制": "拥塞控制",
+          "pwn": "pwn", "glibc": "glibc", "堆": "heap",
+          "ctf": "ctf", "docker": "docker", "内核": "linux",
+          "信号": "signal", "优雅退出": "优雅退出", " mercury": "mercury"
+        };
+        var hay = (title + " " + body).toLowerCase();
+        var out = [];
+        Object.keys(dict).forEach(function (k) {
+          if (hay.indexOf(k.toLowerCase()) !== -1 && out.indexOf(dict[k]) === -1) out.push(dict[k]);
+        });
+        return out.slice(0, 5);
+      }
+
+      function applyAi(desc, tags, silent) {
+        /* AI 只接管空字段：作者已写的内容一律不覆盖 */
+        if (!$("#f-desc").value.trim()) $("#f-desc").value = desc;
+        if (!$("#f-tags").value.trim() && tags.length) $("#f-tags").value = tags.join(", ");
+        msg($("[data-post-msg]"), silent
+          ? "摘要或标签留空，已由 AI 自动生成（表单里可再改）。"
+          : "AI 已生成摘要与标签，可修改后保存。");
+      }
+
+      function aiAssist(silent) {
+        var title = $("#f-title").value.trim();
+        var body = $("#f-body").value;
+        if (!title && !body.trim()) {
+          msg($("[data-post-msg]"), "先写标题或正文，AI 才有内容可读。");
+          return;
+        }
+        if (silent) {   /* 保存兜底：同步补齐，不播加载态 */
+          applyAi(genDesc(title, body), genTags(title, body), true);
+          return;
+        }
+        aiBusy(true);
+        setTimeout(function () {
+          aiBusy(false);
+          applyAi(genDesc(title, body), genTags(title, body), false);
+        }, AI_DELAY);
       }
 
       /* ---------- 分类 ---------- */
@@ -629,6 +723,8 @@
         if (el.dataset.action === "new-post") { openEditor(null); return; }
         if (el.dataset.action === "cancel-edit") { resetEditor(); return; }
         if (el.dataset.action === "save-post") { savePost(); return; }
+        if (el.dataset.action === "ai-assist") { aiAssist(false); return; }
+        if (el.dataset.action === "save-bio") { saveBio(); return; }
         if (el.dataset.action === "save-cat") { saveCat(); return; }
         if (el.dataset.action === "cancel-cat") { resetCatForm(); msg($("[data-cat-msg]"), ""); return; }
         if (el.dataset.action === "new-cat") {
@@ -666,6 +762,7 @@
             resetEditor();
             resetCatForm();
             resetFriendForm();
+            refreshBio();
             msg($("[data-settings-msg]"), "已重置为初始数据。");
           }
           return;
@@ -733,6 +830,33 @@
           return;
         }
       });
+
+      /* ---------- 个人简介（面页侧栏 + 作者页共用） ---------- */
+      var bioInput = $("#s-bio");
+      function refreshBio() {
+        if (!bioInput) return;
+        bioInput.value = store.authorBio(face);
+        syncBioCount();
+      }
+      function syncBioCount() {
+        var cnt = $("[data-bio-count]");
+        if (cnt) cnt.textContent = bioInput.value.trim().length;
+      }
+      if (bioInput) {
+        bioInput.addEventListener("input", syncBioCount);
+        refreshBio();
+      }
+      function saveBio() {
+        if (!bioInput) return;
+        var bio = bioInput.value.trim();
+        var out = $("[data-settings-msg]");
+        if (!bio) { msg(out, "简介不能为空——侧栏和作者页都会展示它。"); bioInput.focus(); return; }
+        if (bio.length > 200) { msg(out, "简介不超过 200 字（当前 " + bio.length + "）。"); bioInput.focus(); return; }
+        store.setAuthorBio(face, bio);
+        syncBioCount();
+        msg(out, "已保存——打开 " + meta.home + " 或作者页立即可见。");
+        window.uumToast("个人简介已更新");
+      }
 
       /* ---------- 媒体：图片引用库（localStorage 持久化，列出全部已收录） ----------
          Demo 不做真正的文件上传；这里持久化「文件名 + 仓库引用码 + 缩略图」，
