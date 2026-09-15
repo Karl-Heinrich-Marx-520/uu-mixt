@@ -1,0 +1,27 @@
+{
+  "listen": "127.0.0.1:8787",
+  "repoPath": "/srv/uum/work",
+  "mock": false,
+  "perTokenPerMin": 30,
+  "maxTextKB": 200,
+  "maxImageMB": 2,
+  "git": {
+    "authorName": "UU&Mixt 写作台",
+    "authorEmail": "desk@uuandmixt.com"
+  },
+  "tokens": [
+    { "hash": "用 `uum-server -hash <明文token>` 生成后粘贴（UU）", "label": "UU", "face": "uu" },
+    { "hash": "同上（Mixt）", "label": "Mixt", "face": "mixt" }
+  ],
+  "pet": {
+    "baseUrl": "https://api.deepseek.com",
+    "model": "deepseek-chat",
+    "apiKeyEnv": "UUM_LLM_KEY",
+    "timeoutSec": 30,
+    "maxTokens": 300,
+    "temperature": 0.8,
+    "perIPPerMin": 10,
+    "dailyQuota": 500,
+    "cacheTTLMin": 60
+  }
+}

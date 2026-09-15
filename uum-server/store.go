@@ -1,0 +1,390 @@
+/*
+==========================================================================
+
+	UU&Mixt · uum-server 存储层（docs/09 T5-1）
+	两种实现，同一接口：
+	  · MockStore   —— 内存存储，-mock 自测用（不碰 git，curl 跑通全部接口）
+	  · GitStore    —— 服务器 git 工作副本：写/删即 git commit（审计）+ push 主库
+	共同约束：
+	  · 路径白名单（face 由 token 推导，接口不接受 face 参数）：
+	      src/content/<face>/**          本人面文章
+	      src/config/categories-<face>.json  本人分类配置
+	      src/data/friends.json          站点级友链（决策 7.16，两位作者都可维护）
+	      public/images/<face>/**        本人面图片
+	  · 拒绝 ..、绝对路径、反斜杠、符号链接（含父目录链上的符号链接逃逸）
+	  · sha 乐观锁：git blob SHA-1，409 = 内容已被另一端修改
+	==========================================================================
+*/
+package main
+
+import (
+	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
+)
+
+/* ---------- 错误哨兵：handler 统一映射为中文 + HTTP 状态码 ---------- */
+
+var (
+	errBadPath   = errors.New("路径不合法（400）：请使用相对路径，不含 .. 与反斜杠")
+	errForbidden = errors.New("路径越权（403）：只能操作本人面的文章、分类与图片，以及站点级友链")
+	errNotFound  = errors.New("文件不存在（404）")
+	errConflict  = errors.New("内容已被另一端修改（409）：请刷新页面后重试")
+	errTooLarge  = errors.New("文件超过大小限制（413）")
+)
+
+/* ---------- 路径校验（两种存储共用，保证 mock 与真实行为一致） ---------- */
+
+func validateDir(face, raw string) (string, error)  { return validatePath(face, raw, true) }
+func validateFile(face, raw string) (string, error) { return validatePath(face, raw, false) }
+
+func validatePath(face, raw string, isDir bool) (string, error) {
+	if raw == "" {
+		return "", errBadPath
+	}
+	if strings.Contains(raw, "\\") || strings.HasPrefix(raw, "/") {
+		return "", errBadPath
+	}
+	clean := path.Clean(raw)
+	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
+		return "", errBadPath
+	}
+	if !allowedPath(face, clean, isDir) {
+		return "", errForbidden
+	}
+	return clean, nil
+}
+
+func allowedPath(face, clean string, isDir bool) bool {
+	contentDir := "src/content/" + face
+	imagesDir := "public/images/" + face
+	if isDir { // 列目录允许目录本身（desk.js 调 listDir("src/content/<face>") 不带尾斜杠）
+		return clean == contentDir || strings.HasPrefix(clean, contentDir+"/") ||
+			clean == imagesDir || strings.HasPrefix(clean, imagesDir+"/")
+	}
+	switch {
+	case strings.HasPrefix(clean, contentDir+"/"):
+		return true
+	case clean == "src/config/categories-"+face+".json":
+		return true
+	case clean == "src/data/friends.json": // 站点级共享数据（决策 7.16）
+		return true
+	case strings.HasPrefix(clean, imagesDir+"/"):
+		return true
+	}
+	return false
+}
+
+/* gitBlobHash：与 git blob 一致的 SHA-1（"blob <len>\\0" + 内容），路径无关 */
+func gitBlobHash(b []byte) string {
+	h := sha1.New()
+	fmt.Fprintf(h, "blob %d", len(b))
+	h.Write([]byte{0})
+	h.Write(b)
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+/* ---------- Store 接口 ---------- */
+
+type FileInfo struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+	SHA  string `json:"sha"`
+	Type string `json:"type"` // 恒为 "file"（写作台只消费文件）
+}
+
+type Store interface {
+	List(face, rel string) ([]FileInfo, error)
+	Read(face, rel string) ([]byte, error)
+	// Write 返回 (新 blob sha, 短 commit 号, 告警, 错误)；overwrite=true 且 sha 为空时允许覆盖已存在文件（媒体面板不跟踪图片 sha）
+	Write(face, rel string, data []byte, msg, sha string, overwrite bool) (string, string, string, error)
+	Delete(face, rel string, msg, sha string) (string, string, error)
+}
+
+/* ---------- MockStore：内存实现（-mock 自测） ---------- */
+
+type MockStore struct {
+	mu   sync.Mutex
+	data map[string][]byte
+}
+
+func NewMockStore() *MockStore {
+	seed := "---\ntitle: \"tcache 结构体布局\"\nslug: tcache-layout\ndate: 2026-08-20\nauthor: mixt\ncategory: 堆利用\ntags: [pwn, glibc]\n---\n\n正文……\n"
+	return &MockStore{data: map[string][]byte{
+		"src/content/mixt/tcache-layout.md": []byte(seed),
+	}}
+}
+
+func (m *MockStore) List(face, rel string) ([]FileInfo, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	prefix := rel
+	if !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+	var out []FileInfo
+	for k, v := range m.data {
+		rest := strings.TrimPrefix(k, prefix)
+		if strings.HasPrefix(k, prefix) && !strings.Contains(rest, "/") {
+			out = append(out, FileInfo{Name: rest, Path: k, SHA: gitBlobHash(v), Type: "file"})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out, nil
+}
+
+func (m *MockStore) Read(face, rel string) ([]byte, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, err := validateFile(face, rel); err != nil {
+		return nil, err
+	}
+	b, ok := m.data[rel]
+	if !ok {
+		return nil, errNotFound
+	}
+	return b, nil
+}
+
+func (m *MockStore) Write(face, rel string, data []byte, msg, sha string, overwrite bool) (string, string, string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, err := validateFile(face, rel); err != nil {
+		return "", "", "", err
+	}
+	cur, ok := m.data[rel]
+	if ok {
+		curSha := gitBlobHash(cur)
+		if sha == "" && !overwrite || sha != "" && sha != curSha {
+			return "", "", "", errConflict
+		}
+		if bytes.Equal(cur, data) {
+			return curSha, "mock", "", nil // 内容未变：幂等成功
+		}
+	}
+	m.data[rel] = data
+	return gitBlobHash(data), "mock", "", nil
+}
+
+func (m *MockStore) Delete(face, rel string, msg, sha string) (string, string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, err := validateFile(face, rel); err != nil {
+		return "", "", err
+	}
+	cur, ok := m.data[rel]
+	if !ok {
+		return "", "", errNotFound
+	}
+	if sha == "" || sha != gitBlobHash(cur) {
+		return "", "", errConflict
+	}
+	delete(m.data, rel)
+	return "mock", "", nil
+}
+
+/* ---------- GitStore：服务器 git 工作副本 ---------- */
+
+type GitStore struct {
+	mu          sync.Mutex
+	repoPath    string
+	authorName  string
+	authorEmail string
+}
+
+func NewGitStore(repoPath, authorName, authorEmail string) (*GitStore, error) {
+	abs, err := filepath.Abs(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Stat(filepath.Join(abs, ".git")); err != nil {
+		return nil, fmt.Errorf("repoPath 不是 git 工作副本（缺 .git）：%s", abs)
+	}
+	return &GitStore{repoPath: abs, authorName: authorName, authorEmail: authorEmail}, nil
+}
+
+/* abs 把仓库内相对路径转绝对路径，并做符号链接逃逸检查（白名单之外的二道防线） */
+func (g *GitStore) abs(rel string) (string, error) {
+	full := filepath.Join(g.repoPath, filepath.FromSlash(rel))
+	if !strings.HasPrefix(full, g.repoPath+string(os.PathSeparator)) {
+		return "", errBadPath
+	}
+	// 从目标向上找第一个存在的祖先，解析符号链接后必须仍在仓库根内
+	existing := full
+	for {
+		if _, err := os.Lstat(existing); os.IsNotExist(err) {
+			parent := filepath.Dir(existing)
+			if parent == existing {
+				break
+			}
+			existing = parent
+			continue
+		}
+		break
+	}
+	resolvedRepo, err := filepath.EvalSymlinks(g.repoPath)
+	if err != nil {
+		return "", err
+	}
+	resolved, err := filepath.EvalSymlinks(existing)
+	if err != nil {
+		return "", err
+	}
+	if resolved != resolvedRepo && !strings.HasPrefix(resolved, resolvedRepo+string(os.PathSeparator)) {
+		return "", errForbidden
+	}
+	if fi, err := os.Lstat(full); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		return "", errForbidden // 目标本身是符号链接：拒绝
+	}
+	return full, nil
+}
+
+func (g *GitStore) List(face, rel string) ([]FileInfo, error) {
+	full, err := g.abs(rel)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(full)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, errNotFound
+		}
+		return nil, err
+	}
+	var out []FileInfo
+	for _, e := range entries {
+		if e.IsDir() || e.Type()&os.ModeSymlink != 0 {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join(full, e.Name()))
+		if err != nil {
+			continue
+		}
+		out = append(out, FileInfo{Name: e.Name(), Path: rel + "/" + e.Name(), SHA: gitBlobHash(b), Type: "file"})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out, nil
+}
+
+func (g *GitStore) Read(face, rel string) ([]byte, error) {
+	full, err := g.abs(rel)
+	if err != nil {
+		return nil, err
+	}
+	b, err := os.ReadFile(full)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, errNotFound
+		}
+		return nil, err
+	}
+	return b, nil
+}
+
+func (g *GitStore) Write(face, rel string, data []byte, msg, sha string, overwrite bool) (string, string, string, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	full, err := g.abs(rel)
+	if err != nil {
+		return "", "", "", err
+	}
+	cur, curErr := os.ReadFile(full)
+	if curErr == nil {
+		curSha := gitBlobHash(cur)
+		if (sha == "" && !overwrite) || (sha != "" && sha != curSha) {
+			return "", "", "", errConflict
+		}
+		if bytes.Equal(cur, data) {
+			return curSha, "", "", nil // 内容未变：幂等成功，不产生空提交
+		}
+	} else if !os.IsNotExist(curErr) {
+		return "", "", "", curErr
+	}
+	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+		return "", "", "", err
+	}
+	if err := os.WriteFile(full, data, 0o644); err != nil {
+		return "", "", "", err
+	}
+	commit, warning, err := g.commit(rel, msg, face)
+	return gitBlobHash(data), commit, warning, err
+}
+
+func (g *GitStore) Delete(face, rel string, msg, sha string) (string, string, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	full, err := g.abs(rel)
+	if err != nil {
+		return "", "", err
+	}
+	cur, err := os.ReadFile(full)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", "", errNotFound
+		}
+		return "", "", err
+	}
+	if sha == "" || sha != gitBlobHash(cur) {
+		return "", "", errConflict
+	}
+	if err := os.Remove(full); err != nil {
+		return "", "", err
+	}
+	return g.commit(rel, msg, face)
+}
+
+/*
+commit 提交单路径变更并推送到主库（origin = /srv/uum/repo.git）。
+
+	推送失败不阻塞作者（内容已落工作副本），以 warning 字段返回，日志可见。
+*/
+func (g *GitStore) commit(rel, msg, face string) (string, string, error) {
+	msg = strings.TrimSpace(strings.ReplaceAll(msg, "\r", ""))
+	if msg == "" {
+		msg = "content: 写作台更新"
+	}
+	if runes := []rune(msg); len(runes) > 300 {
+		msg = string(runes[:300])
+	}
+	full := msg + "\n\nVia: 写作台\nAuthor-Face: " + face
+
+	if _, err := g.git("add", "--", rel); err != nil {
+		return "", "", fmt.Errorf("git add 失败：%w", err)
+	}
+	out, err := g.git("commit", "-m", full)
+	if err != nil {
+		if strings.Contains(out, "nothing to commit") {
+			return "", "", nil // 竞态下内容与 HEAD 一致：视为成功
+		}
+		return "", "", fmt.Errorf("git commit 失败：%s", strings.TrimSpace(out))
+	}
+	rev, err := g.git("rev-parse", "--short", "HEAD")
+	if err != nil {
+		return "", "", nil
+	}
+	commit := strings.TrimSpace(rev)
+	if _, err := g.git("push", "origin", "HEAD:main"); err != nil {
+		return commit, "已提交到工作副本，但推送主库失败：" + strings.TrimSpace(err.Error()), nil
+	}
+	return commit, "", nil
+}
+
+func (g *GitStore) git(args ...string) (string, error) {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = g.repoPath
+	cmd.Env = append(os.Environ(),
+		"GIT_AUTHOR_NAME="+g.authorName, "GIT_AUTHOR_EMAIL="+g.authorEmail,
+		"GIT_COMMITTER_NAME="+g.authorName, "GIT_COMMITTER_EMAIL="+g.authorEmail,
+	)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
