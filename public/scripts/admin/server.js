@@ -102,6 +102,153 @@
     localStorage.setItem(MOCK_KEY, JSON.stringify(store));
   }
 
+  /* ---------- mock：AI 摘要助手 + 标签池（语义与 Go 服务端一一对应） ---------- */
+  var TAG_POOL_FILE = "src/config/tag-pool.json";
+
+  function mockScanTags(store) {
+    var out = {};
+    Object.keys(store).forEach(function (k) {
+      if (/^src\/content\/.+\.md$/.test(k)) {
+        var m = /^tags:[ \t]*\[([^\]]*)\][ \t]*$/m.exec(store[k]);
+        if (m) {
+          out[k] = m[1].split(",").map(function (t) {
+            return t.trim().replace(/^["']|["']$/g, "");
+          }).filter(Boolean);
+        }
+      }
+    });
+    return out;
+  }
+  function mockReadPool(store) {
+    if (!store[TAG_POOL_FILE]) return [];
+    try {
+      var p = JSON.parse(store[TAG_POOL_FILE]);
+      return Array.isArray(p) ? p : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function mockWritePool(store, pool) {
+    store[TAG_POOL_FILE] = JSON.stringify(pool, null, 2) + "\n";
+  }
+
+  /* mockAssist：demo genDesc/genTags 的移植，仅自测用（真实模式由服务端转发上游） */
+  function mockAssist(title, body) {
+    var desc = "";
+    var lines = String(body || "").split("\n");
+    for (var i = 0; i < lines.length; i++) {
+      var t = lines[i].trim();
+      if (!t) continue;
+      if (/^(#|>|!|\||```|---|tags:)/.test(t)) continue;
+      t = t.replace(/^[*`]+|[*`]+$/g, "").trim();
+      if (!t) continue;
+      desc = t;
+      break;
+    }
+    if (!desc) desc = "关于「" + title + "」的内容摘要（mock 自测生成）。";
+    if (desc.length > 72) desc = desc.slice(0, 72) + "……";
+    var dict = [
+      ["c++", "cpp"], ["asio", "asio"], ["beast", "beast"], ["epoll", "epoll"],
+      ["tcp", "tcp"], ["http", "http"], ["协程", "协程"], ["coroutine", "coroutine"],
+      ["muduo", "muduo"], ["qt", "qt"], ["ns-3", "ns-3"], ["hpcc", "hpcc"],
+      ["拥塞", "拥塞控制"], ["pwn", "pwn"], ["glibc", "glibc"], ["堆", "堆利用"],
+      ["ctf", "ctf"], ["docker", "docker"], ["内核", "内核"], ["mercury", "mercury"],
+    ];
+    var low = String(body || "") + " " + title;
+    low = low.toLowerCase();
+    var tags = [];
+    for (var j = 0; j < dict.length && tags.length < 5; j++) {
+      if (low.indexOf(dict[j][0]) !== -1) tags.push(dict[j][1]);
+    }
+    if (!tags.length) tags = ["笔记"];
+    return { description: desc, tags: tags, via: "mock" };
+  }
+
+  /* mockTagChange：computeTagChange 的 JS 移植（add / rename 级联 / remove 级联） */
+  function mockTagChange(op) {
+    var store = mockStore();
+    var pool = mockReadPool(store);
+    var postTags = mockScanTags(store);
+    var changed = {};
+    var res = { posts: 0, merged: false, exists: false, pool: pool.slice(), commit: "mock" };
+
+    if (op.add) {
+      if (pool.indexOf(op.add) !== -1) {
+        res.exists = true;
+      } else {
+        res.pool.push(op.add);
+        mockWritePool(store, res.pool);
+        mockWrite(store);
+      }
+      return res;
+    }
+
+    if (op.from) {
+      var to = op.to;
+      var toExists = pool.indexOf(to) !== -1;
+      Object.keys(postTags).forEach(function (k) {
+        if (!toExists && postTags[k].indexOf(to) !== -1) toExists = true;
+      });
+      Object.keys(postTags).forEach(function (k) {
+        var tags = postTags[k];
+        if (tags.indexOf(op.from) === -1) return;
+        var next = [];
+        tags.forEach(function (t) {
+          if (t === op.from) {
+            if (tags.indexOf(to) !== -1) return; /* 同篇双标签：旧名并入新名，只移除旧名 */
+            next.push(to);
+            return;
+          }
+          next.push(t);
+        });
+        changed[k] = next;
+      });
+      res.posts = Object.keys(changed).length;
+      res.merged = toExists;
+      res.pool = pool.filter(function (t) { return t !== op.from; });
+      if (!toExists && res.posts === 0 && res.pool.indexOf(to) === -1) res.pool.push(to); /* 纯池改名 */
+    }
+
+    if (op.remove) {
+      res.pool = pool.filter(function (t) { return t !== op.remove; });
+      Object.keys(postTags).forEach(function (k) {
+        var tags = postTags[k];
+        if (tags.indexOf(op.remove) === -1) return;
+        changed[k] = tags.filter(function (t) { return t !== op.remove; });
+      });
+      res.posts = Object.keys(changed).length;
+    }
+
+    Object.keys(changed).forEach(function (k) {
+      store[k] = store[k].replace(
+        /^tags:[ \t]*\[[^\]]*\][ \t]*$/m,
+        "tags: [" + changed[k].join(", ") + "]"
+      );
+    });
+    if (JSON.stringify(pool) !== JSON.stringify(res.pool)) mockWritePool(store, res.pool);
+    mockWrite(store);
+    return res;
+  }
+
+  function mockGetTags() {
+    var store = mockStore();
+    var counts = {};
+    var postTags = mockScanTags(store);
+    Object.keys(postTags).forEach(function (k) {
+      postTags[k].forEach(function (t) { counts[t] = (counts[t] || 0) + 1; });
+    });
+    var names = Object.keys(counts);
+    mockReadPool(store).forEach(function (t) {
+      if (!(t in counts)) names.push(t);
+    });
+    var tags = names.map(function (n) { return { name: n, count: counts[n] || 0 }; });
+    tags.sort(function (a, b) {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+    });
+    return { tags: tags, pool: mockReadPool(store) };
+  }
+
   /* ---------- 错误分类（docs/09：网络失败 / 凭据无效 / 越权，各给中文指引） ---------- */
   function networkError() {
     return new Error(
@@ -258,6 +405,53 @@
       fd.append("message", message || "");
       fd.append("file", new Blob([base64ToBytes(base64)]), path.split("/").pop());
       return request("/api/write", { method: "POST", body: fd });
+    },
+
+    /** AI 生成摘要与标签（POST /api/assist，决策 7.20）：
+        服务端持上游 Key 转发，Key 不进前端；返回 {description, tags}。 */
+    async assist(title, body) {
+      if (mock) return mockAssist(title, body);
+      return request("/api/assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title, body: body }),
+      });
+    },
+
+    /** 标签池（站点级共享，决策 7.23）：GET /api/tags → {tags:[{name,count}], pool:[…]} */
+    async getTags() {
+      if (mock) return mockGetTags();
+      return request("/api/tags");
+    },
+
+    /** 池新增：返回 {posts, merged, exists, pool, commit}（重复幂等 exists=true） */
+    async addTag(tag) {
+      if (mock) return mockTagChange({ add: tag });
+      return request("/api/tags/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tag: tag }),
+      });
+    },
+
+    /** 改名级联全站文章（单次提交，服务端记发起者审计） */
+    async renameTag(from, to) {
+      if (mock) return mockTagChange({ from: from, to: to });
+      return request("/api/tags/rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ from: from, to: to }),
+      });
+    },
+
+    /** 删除级联全站文章 + 池（标签不存在时幂等 posts=0） */
+    async removeTag(tag) {
+      if (mock) return mockTagChange({ remove: tag });
+      return request("/api/tags/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tag: tag }),
+      });
     },
   };
 

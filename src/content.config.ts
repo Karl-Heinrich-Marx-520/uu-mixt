@@ -13,7 +13,8 @@ import { glob } from 'astro/loaders';
 const postSchema = z.object({
   title: z.string().min(1, '标题不能为空').max(60, '标题不能超过 60 字符'),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'slug 必须是纯 kebab-case（小写字母/数字/连字符）'),
-  description: z.string().min(60, 'description 不能少于 60 字符').max(120, 'description 不能超过 120 字符'),
+  // description：下限 1（决策 7.20 取消 60 字下限——AI 托管后由提示词约束 60-120，不再构建期强卡）
+  description: z.string().min(1, 'description 不能为空').max(120, 'description 不能超过 120 字符'),
   date: z.coerce.date(),
   updated: z.coerce.date().optional(),
   author: z.enum(['uu', 'mixt']),
