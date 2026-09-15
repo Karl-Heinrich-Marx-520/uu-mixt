@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=18">
+  <link rel="stylesheet" href="assets/demo.css?v=19">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -298,6 +298,20 @@
             <button type="button" class="admin-btn admin-btn--ghost" data-action="reset-data">重置为初始数据</button>
           </div>
           <p class="admin-toastline" data-settings-msg aria-live="polite"></p>
+        </div>
+
+        <!-- 构建发布（正式版=服务器端手动触发构建，demo 模拟交互，决策 7.24） -->
+        <div class="admin-panel" data-panel-body="rebuild">
+          <h2>构建发布</h2>
+          <p class="admin-hint" style="margin:0 0 14px">
+            把写作台里的最新内容（文章、分类、标签、简介）重新生成为前台页面。
+            正式环境构建约需 1-2 分钟，完成后前台立即生效；<strong>构建失败会保留现有页面</strong>，不会开天窗。
+          </p>
+          <div class="admin-editor-actions" style="justify-content:flex-start">
+            <button type="button" class="admin-btn admin-btn--primary" data-action="site-rebuild">重新构建并发布</button>
+          </div>
+          <p class="admin-toastline" data-rebuild-msg aria-live="polite"></p>
+          <pre class="admin-rebuild-log" data-rebuild-log hidden></pre>
         </div>
       </section>
     </div>
@@ -759,6 +773,7 @@
         if (el.dataset.action === "save-post") { savePost(); return; }
         if (el.dataset.action === "ai-assist") { aiAssist(false); return; }
         if (el.dataset.action === "save-bio") { saveBio(); return; }
+        if (el.dataset.action === "site-rebuild") { siteRebuild(); return; }
         if (el.dataset.action === "add-tag") { addPoolTag(); return; }
         if (el.dataset.renameTag) {
           var oldName = el.dataset.renameTag;
@@ -920,6 +935,32 @@
         syncBioCount();
         msg(out, "已保存——打开 " + meta.home + " 或作者页立即可见。");
         window.uumToast("个人简介与标签已更新");
+      }
+
+      /* ---------- 构建发布（决策 7.24 demo 模拟：交互与正式版一致，2 秒模拟构建） ---------- */
+      var rebuildBusy = false;
+      function siteRebuild() {
+        if (rebuildBusy) return;
+        if (!window.confirm("重新构建并发布前台页面？\n约需 1-2 分钟，期间可以继续写作。")) return;
+        var btn = $("[data-action='site-rebuild']");
+        var out = $("[data-rebuild-msg]");
+        var logEl = $("[data-rebuild-log]");
+        rebuildBusy = true;
+        btn.disabled = true;
+        msg(out, "已发起构建请求…");
+        var t0 = Date.now();
+        setTimeout(function () {
+          var secs = Math.max(1, Math.round((Date.now() - t0) / 1000));
+          rebuildBusy = false;
+          btn.disabled = false;
+          msg(out, "构建完成（" + secs + " 秒）：前台已更新。");
+          logEl.textContent =
+            "[demo] npm run build\n" +
+            "[demo] check-pages: 全站页面 0 问题\n" +
+            "[demo] rebuild OK -> /srv/uum/dist";
+          logEl.hidden = false;
+          window.uumToast("构建发布完成，前台已更新");
+        }, 2000);
       }
 
       /* ---------- 标签池（全站共享；重命名/删除同步全部文章） ---------- */
