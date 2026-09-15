@@ -5,6 +5,7 @@
  */
 import Layout from "../../components/Layout.astro";
 import { categories, categoryCount, published } from "../../lib/content-layer";
+import author from "../../config/author-uu.json";
 
 const face = "uu" as const;
 const cats = categories(face);
@@ -37,8 +38,8 @@ const stack = ["C++17/20", "Boost.Asio", "Boost.Beast", "muduo", "Qt", "CMake", 
     <img src="/assets/avatars/uu.jpg" alt="UU 的头像">
     <div>
       <h1>UU</h1>
-      <p class="author-dir">C++ 后端 · 网络编程 · 科研复现</p>
-      <p class="author-bio">写 C++ 后端与网络编程，做过异步服务器与 Qt 客户端，也在复现 AI 集群的集合通信拥塞控制。落笔偏好可复现的细节与可验证的结论——不写「应该可以」，写「我实测是」。</p>
+      <p class="author-dir">{author.tags.join(" · ")}</p>
+      <p class="author-bio">{author.bio}</p>
     </div>
   </section>
 
