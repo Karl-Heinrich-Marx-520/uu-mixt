@@ -27,10 +27,11 @@ touch "$PENDING" 2>>"$LOG" || { log "FATAL: 无法写 pending 标志 $PENDING"; 
 exec 9>"$LOCK" 2>>"$LOG" || { log "FATAL: 无法打开锁文件 $LOCK"; exit 1; }
 flock -n 9 || exit 0   # 已有实例在跑；它收尾时会看见 pending 自动补一轮
 
+FAIL=0
 while :; do
   rm -f "$PENDING"
   log "---- rebuild start ----"
-  cd "$WORK" || { log "FATAL: work 目录不可达"; break; }
+  cd "$WORK" || { log "FATAL: work 目录不可达"; FAIL=1; break; }
 
   export ASTRO_TELEMETRY_DISABLED=1
   export NODE_OPTIONS="--max-old-space-size=1536"
@@ -38,7 +39,7 @@ while :; do
   if [ ! -d node_modules ]; then
     log "npm install（首次）..."
     npm install --no-audit --no-fund --registry=https://registry.npmmirror.com >>"$LOG" 2>&1 \
-      || { log "npm install FAILED"; break; }
+      || { log "npm install FAILED"; FAIL=1; break; }
   fi
 
   rm -rf dist
@@ -47,14 +48,20 @@ while :; do
   rm -rf node_modules/.astro
   if npm run build >>"$LOG" 2>&1 && [ -d dist ]; then
     if node scripts/check-pages.mjs >>"$LOG" 2>&1; then
-      rsync -a --delete dist/ "$DIST/" && log "rebuild OK -> $DIST"
+      if rsync -a --delete dist/ "$DIST/"; then
+        log "rebuild OK -> $DIST"
+      else
+        log "rsync FAILED —— 保留旧 dist"; FAIL=1
+      fi
     else
-      log "check-pages FAILED —— 保留旧 dist"
+      log "check-pages FAILED —— 保留旧 dist"; FAIL=1
     fi
   else
-    log "astro build FAILED —— 保留旧 dist"
+    log "astro build FAILED —— 保留旧 dist"; FAIL=1
   fi
 
   [ -f "$PENDING" ] || break
   log "构建期间有新变更（pending），继续下一轮"
 done
+# 失败必须可见：非零退出码经 /api/rebuild 传给写作台展示（exitCode != 0）
+exit "$FAIL"
