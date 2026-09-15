@@ -16,11 +16,13 @@ Restart=on-failure
 RestartSec=3
 MemoryMax=120M
 
-# 加固：只写工作副本与主库，其余只读
+# 加固：/srv/uum 整树可写（工作副本、主库、dist、锁/日志），其余只读
+# （决策 7.24 实测：只放行 work+repo.git 时，uum-rebuild.sh 写锁/日志/dist 全被
+#  ProtectSystem=strict 拒绝，脚本毫秒级退出——写作台按钮永远失败）
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/srv/uum/work /srv/uum/repo.git
+ReadWritePaths=/srv/uum
 PrivateTmp=true
 
 [Install]
