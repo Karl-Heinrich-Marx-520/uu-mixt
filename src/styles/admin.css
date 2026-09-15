@@ -445,3 +445,18 @@ html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-s);
 }
+
+/* 构建发布 · 日志预览（决策 7.24：手动触发服务器端重新构建） */
+.admin-rebuild-log {
+  max-height: 260px;
+  overflow: auto;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: var(--text-2);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-s);
+  white-space: pre-wrap;
+  word-break: break-all;
+}

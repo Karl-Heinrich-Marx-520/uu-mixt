@@ -453,6 +453,19 @@
         body: JSON.stringify({ tag: tag }),
       });
     },
+
+    /** 手动触发服务器端重新构建（POST /api/rebuild，决策 7.24）：
+        异步启动（flock 单实例 + running 防重复），立即返回 {status,message}。 */
+    async rebuildStart() {
+      if (mock) return mockRebuildStart();
+      return request("/api/rebuild", { method: "POST" });
+    },
+
+    /** 构建状态：{running, exitCode(-1=没跑过), elapsedSec, tail=日志尾部} */
+    async rebuildStatus() {
+      if (mock) return mockRebuildStatus();
+      return request("/api/rebuild");
+    },
   };
 
   /* 全局名沿用 UUMGH：desk.js 与登录页一行不改（仅换本适配器文件） */

@@ -667,6 +667,7 @@
     }
     if (el.dataset.action === "ai-assist") { aiAssist(); return; }
     if (el.dataset.action === "save-bio") { saveBio(); return; }
+    if (el.dataset.action === "site-rebuild") { siteRebuild(); return; }
     if (el.dataset.action === "add-tag") { addPoolTag(); return; }
     if (el.dataset.renameTag) { renamePoolTag(el.dataset.renameTag); return; }
     if (el.dataset.delTag) { removePoolTag(el.dataset.delTag); return; }
