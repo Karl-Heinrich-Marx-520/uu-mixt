@@ -22,7 +22,15 @@ Thumbs.db
 # 项目长期知识已沉淀在 docs/ 与 AGENTS.md，此处为会话过程数据，不纳入版本管理
 .workbuddy/
 
-# ── 桌宠 LLM 转发服务（pet-server）──
-pet-server/config.json
-pet-server/uum-pet
-pet-server/uum-pet.exe
+
+# ── 统一小服务 uum-server（写作台写入 API + 桌宠 LLM 转发）──
+uum-server/config.json
+uum-server/config.dev.json
+uum-server/config.gittest.json
+uum-server/uum-server
+uum-server/uum-server.exe
+uum-server/uum-server-linux-amd64
+
+# ── git 灾难事故现场（留查，勿删勿提交）──
+.git.empty-init-20260915/
+.git.broken-20260915/
