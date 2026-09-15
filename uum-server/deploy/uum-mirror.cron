@@ -1,0 +1,6 @@
+# UU&Mixt 每日镜像：主库 → GitHub（docs/09 T5-3 · 决策 7.19 修订：每天 1 次，凌晨 4 点）
+# 安装：sudo cp deploy/uum-mirror.cron /etc/cron.d/uum-mirror && sudo chmod 644 /etc/cron.d/uum-mirror
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+0 4 * * * root /srv/uum/bin/uum-mirror.sh
