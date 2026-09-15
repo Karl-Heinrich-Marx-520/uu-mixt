@@ -35,8 +35,10 @@ while :; do
 
   # 同步主库：写作台提交与外部 push（如 UU 本地推 server）都先落在 bare 主库，
   # 工作副本不自动跟进——构建前必须对齐 origin/main，否则永远构建旧内容
-  # （2026-09-15 验收实测：work 滞后导致前台拿不到新前端与新提交）
-  if git fetch origin "+refs/heads/main:refs/heads/main" >>"$LOG" 2>&1 \
+  # （2026-09-15 验收实测：work 滞后导致前台拿不到新前端与新提交。
+  #   注意不能 fetch 进当前检出的 refs/heads/main——git 会拒绝；
+  #   用默认 refspec 更新远程跟踪 origin/main 后再 reset）
+  if git fetch origin >>"$LOG" 2>&1 \
      && git reset --hard origin/main >>"$LOG" 2>&1; then
     log "work 已对齐主库 $(git rev-parse --short HEAD)"
   else
