@@ -241,18 +241,28 @@ func (s *server) handlePetChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) petUpstream(msgs []petMessage) (string, error) {
-	key := os.Getenv(s.cfg.Pet.APIKeyEnv)
-	if key == "" && !strings.Contains(s.cfg.Pet.BaseURL, "localhost") && !strings.Contains(s.cfg.Pet.BaseURL, "127.0.0.1") {
-		return "", errors.New("missing API key: set $" + s.cfg.Pet.APIKeyEnv)
+	return llmUpstream(s.petClient, s.cfg.Pet.BaseURL, s.cfg.Pet.Model,
+		s.cfg.Pet.APIKeyEnv, msgs, s.cfg.Pet.MaxTokens, s.cfg.Pet.Temperature)
+}
+
+/*
+llmUpstream 通用 OpenAI 兼容转发（桌宠 /api/pet/chat 与写作台 /api/assist 共用）。
+
+	Key 在服务端 env，绝不进前端；调用方各自持有 http.Client（显式直连不吃环境代理）。
+*/
+func llmUpstream(client *http.Client, baseURL, model, apiKeyEnv string, msgs []petMessage, maxTokens int, temperature float64) (string, error) {
+	key := os.Getenv(apiKeyEnv)
+	if key == "" && !strings.Contains(baseURL, "localhost") && !strings.Contains(baseURL, "127.0.0.1") {
+		return "", errors.New("missing API key: set $" + apiKeyEnv)
 	}
 	payload, _ := json.Marshal(map[string]any{
-		"model":       s.cfg.Pet.Model,
+		"model":       model,
 		"messages":    msgs,
-		"max_tokens":  s.cfg.Pet.MaxTokens,
-		"temperature": s.cfg.Pet.Temperature,
+		"max_tokens":  maxTokens,
+		"temperature": temperature,
 		"stream":      false,
 	})
-	url := strings.TrimRight(s.cfg.Pet.BaseURL, "/") + "/chat/completions"
+	url := strings.TrimRight(baseURL, "/") + "/chat/completions"
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
 		return "", err
@@ -261,7 +271,7 @@ func (s *server) petUpstream(msgs []petMessage) (string, error) {
 	if key != "" {
 		req.Header.Set("Authorization", "Bearer "+key)
 	}
-	resp, err := s.petClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}

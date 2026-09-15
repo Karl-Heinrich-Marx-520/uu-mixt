@@ -11,7 +11,12 @@
 	  · face 由 token 推导，接口不接受 face 参数——越面写入做不到
 	  · 服务端只存 token 的 SHA-256 哈希；吊销 = 配置里删一条记录
 	  · 每次写入/删除即 git commit（作者与时间天然入审计）并推送到服务器主库
-	职责二：桌宠 LLM 转发（决策 7.18，同进程，见 petchat.go）
+	职责二：写作台 AI 摘要助手（决策 7.20 正式版接线，见 assist.go）
+	  · POST /api/assist  {title, body} → {description, tags}（服务端持 Key 转发上游）
+	职责三：标签池（决策 7.23 全站共享，见 tagpool.go）
+	  · GET  /api/tags           汇总（文章标签计数 + 池）
+	  · POST /api/tags/add|rename|remove  池维护；rename/remove 级联全站文章，单次提交
+	职责四：桌宠 LLM 转发（决策 7.18，同进程，见 petchat.go）
 	形态：Go 标准库零依赖单二进制；内存 < 50MB；只监听 127.0.0.1（公网仅 Nginx 反代）；
 	配置 /etc/uum/config.json（token hash 表、仓库路径、上游 LLM 三元组）。
 	本地自测：-mock 开关切内存存储（不碰 git），curl 跑通全部接口（见 README.md）。
@@ -52,15 +57,16 @@ type GitConfig struct {
 }
 
 type Config struct {
-	Listen         string    `json:"listen"`
-	RepoPath       string    `json:"repoPath"` // git 工作副本（主库为 /srv/uum/repo.git bare）
-	Mock           bool      `json:"mock"`     // true = 内存存储自测，不碰 git
-	Tokens         []Author  `json:"tokens"`
-	PerTokenPerMin int       `json:"perTokenPerMin"` // 每 token 写操作/登录尝试限频
-	MaxTextKB      int       `json:"maxTextKB"`      // Markdown/JSON 单文件上限
-	MaxImageMB     int       `json:"maxImageMB"`     // 图片上限
-	Git            GitConfig `json:"git"`
-	Pet            PetConfig `json:"pet"`
+	Listen         string       `json:"listen"`
+	RepoPath       string       `json:"repoPath"` // git 工作副本（主库为 /srv/uum/repo.git bare）
+	Mock           bool         `json:"mock"`     // true = 内存存储自测，不碰 git
+	Tokens         []Author     `json:"tokens"`
+	PerTokenPerMin int          `json:"perTokenPerMin"` // 每 token 写操作/登录尝试限频
+	MaxTextKB      int          `json:"maxTextKB"`      // Markdown/JSON 单文件上限
+	MaxImageMB     int          `json:"maxImageMB"`     // 图片上限
+	Git            GitConfig    `json:"git"`
+	Pet            PetConfig    `json:"pet"`
+	Assist         AssistConfig `json:"assist"` // 写作台 AI 摘要助手（决策 7.20）
 }
 
 func loadConfig(p string) (*Config, error) {
@@ -84,6 +90,16 @@ func loadConfig(p string) (*Config, error) {
 			PerIPPerMin: 10,
 			DailyQuota:  500,
 			CacheTTLMin: 60,
+		},
+		Assist: AssistConfig{
+			BaseURL:        "https://api.deepseek.com",
+			Model:          "deepseek-chat",
+			APIKeyEnv:      "UUM_LLM_KEY",
+			TimeoutSec:     60,
+			MaxTokens:      500,
+			Temperature:    0.4,
+			PerTokenPerMin: 6, // 比写接口更严（决策 7.23 正式版接线）
+			MaxBodyRunes:   6000,
 		},
 	}
 	if err := json.Unmarshal(raw, cfg); err != nil {
@@ -135,6 +151,8 @@ type server struct {
 	petQuota  *quotaCounter // 桌宠：全局日配额
 	petCache  *answerCache  // 桌宠：同题缓存
 	petClient *http.Client  // 桌宠：上游 HTTP（显式直连，不吃环境代理）
+
+	assistClient *http.Client // 写作台 AI 摘要：上游 HTTP（同 petClient 纪律，超时更长）
 }
 
 /* 鉴权：Authorization: Bearer <token> → sha256 → 查表（恒定时间比较） */
@@ -482,6 +500,10 @@ func main() {
 			Timeout:   time.Duration(cfg.Pet.TimeoutSec) * time.Second,
 			Transport: &http.Transport{Proxy: nil},
 		},
+		assistClient: &http.Client{
+			Timeout:   time.Duration(cfg.Assist.TimeoutSec) * time.Second,
+			Transport: &http.Transport{Proxy: nil},
+		},
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/verify", s.handleVerify)
@@ -489,6 +511,11 @@ func main() {
 	mux.HandleFunc("/api/read", s.handleRead)
 	mux.HandleFunc("/api/write", s.handleWrite)
 	mux.HandleFunc("/api/file", s.handleDelete)
+	mux.HandleFunc("/api/assist", s.handleAssist)
+	mux.HandleFunc("/api/tags", s.handleTags)
+	mux.HandleFunc("/api/tags/add", s.handleTagsAdd)
+	mux.HandleFunc("/api/tags/rename", s.handleTagsRename)
+	mux.HandleFunc("/api/tags/remove", s.handleTagsRemove)
 	mux.HandleFunc("/api/pet/chat", s.handlePetChat)
 	mux.HandleFunc("/api/chat", s.handlePetChat) // 兼容别名：pet.js 切到 /api/pet/chat 后移除
 	mux.HandleFunc("/healthz", s.handleHealth)

@@ -2,8 +2,8 @@
 
 > | 项 | 值 |
 > |---|---|
-> | 服务 | 写作台写入 API（verify/list/read/write/delete）+ 桌宠 LLM 转发（/api/pet/chat），同进程 |
-> | 依据 | docs/09（T5-1/T5-3 · 决策 7.19）/ 决策 7.18 / docs/06 §4 |
+> | 服务 | 写作台写入 API（verify/list/read/write/delete）+ AI 摘要助手（/api/assist）+ 标签池（/api/tags、/api/tags/add\|rename\|remove）+ 桌宠 LLM 转发（/api/pet/chat），同进程 |
+> | 依据 | docs/09（T5-1/T5-3 · 决策 7.19；§8.2 正式版接线 · 决策 7.20-7.23）/ 决策 7.18 / docs/06 §4 |
 > | 形态 | Go 标准库零依赖单二进制，内存 < 50MB，只监听 `127.0.0.1:8787` |
 > | 分工 | 本页所有命令 **由 master 在服务器上执行**（UI agent 不持有 SSH 凭据） |
 
@@ -13,7 +13,7 @@
 
 | 文件 | 说明 |
 |---|---|
-| `main.go` `store.go` `petchat.go` `go.mod` | 服务源码（Go ≥ 1.22） |
+| `main.go` `store.go` `petchat.go` `assist.go` `tagpool.go` `go.mod` | 服务源码（Go ≥ 1.22） |
 | `uum-server-linux-amd64` | 已交叉编译的 linux/amd64 二进制（不入 git，可重编：见 §2） |
 | `config.example.json` | 配置样例（token hash 表 / 仓库路径 / 上游 LLM 三元组） |
 | `selftest.sh` | 冒烟自测（curl 全接口，26 项断言，本地已全绿） |
@@ -111,6 +111,31 @@ git pull server main && npm run build && node scripts/check-pages.mjs && ./deplo
 - [ ] 错 token 401 / 越权 403 / 超限 413 / sha 冲突 409，全部中文报错
 - [ ] cron 手动触发 `push --mirror` 成功（§6）
 - [ ] `?mock=1` 全流程仍可用；构建 / check-pages / 桌宠 / 搜索不受影响
+
+## 8.1 已上线服务升级（决策 7.20-7.23 正式版接线，2026-09-15）
+
+服务器上已在跑旧版二进制时，按此更新（新增 /api/assist 与 /api/tags* 端点，旧接口零改动）：
+
+```bash
+# 1. 上传新二进制（UI agent 已在工作区编译好 linux/amd64）
+scp uum-server-linux-amd64 <user>@47.116.143.98:/tmp/uum-server-new
+
+# 2. 服务器上原子替换并重启
+ssh <user>@47.116.143.98
+sudo systemctl stop uum-server
+sudo install -m 755 /tmp/uum-server-new /usr/local/bin/uum-server   # 路径按 unit 的 Exec=
+sudo systemctl start uum-server
+curl -s http://127.0.0.1:8787/healthz   # 确认 uptime 重新起算、petModel 正常
+
+# 3. 确认 UUM_LLM_KEY 仍在环境里（pet.env，unit 的 EnvironmentFile）
+systemctl show uum-server -p EnvironmentFiles
+# 若 Key 缺失：/api/pet/chat 与 /api/assist 会 502，写作台其余功能不受影响
+
+# 4. Nginx 无需改动（/api/ 前缀整体反代，新端点自动可达）
+```
+
+升级后新功能验收：写作台设置面板改简介保存 → 仓库出现 `config(uu): 更新个人简介与标签` 提交；
+文章表单留空 description 保存 → 出现 AI 生成摘要；标签池面板改名 → 全站文章 frontmatter 一次提交同步。
 
 ## 9. 故障与回滚
 
