@@ -1,0 +1,17 @@
+{
+  "name": "uu-mixt",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "UU&Mixt —— 双作者双面技术博客（Astro 静态站）",
+  "scripts": {
+    "dev": "node node_modules/astro/astro.js dev",
+    "build": "node node_modules/astro/astro.js build",
+    "preview": "node node_modules/astro/astro.js preview"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^5.0.0"
+  }
+}

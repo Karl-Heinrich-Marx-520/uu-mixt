@@ -1,0 +1,52 @@
+---
+/**
+ * 全站搜索（/search/，[内容管线]）
+ * PRD 5.1：构建期静态索引 + 前端零后端查询；覆盖两面；结果标识作者；
+ *          中文可用；标题权重高于正文；标签精确过滤；空输入显示最近更新；
+ *          无结果给建议标签；索引按需加载（进入本页才拉取）。
+ * 视觉与 demo 的搜索结果条一致（result-item / result-author / mark 高亮）。
+ */
+import Layout from "../components/Layout.astro";
+import "../styles/tokens.css";
+import "../styles/base.css";
+import "../styles/shell.css";
+import "../styles/components.css";
+import "../styles/search.css";
+---
+<Layout
+  face="shared"
+  title="全站搜索 · UU&Mixt"
+  description="一次搜索覆盖两面：UU 与 Mixt 的文章会同时出现，并标识所属作者。"
+  scripts={["/scripts/search.js"]}
+>
+  <h1 style="font-size:1.5rem;margin:6px 0 6px">全站搜索</h1>
+  <p class="search-lead">
+    一次搜索覆盖<strong>两面</strong>：UU 与 Mixt 的文章会同时出现，每条结果都标出作者。
+  </p>
+
+  <div class="search-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input
+      id="q"
+      type="search"
+      inputmode="search"
+      autocomplete="off"
+      placeholder="搜索标题、摘要、正文、标签或分类…"
+      aria-label="搜索关键词"
+      aria-describedby="search-meta"
+    >
+  </div>
+
+  <div class="tag-cloud" data-search-tags></div>
+
+  <p class="search-meta" id="search-meta" data-search-meta aria-live="polite">正在载入索引…</p>
+
+  <div data-search-results></div>
+
+  <noscript>
+    <div class="notice notice--info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 12v4"/></svg>
+      <span>搜索依赖 JavaScript。没有 JS 时请从<strong>入口页</strong>进入任一面，用该面的「归档」与「标签」页浏览全部文章。</span>
+    </div>
+  </noscript>
+</Layout>

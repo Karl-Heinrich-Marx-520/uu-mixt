@@ -1,0 +1,233 @@
+/* shell.css —— 共享外壳：页头 / 布局 / 卡牌翻转 / 页脚 / 浮动组件（自 demo 原样迁移） */
+/* ---------- 5. 共享外壳：页头 ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.header-inner {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 1.06rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ef9f27 50%, #378add 50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.brand-mark svg { width: 14px; height: 14px; }
+.brand .amp {
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 600;
+}
+.nav {
+  display: flex;
+  gap: 2px;
+  margin-left: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav a {
+  padding: 6px 13px;
+  border-radius: 9px;
+  font-size: 0.92rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.nav a:hover { color: var(--text-1); background: var(--bg-soft); }
+.nav a[aria-current="page"] {
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color var(--t-fast), border-color var(--t-fast);
+}
+.icon-btn:hover { color: var(--text-1); border-color: var(--border-strong); }
+.icon-btn svg { width: 17px; height: 17px; }
+.flip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.flip-btn svg { width: 15px; height: 15px; }
+.flip-btn:hover { background: var(--accent-deep); color: #fff; }
+
+/* ---------- 6. 通用布局 ---------- */
+.page {
+  max-width: var(--content-w);
+  margin: 0 auto;
+  padding: 30px 20px 72px;
+  min-height: calc(100vh - var(--header-h) - 160px);
+}
+/* 面 → 面：卡牌式翻转（v4）
+   整页内容包在 .page-card 中作为一张卡牌；高光带扫过后，背景与内容在 90° 瞬间同时切换 */
+body { perspective: 2400px; }
+body.flip-out .page-card {
+  animation: card-flip-out 700ms cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+body.flip-in .page-card {
+  animation: card-flip-in 760ms var(--ease) backwards;
+  will-change: transform, opacity;
+}
+/* 后退/前进（popstate 反播）：与翻出方向相反地归位 */
+body.flip-in-reverse .page-card {
+  animation: card-flip-in-reverse 760ms var(--ease) backwards;
+  will-change: transform, opacity;
+}
+@keyframes card-flip-in-reverse {
+  0% { transform: rotateY(-89deg) scale(0.94); opacity: 0.85; }
+  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
+@keyframes card-flip-out {
+  0% { transform: rotateY(0deg) scale(1); opacity: 1; }
+  100% { transform: rotateY(-89deg) scale(0.94); opacity: 0.85; }
+}
+@keyframes card-flip-in {
+  0% { transform: rotateY(89deg) scale(0.94); opacity: 0.85; }
+  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
+/* 高光带（转场瞬间）：斜向白色光带，只动画 transform/opacity */
+.gloss {
+  position: fixed;
+  inset: -10% -30%;
+  z-index: 96;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(105deg,
+    transparent 34%, rgba(255, 255, 255, 0.5) 47%,
+    rgba(255, 255, 255, 0.92) 50%, rgba(255, 255, 255, 0.5) 53%,
+    transparent 66%);
+  will-change: transform, opacity;
+}
+/* 翻入预备（内联脚本注入到 <html>，避免翻入页闪帧；demo.js 接管后移除） */
+html.flip-in-pending .page-card { opacity: 0; }
+
+/* ---------- 12. 页脚 ---------- */
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: 30px 20px 34px;
+}
+.footer-inner {
+  max-width: var(--content-w);
+  margin: 0 auto;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-3);
+}
+.footer-brand { font-weight: 700; font-size: 0.95rem; color: var(--text-2); }
+.footer-brand .amp {
+  font-family: Georgia, serif;
+  font-style: italic;
+}
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.footer-links a:hover { color: var(--accent-deep); }
+.footer-links .sep { color: var(--border-strong); }
+.icp { margin: 8px 0 0; }
+.icp a:hover { color: var(--text-2); }
+
+/* ---------- 13. 浮动组件：toast / 回到顶部 ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 34px;
+  transform: translate(-50%, 16px);
+  background: var(--text-1);
+  color: var(--bg);
+  font-size: 0.86rem;
+  padding: 9px 20px;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-mid), transform var(--t-mid);
+  z-index: 99;
+  max-width: 86vw;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.back-top {
+  position: fixed;
+  right: 26px;
+  bottom: 30px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: all var(--t-mid);
+  z-index: 60;
+  box-shadow: var(--shadow-1);
+}
+.back-top.show { opacity: 1; visibility: visible; transform: none; }
+.back-top:hover { color: var(--accent-deep); border-color: var(--accent-border); }
+.back-top svg { width: 17px; height: 17px; }

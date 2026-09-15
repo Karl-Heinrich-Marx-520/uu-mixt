@@ -1,0 +1,61 @@
+---
+/**
+ * 单标签页（[页面与模板]）—— PRD 4.1 的 /uu/tags/<tag>/ 与 /mixt/tags/<tag>/
+ * 列出该标签下**跨两面**的文章，每条标识作者（PRD 4.4）。
+ */
+import Layout from "../../../components/Layout.astro";
+import { tags, published, type Face } from "../../../lib/content-layer";
+import { formatDate } from "../../../lib/format";
+
+export async function getStaticPaths() {
+  const pool = await tags();
+  const faces: Face[] = ["uu", "mixt"];
+  const [u, m] = await Promise.all([published("uu"), published("mixt")]);
+  const paths = [];
+  for (const face of faces) {
+    for (const t of pool) {
+      const rows = [
+        ...u.filter((p) => (p.data.tags ?? []).includes(t.name)).map((p) => ({ f: "uu" as Face, p })),
+        ...m.filter((p) => (p.data.tags ?? []).includes(t.name)).map((p) => ({ f: "mixt" as Face, p })),
+      ].sort((a, b) => +b.p.data.date - +a.p.data.date);
+      if (rows.length === 0) continue;
+      paths.push({ params: { face, tag: t.name }, props: { face, tag: t.name, rows } });
+    }
+  }
+  return paths;
+}
+
+const { face, tag, rows } = Astro.props;
+const me = face === "uu" ? "UU" : "Mixt";
+const other: Face = face === "uu" ? "mixt" : "uu";
+---
+<Layout
+  face={face}
+  flipTo={`/${other}/`}
+  title={`标签：${tag} · ${me} 的文章 · UU&Mixt`}
+  description={`标签「${tag}」下的全部文章，跨两面汇总，每条标识所属作者。`}
+>
+  <Fragment slot="nav">
+    <a href={`/${face}/`}>首页</a>
+    <a href={`/${face}/writing/`}>归档</a>
+    <a href={`/${face}/categories/`}>分类</a>
+    <a href={`/${face}/tags/`}>标签</a>
+  </Fragment>
+
+  <h1 style="font-size:1.5rem;margin:6px 0 10px">标签：{tag}</h1>
+  <p style="font-size:.84rem;color:var(--text-3);margin:0 0 20px">
+    共 {rows.length} 篇（UU {rows.filter((r: any) => r.f === "uu").length} / Mixt {rows.filter((r: any) => r.f === "mixt").length}）· 标签为<strong>两面共享</strong>
+  </p>
+
+  <ul class="archive-list">
+    {rows.map((r: any) => (
+      <li class="archive-row">
+        <time datetime={formatDate(r.p.data.date)}>{formatDate(r.p.data.date).slice(5)}</time>
+        <a href={`/${r.f}/posts/${r.p.data.slug}/`}>{r.p.data.title}</a>
+        <span class="result-author" data-face={r.f}>{r.f === "uu" ? "UU" : "Mixt"}</span>
+      </li>
+    ))}
+  </ul>
+
+  <p style="margin-top:22px"><a href={`/${face}/tags/`} style="font-size:.88rem">← 返回全部标签</a></p>
+</Layout>

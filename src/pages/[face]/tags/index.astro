@@ -1,0 +1,77 @@
+---
+/**
+ * 标签页（[页面与模板]）
+ * 规格（PRD 3.6 + 4.4）：标签为**全站共享池**；标签页列出该标签下**跨两面**的文章，
+ * 每条结果必须标识所属作者；页面需说明"标签为全站共享"。
+ * 本页为面内入口（/uu/tags/ 与 /mixt/tags/ 共用同一实现，仅主题与导航不同）。
+ */
+import Layout from "../../../components/Layout.astro";
+import { tags, published, type Face } from "../../../lib/content-layer";
+import { formatDate } from "../../../lib/format";
+
+export async function getStaticPaths() {
+  return [{ params: { face: "uu" }, props: { face: "uu" as Face } }, { params: { face: "mixt" }, props: { face: "mixt" as Face } }];
+}
+
+const { face } = Astro.props;
+const me = face === "uu" ? { name: "UU", tag: "UU" } : { name: "Mixt", tag: "Mixt" };
+const other: Face = face === "uu" ? "mixt" : "uu";
+const pool = await tags();
+---
+<Layout
+  face={face}
+  flipTo={`/${other}/`}
+  title={`标签 · ${me.name} 的文章 · UU&Mixt`}
+  description="标签是两面共享的：同一个标签会同时收纳两位作者的文章，每条结果标识所属作者。"
+>
+  <Fragment slot="nav">
+    <a href={`/${face}/`}>首页</a>
+    <a href={`/${face}/writing/`}>归档</a>
+    <a href={`/${face}/categories/`}>分类</a>
+    <a href={`/${face}/about/`}>关于</a>
+  </Fragment>
+
+  <h1 style="font-size:1.5rem;margin:6px 0 10px">标签</h1>
+  <p style="font-size:.84rem;color:var(--text-3);margin:0 0 20px">
+    标签是<strong>两面共享</strong>的：同一个标签会同时收纳 UU 与 Mixt 面用到它的文章，每条结果都标识作者；分类则是各面独立的。
+  </p>
+
+  {pool.length === 0 && (
+    <div class="empty-state">
+      <h2>还没有任何标签</h2>
+      <p>在写作台新建文章时填上标签，这里会自动出现。</p>
+    </div>
+  )}
+
+  {pool.length > 0 && (
+    <Fragment>
+      <div class="tag-cloud">
+        {pool.map((t) => (
+          <a href={`/${face}/tags/${encodeURIComponent(t.name)}/`}>{t.name} <b>{t.count}</b></a>
+        ))}
+      </div>
+
+      {await Promise.all(pool.map(async (t) => {
+        const [u, m] = await Promise.all([published("uu"), published("mixt")]);
+        const rows = [
+          ...u.filter((p) => (p.data.tags ?? []).includes(t.name)).map((p) => ({ f: "uu" as Face, p })),
+          ...m.filter((p) => (p.data.tags ?? []).includes(t.name)).map((p) => ({ f: "mixt" as Face, p })),
+        ].sort((a, b) => +b.p.data.date - +a.p.data.date);
+        return (
+          <div class="tag-block" id={`tag-${t.name}`}>
+            <h2>{t.name} <small>共 {rows.length} 篇 · UU {rows.filter((r) => r.f === "uu").length} / Mixt {rows.filter((r) => r.f === "mixt").length}</small></h2>
+            <ul class="archive-list">
+              {rows.map((r) => (
+                <li class="archive-row">
+                  <time datetime={formatDate(r.p.data.date)}>{formatDate(r.p.data.date).slice(5)}</time>
+                  <a href={`/${r.f}/posts/${r.p.data.slug}/`}>{r.p.data.title}</a>
+                  <span class="result-author" data-face={r.f}>{r.f === "uu" ? "UU" : "Mixt"}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      }))}
+    </Fragment>
+  )}
+</Layout>

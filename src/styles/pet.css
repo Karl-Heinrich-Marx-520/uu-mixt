@@ -1,0 +1,250 @@
+/* pet.css —— 桌宠「小鹿」（自 demo/assets/demo.css 13k 节原样迁移，勿改交互参数） */
+/* ---------- 桌宠「小鹿」（PRD E1） ---------- */
+.pet {
+  position: fixed;
+  left: 16px;
+  bottom: 14px;
+  width: 64px;
+  border: none;
+  background: transparent;
+  cursor: grab;
+  z-index: 860;   /* 高于 entry-foot(850)/friend-deck(800)：小鹿与聊天框不被页脚浮层盖住 */
+  padding: 0;
+  animation: pet-bob 3.8s ease-in-out infinite;
+  transition: transform var(--t-fast);
+  touch-action: none;   /* 触屏拖动不被页面滚动劫持 */
+}
+.pet:hover { transform: scale(1.06); }
+.pet.is-dragging {
+  animation: none;
+  cursor: grabbing;
+  z-index: 900;
+  transition: none;     /* 拖动跟手，不吃过渡 */
+}
+.pet.is-dragging:hover { transform: none; }
+.pet img { display: block; width: 64px; height: auto; image-rendering: pixelated; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.18)); }
+.pet.is-active { animation-play-state: paused; transform: scale(1.06); }
+@keyframes pet-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+/* ---------- 小鹿动作动画（挂在 img 上，不与 .pet 的浮动/悬停缩放冲突） ----------
+   idle 随机：is-wiggle 摇摆 / is-hop 双跳 / is-look 张望（pet.js 定时触发）；
+   事件动作：is-nod 回答点头 / is-land 放下落地回弹；拖动中持续 pet-dangle 悬空摆动。
+   支点取脚底（transform-origin 50% 100%），跳/摆才有「站在原地」的感觉。 */
+.pet img { transform-origin: 50% 100%; }
+.pet.is-dragging img { animation: pet-dangle 1.1s ease-in-out infinite; }
+.pet img.is-wiggle { animation: pet-wiggle 0.9s ease-in-out; }
+.pet img.is-hop    { animation: pet-hop 0.85s cubic-bezier(0.28, 0.84, 0.42, 1); }
+.pet img.is-look   { animation: pet-look 1.2s ease-in-out; }
+.pet img.is-flip   { animation: pet-flip 1.2s ease-in-out; }
+.pet img.is-nod    { animation: pet-nod 0.55s ease-in-out 2; }
+.pet img.is-land   { animation: pet-land 0.5s ease-out; }
+@keyframes pet-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg); }
+  60% { transform: rotate(5deg); }
+}
+@keyframes pet-hop {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  18% { transform: translateY(0) scaleY(0.9); }
+  45% { transform: translateY(-14px) scaleY(1.05); }
+  70% { transform: translateY(0) scaleY(0.94); }
+  86% { transform: translateY(-4px) scaleY(1.02); }
+}
+@keyframes pet-look {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-7px) rotate(-4deg); }
+  55% { transform: translateX(7px) rotate(4deg); }
+}
+@keyframes pet-flip {
+  0%, 100% { transform: scaleX(1); }
+  40%, 60% { transform: scaleX(-1); }
+}
+@keyframes pet-nod {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(3px) rotate(3deg); }
+}
+@keyframes pet-dangle {
+  0%, 100% { transform: rotate(-3.5deg); }
+  50% { transform: rotate(3.5deg); }
+}
+@keyframes pet-land {
+  0% { transform: scaleY(0.9); }
+  55% { transform: scaleY(1.06) scaleX(0.97); }
+  100% { transform: scaleY(1); }
+}
+/* ---------- 散步：空闲时平滑走到视口另一处（pet.js stroll 触发） ----------
+   left/top 过渡负责位移；img 走路颠簸；朝移动方向翻转（is-flipped 持续到走完）。
+   翻转不能与 walk 动画同层（animation 会覆盖 transform），故 flipped 走专用 keyframes。 */
+.pet.is-strolling { transition: left 2.4s ease-in-out, top 2.4s ease-in-out; }
+.pet.is-strolling img { animation: pet-walk 0.34s ease-in-out infinite; }
+.pet.is-strolling img.is-flipped { animation: pet-walk-flipped 0.34s ease-in-out infinite; }
+@keyframes pet-walk {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes pet-walk-flipped {
+  0%, 100% { transform: scaleX(-1) translateY(0); }
+  50% { transform: scaleX(-1) translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pet { animation: none; }
+  .pet img, .pet.is-dragging img { animation: none !important; }
+  .pet.is-strolling { transition: none; }
+}
+
+.pet-hint {
+  position: absolute;
+  left: 72px;
+  top: 2px;
+  white-space: nowrap;
+  padding: 6px 11px;
+  font-size: 0.78rem;
+  color: var(--text-1);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px 999px 999px 4px;
+  box-shadow: var(--shadow-1);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+.pet-hint.is-visible { opacity: 1; transform: translateX(0); }
+/* 小鹿被拖到屏幕右半时气泡翻到左侧（pet.js 切换），避免弹出视口 */
+.pet-hint--left { left: auto; right: 72px; transform: translateX(6px); border-radius: 999px 999px 4px 999px; }
+.pet-hint--left.is-visible { transform: translateX(0); }
+
+.pet-drawer[hidden] { display: none; }   /* display:flex 会压过 hidden 属性（踩坑表 #8）——显隐兜底 */
+.pet-drawer {
+  position: fixed;
+  left: 14px;
+  bottom: 104px;
+  width: min(344px, calc(100vw - 28px));
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  box-shadow: var(--shadow-2);
+  z-index: 860;   /* 同 .pet：用户主动打开的对话浮层，压过页面浮层保证按钮可点 */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.pet-drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
+  cursor: grab;                      /* 标题栏 = 拖动手柄（pet.js pointer 逻辑） */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pet-drawer.is-drawer-drag .pet-drawer-head { cursor: grabbing; }
+.pet-drawer.is-drawer-drag { box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26); }
+.pet-drawer-head img { image-rendering: pixelated; }
+.pet-drawer-who { flex: 1; }
+.pet-drawer-who b { display: block; font-size: 0.9rem; }
+.pet-drawer-who span { font-size: 0.72rem; color: var(--text-3); }
+.pet-close {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.pet-close:hover { color: var(--text-1); background: var(--bg-soft); }
+
+.pet-log {
+  padding: 14px 14px 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pet-msg {
+  max-width: 86%;
+  padding: 9px 12px;
+  border-radius: 14px;
+  font-size: 0.86rem;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+.pet-msg--pet {
+  align-self: flex-start;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  border-bottom-left-radius: 4px;
+}
+.pet-msg--me {
+  align-self: flex-end;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--text-1);
+  border-bottom-right-radius: 4px;
+}
+.pet-msg a { color: var(--accent-deep); font-weight: 600; }
+.pet-msg .pet-note { display: block; margin-top: 6px; font-size: 0.76rem; color: var(--text-3); }
+.pet-typing { letter-spacing: 3px; color: var(--text-3); }
+
+.pet-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 0; }
+.pet-chips button {
+  font: inherit;
+  font-size: 0.74rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+.pet-chips button:hover { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-deep); }
+
+.pet-input {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px 12px;
+}
+.pet-input input {
+  flex: 1;
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 9px 12px;
+  color: var(--text-1);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+}
+.pet-input input:focus { outline: 2px solid var(--accent-border); outline-offset: 1px; }
+.pet-input button {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent-deep);
+  color: #fff;
+  cursor: pointer;
+}
+.pet-input button:hover { filter: brightness(1.1); }
+
+.pet-scope {
+  margin: 0;
+  padding: 0 14px 12px;
+  font-size: 0.7rem;
+  color: var(--text-3);
+}
+
+@media (max-width: 560px) {
+  .pet-drawer { left: 8px; right: 8px; width: auto; bottom: 96px; }
+  .pet-log { max-height: 240px; }
+}

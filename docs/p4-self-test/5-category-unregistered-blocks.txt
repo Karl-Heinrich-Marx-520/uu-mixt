@@ -1,0 +1,1 @@
+[内容校验失败] src/content/mixt/tcache-layout-2.md · 字段「category」· 「堆利用与分配器」未在本面分类配置中登记（已登记：堆利用 / 栈与格式化字符串 / CTF / 工具链）

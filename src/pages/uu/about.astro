@@ -1,0 +1,83 @@
+---
+/**
+ * UU 作者页（[页面与模板]）—— 面导航「关于」
+ * 结构按 demo 的 uu-about.html：作者信息 + 在做什么 + 这一面的分类索引 + 技术栈 + 联系。
+ */
+import Layout from "../../components/Layout.astro";
+import { categories, categoryCount, published } from "../../lib/content-layer";
+
+const face = "uu" as const;
+const cats = categories(face);
+const posts = await published(face);
+const catWithCount = await Promise.all(
+  cats.map(async (c) => ({ ...c, count: await categoryCount(face, c.name) }))
+);
+const facts = [
+  { t: "异步网络服务", d: "基于 Boost.Asio / Beast 的 HTTP 与 TCP 服务，关注优雅退出、线程模型与错误处理路径。" },
+  { t: "拥塞控制科研", d: "复现数据中心集合通信的拥塞控制方案（INT 反馈、窗口与速率调整），在 NS-3 上跑对比实验。" },
+  { t: "桌面客户端", d: "Qt + CMake 的客户端工程，含配置层、单例网络管理器与深色主题界面。" },
+  { t: "源码阅读", d: "带着问题读 muduo、Asio 等工业级库，重点看所有权关系与生命周期边界。" },
+];
+const stack = ["C++17/20", "Boost.Asio", "Boost.Beast", "muduo", "Qt", "CMake", "Linux", "NS-3", "Nginx", "Astro"];
+---
+<Layout
+  face="uu"
+  flipTo="/mixt/"
+  title="关于 UU · UU&Mixt"
+  description="UU：C++ 后端与网络编程方向，做异步服务器、Qt 客户端与 AI 集群拥塞控制的科研复现。"
+>
+  <Fragment slot="nav">
+    <a href="/uu/">首页</a>
+    <a href="/uu/writing/">归档</a>
+    <a href="/uu/categories/">分类</a>
+    <a href="/uu/about/" aria-current="page">关于</a>
+  </Fragment>
+
+  <section class="author-hero" aria-label="作者信息">
+    <img src="/assets/avatars/uu.jpg" alt="UU 的头像">
+    <div>
+      <h1>UU</h1>
+      <p class="author-dir">C++ 后端 · 网络编程 · 科研复现</p>
+      <p class="author-bio">写 C++ 后端与网络编程，做过异步服务器与 Qt 客户端，也在复现 AI 集群的集合通信拥塞控制。落笔偏好可复现的细节与可验证的结论——不写「应该可以」，写「我实测是」。</p>
+    </div>
+  </section>
+
+  <section class="author-section">
+    <h2>在做什么 <small>共 {posts.length} 篇文章</small></h2>
+    <div class="author-facts">
+      {facts.map((f) => (
+        <div class="author-fact">
+          <b>{f.t}</b>
+          <span>{f.d}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {catWithCount.length > 0 && (
+    <section class="author-section">
+      <h2>这一面的分类</h2>
+      <div class="author-links">
+        {catWithCount.map((c) => (
+          <a href={`/uu/categories/#cat-${c.slug}`}>{c.name}（{c.count} 篇）</a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="author-section">
+    <h2>技术栈</h2>
+    <div class="chip-row">
+      {stack.map((t) => <span class="chip">{t}</span>)}
+    </div>
+  </section>
+
+  <section class="author-section">
+    <h2>联系</h2>
+    <div class="author-links">
+      <a href="https://github.com/Karl-Heinrich-Marx-520" target="_blank" rel="noopener">GitHub</a>
+      <a href="/uu/writing/">看 UU 的全部文章</a>
+    </div>
+    <p style="margin-top:16px"><a class="author-cta" href="/uu/">进入 UU 的一面 →</a></p>
+  </section>
+</Layout>

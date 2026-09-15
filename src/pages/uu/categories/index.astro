@@ -1,0 +1,75 @@
+---
+/**
+ * UU 面分类页（[页面与模板]）
+ * 与 demo 的分类页一致：分类卡片（名称 / 篇数 / 说明 / 最近一篇）+ 各分类时间线。
+ * 空分类（配置为空）→ 整页空状态降级（PRD 3.5）。
+ */
+import Layout from "../../../components/Layout.astro";
+import { published, categories } from "../../../lib/content-layer";
+import { formatDate } from "../../../lib/format";
+
+const face = "uu" as const;
+const cats = categories(face);
+const posts = await published(face);
+const withPosts = cats.map((c) => ({
+  ...c,
+  items: posts.filter((p) => p.data.category === c.name),
+}));
+---
+<Layout
+  face="uu"
+  flipTo="/mixt/"
+  title="分类 · UU 的文章 · UU&Mixt"
+  description="UU 一面的分类总览：每个分类各自的文章列表。"
+>
+  <Fragment slot="nav">
+    <a href="/uu/">首页</a>
+    <a href="/uu/writing/">归档</a>
+    <a href="/uu/categories/" aria-current="page">分类</a>
+    <a href="/uu/about/">关于</a>
+  </Fragment>
+
+  <h1 style="font-size:1.5rem;margin:6px 0 22px">
+    分类 <small style="font-size:.85rem;color:var(--text-3);font-weight:400">{cats.length} 个分类 · 共 {posts.length} 篇</small>
+  </h1>
+
+  {cats.length === 0 && (
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+      <h2>这里还没有分类</h2>
+      <p>分类由本面作者经写作台自行添加，工程侧不预置。</p>
+    </div>
+  )}
+
+  {cats.length > 0 && (
+    <Fragment>
+      <div class="cat-grid">
+        {withPosts.map((c) => (
+          <a class="cat-card" href={`#cat-${c.slug}`}>
+            <span class="cat-name">{c.name}</span>
+            <span class="cat-count">{c.items.length} 篇</span>
+            <p class="cat-desc">{c.desc}</p>
+            {c.items[0] && (
+              <span class="cat-latest">最近：{c.items[0].data.title} · {formatDate(c.items[0].data.date)}</span>
+            )}
+          </a>
+        ))}
+      </div>
+
+      {withPosts.map((c) => (
+        <Fragment>
+          <h2 class="archive-year" id={`cat-${c.slug}`}>{c.name} <small>{c.items.length} 篇</small></h2>
+          <ul class="archive-list">
+            {c.items.length === 0 && <li class="archive-row"><span style="color:var(--text-3)">该分类下暂无文章</span></li>}
+            {c.items.map((p) => (
+              <li class="archive-row">
+                <time datetime={formatDate(p.data.date)}>{formatDate(p.data.date).slice(5)}</time>
+                <a href={`/${face}/posts/${p.data.slug}/`}>{p.data.title}</a>
+              </li>
+            ))}
+          </ul>
+        </Fragment>
+      ))}
+    </Fragment>
+  )}
+</Layout>

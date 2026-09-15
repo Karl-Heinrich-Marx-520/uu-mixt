@@ -1,1 +1,7 @@
-[]
+[
+  { "slug": "cpp", "name": "C++", "desc": "语言与标准库：Effective 系列精读、协程、lambda 与现代惯用法。" },
+  { "slug": "network-programming", "name": "网络编程", "desc": "从内核到用户态的网络栈拆解：epoll、三次握手、accept 全路径。" },
+  { "slug": "source-reading", "name": "源码阅读", "desc": "带着问题读源码：muduo、Asio 等工业级库的结构与取舍。" },
+  { "slug": "research", "name": "科研复现", "desc": "论文复现笔记：拥塞控制、INT 反馈链路、模拟器与实验矩阵。" },
+  { "slug": "engineering", "name": "工程实践", "desc": "真实项目的架构与踩坑：异步服务器、配置层、优雅退出。" }
+]

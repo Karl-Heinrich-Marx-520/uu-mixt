@@ -362,26 +362,59 @@
     });
   }
 
-  /* ---------- 归档分类筛选 ---------- */
-  var filterBar = doc.querySelector(".filter-bar");
-  if (filterBar) {
-    var rows = [].slice.call(doc.querySelectorAll(".archive-row"));
-    filterBar.addEventListener("click", function (e) {
-      var btn = e.target.closest(".filter-chip");
-      if (!btn) return;
-      filterBar.querySelectorAll(".filter-chip").forEach(function (b) {
-        b.classList.toggle("is-active", b === btn);
+  /* ---------- 首页：文章栏方框 + 拖边界调宽（交互与文章页一致，双击恢复默认） ---------- */
+  var homePage = doc.querySelector(".home-page");
+  var homeMain = homePage && homePage.querySelector(".home-main");
+  var homeFrame = homeMain && homeMain.querySelector(".home-frame");
+  if (homePage && homeFrame) {
+    try {
+      var savedHomeW = parseInt(localStorage.getItem("uum-demo-home-w"), 10);
+      if (savedHomeW >= 680) homeFrame.style.setProperty("--home-w", savedHomeW + "px");
+    } catch (e) {}
+
+    var clampHome = function (w) {
+      /* 上限 = 主栏实际宽度（窄屏单栏后自动变全宽） */
+      return Math.max(680, Math.min(w, homeMain.getBoundingClientRect().width));
+    };
+
+    ["left", "right"].forEach(function (side) {
+      var edge = doc.createElement("div");
+      edge.className = "frame-edge frame-edge--" + side;
+      edge.setAttribute("role", "separator");
+      edge.setAttribute("aria-label", "拖动调整文章栏宽度");
+      edge.title = "拖动调整文章栏宽度 · 双击恢复默认";
+      homeFrame.appendChild(edge);
+
+      var startX = 0, startW = 0, dragging = false;
+      edge.addEventListener("pointerdown", function (e) {
+        dragging = true;
+        startX = e.clientX;
+        startW = homeFrame.getBoundingClientRect().width;
+        edge.classList.add("is-dragging");
+        doc.body.classList.add("is-resizing");
+        try { edge.setPointerCapture(e.pointerId); } catch (err) {}
+        e.preventDefault();
       });
-      var f = btn.dataset.filter;
-      rows.forEach(function (r) {
-        r.classList.toggle("is-hidden", f !== "all" && r.dataset.cat !== f);
+      edge.addEventListener("pointermove", function (e) {
+        if (!dragging) return;
+        /* 方框在主栏内居中：边界每移动 1px，宽度改变 2px */
+        var delta = (e.clientX - startX) * 2 * (side === "right" ? 1 : -1);
+        var w = clampHome(Math.round(startW + delta));
+        homeFrame.style.setProperty("--home-w", w + "px");
+        try { localStorage.setItem("uum-demo-home-w", String(w)); } catch (err) {}
       });
-      doc.querySelectorAll(".archive-year").forEach(function (y) {
-        var group = y.nextElementSibling;
-        var any = group && [].some.call(group.children, function (c) {
-          return !c.classList.contains("is-hidden");
-        });
-        y.style.display = any ? "" : "none";
+      var stop = function () {
+        if (!dragging) return;
+        dragging = false;
+        edge.classList.remove("is-dragging");
+        doc.body.classList.remove("is-resizing");
+      };
+      edge.addEventListener("pointerup", stop);
+      edge.addEventListener("pointercancel", stop);
+      edge.addEventListener("dblclick", function () {
+        homeFrame.style.removeProperty("--home-w");
+        try { localStorage.removeItem("uum-demo-home-w"); } catch (err) {}
+        toast("已恢复默认文章栏宽度");
       });
     });
   }
@@ -398,6 +431,55 @@
   [].slice.call(doc.querySelectorAll("[data-stat-posts]")).forEach(function (el) {
     if (store) el.textContent = store.published(el.dataset.statPosts).length;
   });
+
+  /* ---------- 首页侧栏：统计 + 网站信息（内容层实时更新） ---------- */
+  function countTags(posts) {
+    var tags = {};
+    posts.forEach(function (p) { (p.tags || []).forEach(function (t) { tags[t] = 1; }); });
+    return Object.keys(tags).length;
+  }
+  function wordsToNum(w) {
+    var m = /([\d.]+)\s*(k)?/i.exec(String(w || ""));
+    return m ? parseFloat(m[1]) * (m[2] ? 1000 : 1) : 0;
+  }
+  function fmtWords(total) {
+    return total >= 1000 ? (total / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(total);
+  }
+  function daysSince(dateStr) {
+    return Math.floor((Date.now() - new Date(dateStr + "T00:00:00").getTime()) / 86400000);
+  }
+  function humanUptime(days) {
+    if (days >= 365) return Math.floor(days / 365) + " 年 " + (days % 365) + " 天";
+    if (days >= 30) return Math.floor(days / 30) + " 个月 " + (days % 30) + " 天";
+    return days + " 天";
+  }
+  function humanAgo(days) {
+    if (days <= 0) return "今天";
+    if (days < 30) return days + " 天前";
+    if (days < 365) return Math.floor(days / 30) + " 个月前";
+    return Math.floor(days / 365) + " 年前";
+  }
+  /* 侧栏统计：文章（复用 data-stat-posts）/ 分类 / 标签，均由内容层实时计算 */
+  [].slice.call(doc.querySelectorAll("[data-side-stats]")).forEach(function (el) {
+    if (!store) return;
+    var posts = store.published(el.dataset.sideStats);
+    var set = function (sel, v) { var n = el.querySelector(sel); if (n) n.textContent = v; };
+    set("[data-stat-cats]", store.categories(el.dataset.sideStats).length);
+    set("[data-stat-tags]", countTags(posts));
+  });
+  /* 网站信息：建站日写死（SITE_START），其余由内容层实时计算 */
+  var SITE_START = "2026-09-12";
+  [].slice.call(doc.querySelectorAll("[data-site-info]")).forEach(function (el) {
+    if (!store) return;
+    var posts = store.published(el.dataset.siteInfo);
+    var set = function (sel, v) { var n = el.querySelector(sel); if (n) n.textContent = v; };
+    var latest = posts.reduce(function (a, p) { return (p.date || "") > a ? p.date : a; }, "");
+    set("[data-si-posts]", posts.length + " 篇");
+    set("[data-si-uptime]", humanUptime(Math.max(1, daysSince(SITE_START))));
+    set("[data-si-words]", fmtWords(posts.reduce(function (a, p) { return a + wordsToNum(p.words); }, 0)));
+    set("[data-si-updated]", latest ? humanAgo(daysSince(latest)) : "—");
+  });
+
 
   /* 面首页 / 归档：文章卡片列表 */
   [].slice.call(doc.querySelectorAll("[data-post-list]")).forEach(function (host) {
@@ -434,7 +516,7 @@
     }).join("");
   });
 
-  /* 归档：按年份分组 */
+  /* 归档：按年份分组（时间维度视图：统计行 + 年份锚点跳转条；「按分类找」完全交给分类页） */
   [].slice.call(doc.querySelectorAll("[data-archive]")).forEach(function (host) {
     if (!store) return;
     var face = host.dataset.archive;
@@ -442,20 +524,38 @@
     var byYear = {};
     posts.forEach(function (p) { (byYear[(p.date || "").slice(0, 4)] = byYear[(p.date || "").slice(0, 4)] || []).push(p); });
     var years = Object.keys(byYear).sort().reverse();
+
+    /* 统计行：共 N 篇 · 2026 年 X 篇 · 2025 年 Y 篇 */
+    var counter = doc.querySelector("[data-archive-counter]");
+    if (counter && posts.length) {
+      counter.textContent = "共 " + posts.length + " 篇 · " + years.map(function (y) {
+        return y + " 年 " + byYear[y].length + " 篇";
+      }).join(" · ");
+    }
+
     if (!years.length) {
       host.innerHTML = '<div class="empty-state"><h2>还没有可归档的文章</h2></div>';
       return;
     }
+
+    /* 年份锚点跳转条 */
+    var nav = doc.querySelector("[data-archive-nav]");
+    if (nav) {
+      nav.innerHTML = years.map(function (y) {
+        return '<a href="#year-' + esc(y) + '">' + esc(y) + "<small>" + byYear[y].length + " 篇</small></a>";
+      }).join("");
+    }
+
     host.innerHTML = years.map(function (y) {
       var rows = byYear[y].map(function (p) {
         var attrs = p.detail ? "" : ' data-action="todo" data-msg="Demo：详情页在正式实现里由构建期生成"';
-        return '<li class="archive-row" data-cat="' + esc(p.category) + '">' +
+        return '<li class="archive-row">' +
           '<time datetime="' + esc(p.date) + '">' + esc((p.date || "").slice(5)) + "</time>" +
           '<a href="' + esc(p.detail || "#") + '"' + attrs + ">" + esc(p.title) + "</a>" +
           (p.category ? '<span class="chip chip--cat">' + esc(p.category) + "</span>" : "") +
           "</li>";
       }).join("");
-      return '<h2 class="archive-year">' + esc(y) + " <small>" + byYear[y].length + " 篇</small></h2>" +
+      return '<h2 class="archive-year" id="year-' + esc(y) + '">' + esc(y) + " <small>" + byYear[y].length + " 篇</small></h2>" +
         '<ul class="archive-list">' + rows + "</ul>";
     }).join("");
   });

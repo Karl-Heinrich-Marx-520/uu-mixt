@@ -1,0 +1,66 @@
+---
+/**
+ * 关于本站（共享页，[页面与模板]）
+ * 入口：入口页底部小字 + 两面页脚（2026-09-14 决策，见 PRD 4.4 / 决策记录 7.10）
+ * 内容与 demo 的 about.html 一致：双面结构 / 两位作者 / 运转方式 / 技术形态 / 合规与备案。
+ * 与作者页的分工：本页讲**站点本身**，作者页讲**个人**，两者不重复。
+ */
+import Layout from "../components/Layout.astro";
+import { published } from "../lib/content-layer";
+
+const [uuPosts, mixtPosts] = await Promise.all([published("uu"), published("mixt")]);
+---
+<Layout
+  face="shared"
+  title="关于本站 · UU&Mixt"
+  description="UU&Mixt 是什么：一个可以整站翻转的双作者双面技术博客。这一页解释它的结构、两位作者与运转方式。"
+>
+  <Fragment slot="nav">
+    <a href="/">入口页</a>
+    <a href="/uu/">UU 的一面</a>
+    <a href="/mixt/">Mixt 的一面</a>
+  </Fragment>
+
+  <article class="about-page">
+    <h1>关于本站</h1>
+    <p class="about-lead">这是一个<strong>双作者、双面</strong>的技术博客：两位作者各自经营自己的一面，共享同一个域名与外壳。你可以把整站当作一张卡牌——从任意一面都能「翻」到另一面。</p>
+
+    <h2>这是什么结构？</h2>
+    <p>站点有两个互不干涉的面：</p>
+    <ul>
+      <li><strong>UU 的一面</strong>（<code>/uu/</code>）：C++ 后端、网络编程、源码阅读、科研复现与工程实践。当前 {uuPosts.length} 篇文章。</li>
+      <li><strong>Mixt 的一面</strong>（<code>/mixt/</code>）：PWN 二进制安全、漏洞分析与 CTF writeup。当前 {mixtPosts.length} 篇文章。</li>
+    </ul>
+    <p>两面的<strong>内容、导航、主题色、分类体系与作者页完全隔离</strong>——你在一面看不到另一面的任何文章；共享的只有域名、视觉外壳、翻转组件、入口页、标签池、全站搜索与 RSS。</p>
+    <p>主题色也各归各：UU 面是琥珀，Mixt 面是蓝。翻转时整个站点连同配色一起转过去。</p>
+
+    <h2>两位作者</h2>
+    <div class="about-authors">
+      <a class="about-author" href="/uu/about/">
+        <img src="/assets/avatars/uu.jpg" alt="UU 的头像" width="56" height="56">
+        <div>
+          <b>UU</b>
+          <p>唯一的工程实施者，也是内容作者。写 C++ 后端与网络编程，做 AI 集群拥塞控制的科研复现。</p>
+        </div>
+      </a>
+      <a class="about-author" href="/mixt/about/">
+        <img src="/assets/avatars/mixt.jpg" alt="Mixt 的头像" width="56" height="56">
+        <div>
+          <b>Mixt</b>
+          <p>内容作者。主攻 PWN 二进制安全，写漏洞分析与 CTF writeup，不参与工程搭建。</p>
+        </div>
+      </a>
+    </div>
+
+    <h2>怎么运转？</h2>
+    <p>本站<strong>没有后台、没有数据库</strong>。文章以 Markdown 写作，经构建期校验后生成纯静态页面，由一条部署脚本手动上传到服务器。Mixt 通过网页写作台提交文章与维护分类，不需要接触代码与命令行。</p>
+
+    <h2>技术形态</h2>
+    <p>静态站点生成（Astro）+ Nginx + Let's Encrypt，全站搜索与 RSS 在构建期生成。没有常驻进程、没有评论后端——我们刻意把它做得很薄，这样它几乎不会坏。</p>
+
+    <h2>合规与备案</h2>
+    <p>本站备案名为<strong>「丞翰的技术笔记」</strong>（与站点的展示名 UU&amp;Mixt 分离）。Mixt 面的二进制安全内容遵守严格的措辞规则：伪代码与打码、自建实验环境、文首合规声明，不发布可直接复用的完整利用程序。</p>
+
+    <p class="about-back"><a href="/">← 回到入口页，选一张卡片进入</a></p>
+  </article>
+</Layout>

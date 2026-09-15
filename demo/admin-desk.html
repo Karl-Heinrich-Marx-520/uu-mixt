@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=7">
+  <link rel="stylesheet" href="assets/demo.css?v=16">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -61,6 +61,10 @@
         <button class="admin-side-item" type="button" data-panel="categories">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           分类
+        </button>
+        <button class="admin-side-item" type="button" data-panel="friends">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+          友链
         </button>
         <button class="admin-side-item" type="button" data-panel="media">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
@@ -136,19 +140,20 @@
 
         <!-- 分类面板 -->
         <div class="admin-panel" data-panel-body="categories">
-          <p class="admin-hint">只维护自己那一面的分类。分类的 URL 短名一经发布即冻结；改名会同步更新该分类下的文章标签。</p>
+          <p class="admin-hint">只维护自己那一面的分类。URL 短名由系统按分类名自动生成（一经发布即冻结）；改名会同步更新该分类下的文章标签。</p>
+          <div class="admin-toolbar">
+            <p class="admin-hint" style="margin:0">共 <b data-cat-total>0</b> 个分类 · 文章编辑里的「分类」下拉与此处同步</p>
+            <button class="admin-new" type="button" data-action="new-cat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              添加分类
+            </button>
+          </div>
           <div class="admin-cat-list" data-cat-list></div>
-          <form class="admin-editor" data-cat-form>
+          <form class="admin-editor" data-cat-form hidden>
             <h2 data-cat-form-title>新增分类</h2>
-            <div class="admin-field-row">
-              <div class="admin-field">
-                <label for="c-name">分类名 <em>必填</em></label>
-                <input id="c-name" type="text" placeholder="例如：网络编程">
-              </div>
-              <div class="admin-field">
-                <label for="c-slug">URL 短名（kebab-case，发布后冻结）</label>
-                <input id="c-slug" type="text" placeholder="network-programming">
-              </div>
+            <div class="admin-field">
+              <label for="c-name">分类名 <em>必填</em></label>
+              <input id="c-name" type="text" placeholder="例如：网络编程">
             </div>
             <div class="admin-field">
               <label for="c-desc">一句话说明</label>
@@ -162,18 +167,70 @@
           </form>
         </div>
 
-        <!-- 媒体面板：文章配图的引用生成器 -->
+        <!-- 友链面板：站点级共享数据（入口页卡组的数据源，PRD E8） -->
+        <div class="admin-panel" data-panel-body="friends">
+          <p class="admin-hint">
+            友链是<strong>站点级共享数据</strong>（与标签池同类，两位作者都可维护）。
+            添加后<strong>入口页卡组立刻可见</strong>：打开入口页，点右上角牌堆发牌即可看到。
+            正式实现里友链是仓库中的 JSON 配置 + 构建期渲染（PRD E8）；对外链接一律 <code>rel="noopener"</code> 新窗口打开。
+          </p>
+          <div class="admin-toolbar">
+            <p class="admin-hint" style="margin:0">共 <b data-friend-total>0</b> 个友链 · 入口页卡组按此数据发牌</p>
+            <button class="admin-new" type="button" data-action="new-friend">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              添加友链
+            </button>
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr><th>站点</th><th>地址</th><th>简介</th><th>操作</th></tr>
+            </thead>
+            <tbody data-friend-rows></tbody>
+          </table>
+          <p class="admin-toastline" data-friend-msg aria-live="polite"></p>
+
+          <form class="admin-editor" data-friend-editor hidden aria-label="友链编辑" novalidate>
+            <h2 data-friend-form-title>添加友链</h2>
+            <div class="admin-field-row">
+              <div class="admin-field">
+                <label for="fl-name">站点名 <em>必填</em></label>
+                <input id="fl-name" type="text" placeholder="例如：云端牧码">
+              </div>
+              <div class="admin-field">
+                <label for="fl-url">站点地址 <em>必填</em></label>
+                <input id="fl-url" type="text" placeholder="example.com（协议可省略，自动按 https 处理）">
+              </div>
+            </div>
+            <div class="admin-field">
+              <label for="fl-avatar">头像图片地址（可选，留空则用站名首字生成）</label>
+              <input id="fl-avatar" type="text" placeholder="https://example.com/avatar.png">
+            </div>
+            <div class="admin-field">
+              <label for="fl-desc">一句话简介 <em>必填</em></label>
+              <input id="fl-desc" type="text" placeholder="悬停卡片时展示的介绍">
+            </div>
+            <div class="admin-editor-actions">
+              <button type="button" class="admin-btn admin-btn--ghost" data-action="cancel-friend">取消</button>
+              <button type="button" class="admin-btn admin-btn--primary" data-action="save-friend">保存友链</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- 媒体面板：文章配图的引用库（localStorage 持久化） -->
         <div class="admin-panel" data-panel-body="media">
           <p class="admin-hint">
-            「媒体」用来管理<strong>文章配图</strong>。正式实现里：图片作为文件随文章提交进仓库
-            （构建期自动压缩、生成响应式尺寸），正文里用 <code>/images/&lt;面&gt;/文件名</code> 引用。
-            Demo 没有真正的文件上传——你在下面选图后，它帮你把<strong>仓库引用代码</strong>生成好，复制进正文即可。
+            「媒体」是<strong>文章配图的引用库</strong>：图片收录一次，引用码就一直在库里，随时复制进正文。
+            正式实现里：图片作为文件随文章提交进仓库（构建期自动压缩、生成响应式尺寸），
+            正文里用 <code>/images/&lt;面&gt;/文件名</code> 引用；本面板列出的是已收录图片的全部引用。
           </p>
-          <label class="admin-media-pick">
-            <input type="file" accept="image/*" multiple data-media-input hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-            选择本地图片（可多选）→ 生成引用代码
-          </label>
+          <div class="admin-toolbar">
+            <p class="admin-hint" style="margin:0">共 <b data-media-total>0</b> 张 · 引用路径即正式仓库路径</p>
+            <label class="admin-new">
+              <input type="file" accept="image/*" multiple data-media-input hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              收录图片
+            </label>
+          </div>
           <div class="admin-media-list" data-media-list></div>
         </div>
 
@@ -206,8 +263,8 @@
 
   </div><!-- /.page-card -->
 
-  <script src="assets/demo-store.js?v=7"></script>
-  <script src="assets/demo.js?v=7"></script>
+  <script src="assets/demo-store.js?v=9"></script>
+  <script src="assets/demo.js?v=11"></script>
   <script>
     /* 写作台本体：身份取自登录会话（或 ?face= 便捷入口），无权访问则退回登录页 */
     (function () {
@@ -223,6 +280,7 @@
       var face = null;
       var editingId = null;
       var editingCatSlug = null;
+      var editingFriendId = null;
 
       /* ---------- 门禁 ---------- */
       function resolveFace() {
@@ -419,12 +477,14 @@
       /* ---------- 分类 ---------- */
       function renderCats() {
         var cats = store.categories(face);
+        var totalEl = $("[data-cat-total]");
+        if (totalEl) totalEl.textContent = cats.length;
         var host = $("[data-cat-list]");
         if (!cats.length) {
           host.innerHTML = '<div class="admin-cat-empty">' +
             (face === "mixt"
-              ? "Mixt 面的分类当前为空 —— 这正是 PRD 3.5 的初始状态。添加第一个分类后，站点会自动出现分类导航与分类页。"
-              : "还没有分类。") +
+              ? "Mixt 面的分类当前为空 —— 这正是 PRD 3.5 的初始状态。点右上角「添加分类」创建第一个。"
+              : "还没有分类。点右上角「添加分类」创建第一个。") +
             "</div>";
           return;
         }
@@ -471,31 +531,95 @@
         editingCatSlug = null;
         $("[data-cat-form-title]").textContent = "新增分类";
         $("#c-name").value = "";
-        $("#c-slug").value = "";
         $("#c-desc").value = "";
+        $("[data-cat-form]").hidden = true;   /* 取消/保存后表单收起，回到列表视图 */
+      }
+
+      /* URL 短名自动生成（与正式站 autoCategorySlug 同语义）：
+         纯英文/数字 → kebab-case；含中文 → cat-日期-随机，避免拼音臆测 */
+      function makeCatSlug(name) {
+        var base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        if (base && !/[\u4e00-\u9fa5]/.test(name)) return base;
+        var d = new Date();
+        var stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+        return "cat-" + stamp + "-" + Math.random().toString(36).slice(2, 6);
       }
 
       function saveCat() {
         var name = $("#c-name").value.trim();
-        var slug = $("#c-slug").value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
         var out = $("[data-cat-msg]");
         if (!name) { msg(out, "分类名必填。"); return; }
-        if (!/^[a-z0-9-]+$/.test(slug)) { msg(out, "URL 短名只能用 kebab-case；中文分类名请手动填一个英文短名。"); return; }
         if (editingCatSlug) {
-          store.updateCategory(face, editingCatSlug, { name: name, slug: slug, desc: $("#c-desc").value.trim() });
+          /* URL 短名一经发布即冻结：编辑只改名与说明 */
+          store.updateCategory(face, editingCatSlug, { name: name, slug: editingCatSlug, desc: $("#c-desc").value.trim() });
           msg(out, "分类已更新，相关文章的分类标签已同步。");
         } else {
+          var slug = makeCatSlug(name);
           var ok = store.addCategory(face, { name: name, slug: slug, desc: $("#c-desc").value.trim() });
-          msg(out, ok ? "已添加「" + name + "」—— 分类页与导航已自动出现。" : "同名分类已存在。");
+          msg(out, ok ? "已添加「" + name + "」（URL 短名 " + slug + "）—— 分类页与导航已自动出现。" : "同名分类已存在。");
         }
         resetCatForm();
         renderCats();
         fillCatOptions("");
       }
 
+      /* ---------- 友链（站点级共享；入口页卡组数据源） ---------- */
+      function renderFriends() {
+        var list = store.friends();
+        $("[data-friend-total]").textContent = list.length;
+        var host = $("[data-friend-rows]");
+        if (!list.length) {
+          host.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-3)">还没有友链，点右上角「添加友链」开始。</td></tr>';
+          return;
+        }
+        host.innerHTML = list.map(function (f) {
+          var hostName = String(f.url || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+          return "<tr>" +
+            '<td><span class="admin-friend-dot" aria-hidden="true">' + escapeHtml((f.name || "?").slice(0, 1)) + "</span>" + escapeHtml(f.name) + "</td>" +
+            '<td><code class="admin-friend-host">' + escapeHtml(hostName) + "</code></td>" +
+            "<td>" + escapeHtml(f.desc || "—") + "</td>" +
+            '<td class="admin-status-actions"><span class="admin-row-actions">' +
+              '<button class="admin-mini" data-edit-friend="' + f.id + '">编辑</button>' +
+              '<button class="admin-mini admin-mini--danger" data-del-friend="' + f.id + '">删除</button>' +
+            "</span></td></tr>";
+        }).join("");
+      }
+
+      function resetFriendForm() {
+        editingFriendId = null;
+        $("[data-friend-form-title]").textContent = "添加友链";
+        $("#fl-name").value = "";
+        $("#fl-url").value = "";
+        $("#fl-avatar").value = "";
+        $("#fl-desc").value = "";
+        $("[data-friend-editor]").hidden = true;
+      }
+
+      function saveFriend() {
+        var name = $("#fl-name").value.trim();
+        var url = $("#fl-url").value.trim();
+        var desc = $("#fl-desc").value.trim();
+        var out = $("[data-friend-msg]");
+        if (!name) { msg(out, "站点名必填。"); $("#fl-name").focus(); return; }
+        if (!url) { msg(out, "站点地址必填。"); $("#fl-url").focus(); return; }
+        if (!/^https?:\/\//i.test(url)) url = "https://" + url;   /* 手滑没写协议时自动补 https */
+        if (!desc) { msg(out, "简介必填——悬停卡片时会展示它。"); $("#fl-desc").focus(); return; }
+        var data = { name: name, url: url, avatar: $("#fl-avatar").value.trim(), desc: desc };
+        if (editingFriendId) {
+          store.updateFriend(editingFriendId, data);
+          msg(out, "已保存，入口页卡组刷新后同步。");
+        } else {
+          var ok = store.addFriend(data);
+          if (!ok) { msg(out, "已有同名的友链——换个名字，或直接编辑已有那一条。"); return; }
+          msg(out, "已添加「" + name + "」—— 打开入口页点右上角牌堆即可看到。");
+        }
+        resetFriendForm();
+        renderFriends();
+      }
+
       /* ---------- 事件委托 ---------- */
       document.addEventListener("click", function (e) {
-        var el = e.target.closest("[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat]");
+        var el = e.target.closest("[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat],[data-edit-friend],[data-del-friend]");
         if (!el) return;
         if (el.dataset.action === "logout") {
           try { localStorage.removeItem(SESSION); } catch (err) {}
@@ -507,8 +631,22 @@
         if (el.dataset.action === "save-post") { savePost(); return; }
         if (el.dataset.action === "save-cat") { saveCat(); return; }
         if (el.dataset.action === "cancel-cat") { resetCatForm(); msg($("[data-cat-msg]"), ""); return; }
+        if (el.dataset.action === "new-cat") {
+          resetCatForm();                          /* 清掉可能残留的编辑态 */
+          msg($("[data-cat-msg]"), "");
+          $("[data-cat-form]").hidden = false;
+          $("#c-name").focus();
+          return;
+        }
+        if (el.dataset.action === "new-friend") {
+          $("[data-friend-editor]").hidden = false;
+          $("#fl-name").focus();
+          return;
+        }
+        if (el.dataset.action === "cancel-friend") { resetFriendForm(); msg($("[data-friend-msg]"), ""); return; }
+        if (el.dataset.action === "save-friend") { saveFriend(); return; }
         if (el.dataset.action === "export-data") {
-          var json = JSON.stringify({ posts: store.allPosts(face), categories: store.categories(face), tags: store.tags() }, null, 2);
+          var json = JSON.stringify({ posts: store.allPosts(face), categories: store.categories(face), tags: store.tags(), friends: store.friends() }, null, 2);
           var ta = document.createElement("textarea");
           ta.value = json;
           ta.style.cssText = "position:fixed;opacity:0";
@@ -524,8 +662,10 @@
             store.reset();
             renderPosts();
             renderCats();
+            renderFriends();
             resetEditor();
             resetCatForm();
+            resetFriendForm();
             msg($("[data-settings-msg]"), "已重置为初始数据。");
           }
           return;
@@ -554,8 +694,8 @@
           editingCatSlug = cat.slug;
           $("[data-cat-form-title]").textContent = "编辑分类：" + cat.name;
           $("#c-name").value = cat.name;
-          $("#c-slug").value = cat.slug;
           $("#c-desc").value = cat.desc || "";
+          $("[data-cat-form]").hidden = false;
           $("#c-name").focus();
           return;
         }
@@ -569,31 +709,116 @@
           }
           return;
         }
+        if (el.dataset.editFriend) {
+          var fd = store.friends().filter(function (f) { return f.id === el.dataset.editFriend; })[0];
+          if (!fd) return;
+          editingFriendId = fd.id;
+          $("[data-friend-form-title]").textContent = "编辑友链：" + fd.name;
+          $("#fl-name").value = fd.name;
+          $("#fl-url").value = fd.url;
+          $("#fl-avatar").value = fd.avatar || "";
+          $("#fl-desc").value = fd.desc || "";
+          $("[data-friend-editor]").hidden = false;
+          $("#fl-name").focus();
+          return;
+        }
+        if (el.dataset.delFriend) {
+          var fd2 = store.friends().filter(function (f) { return f.id === el.dataset.delFriend; })[0];
+          if (!fd2) return;
+          if (window.confirm("删除友链「" + fd2.name + "」？入口页卡组会同步移除。")) {
+            store.removeFriend(fd2.id);
+            msg($("[data-friend-msg]"), "已删除。");
+            renderFriends();
+          }
+          return;
+        }
       });
 
-      /* ---------- 媒体：选图 → 生成仓库引用 ---------- */
-      $("[data-media-input]").addEventListener("change", function () {
+      /* ---------- 媒体：图片引用库（localStorage 持久化，列出全部已收录） ----------
+         Demo 不做真正的文件上传；这里持久化「文件名 + 仓库引用码 + 缩略图」，
+         每次进入媒体面板都能看到本面已收录的全部图片与引用。 */
+      var MEDIA_KEY = "uum-demo-media-" + face;
+      function mediaAll() {
+        try { return JSON.parse(localStorage.getItem(MEDIA_KEY)) || []; } catch (e) { return []; }
+      }
+      function mediaSave(list) {
+        try { localStorage.setItem(MEDIA_KEY, JSON.stringify(list)); } catch (e) { window.uumToast("本地存储空间不足，缩略图可能未保存"); }
+      }
+      function renderMedia() {
         var list = $("[data-media-list]");
+        var all = mediaAll();
+        var total = $("[data-media-total]");
+        if (total) total.textContent = all.length;
+        if (!all.length) {
+          list.innerHTML = '<p class="admin-cat-none">还没有收录图片。点右上角「收录图片」选择本地图，会生成正式仓库路径的引用码并加入库里。</p>';
+          return;
+        }
+        list.innerHTML = all.map(function (m, i) {
+          var thumb = m.dataUrl
+            ? '<img src="' + m.dataUrl + '" alt="">'
+            : '<span class="admin-media-ph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>';
+          return '<div class="admin-media-row">' + thumb +
+            '<div class="admin-media-info">' +
+              "<b>" + escapeHtml(m.name) + "</b>" +
+              '<small class="admin-media-meta">' + escapeHtml(m.added) + " 收录 · " + escapeHtml(m.ref) + "</small>" +
+              '<code class="admin-media-ref">![' + escapeHtml(m.alt) + "](" + escapeHtml(m.ref) + ")</code>" +
+            "</div>" +
+            '<span class="admin-row-actions">' +
+              '<button class="admin-mini" data-media-copy="' + escapeHtml(m.ref) + '" data-media-name="' + escapeHtml(m.alt) + '">复制引用</button>' +
+              '<button class="admin-mini admin-mini--danger" data-media-del="' + i + '">移除</button>' +
+            "</span>" +
+            "</div>";
+        }).join("");
+      }
+
+      $("[data-media-input]").addEventListener("change", function () {
         var files = [].slice.call(this.files || []);
+        this.value = "";
         if (!files.length) return;
+        var all = mediaAll();
+        var pending = files.length, added = 0, dup = 0;
         files.forEach(function (file) {
           var ref = "/images/" + face + "/" + file.name;
+          if (all.some(function (m) { return m.ref === ref; })) { dup++; done(); return; }   /* 同名同名路径：已在库中 */
+          var entry = { name: file.name, ref: ref, alt: file.name.replace(/\.[^.]+$/, ""), added: new Date().toISOString().slice(0, 10), dataUrl: "" };
+          var img = new Image();
           var url = URL.createObjectURL(file);
-          var row = document.createElement("div");
-          row.className = "admin-media-row";
-          row.innerHTML =
-            '<img src="' + url + '" alt="">' +
-            '<div class="admin-media-info">' +
-              "<b>" + escapeHtml(file.name) + "</b>" +
-              '<code class="admin-media-ref">![' + escapeHtml(file.name.replace(/\.[^.]+$/, "")) + "](" + escapeHtml(ref) + ")</code>" +
-            "</div>" +
-            '<button class="admin-mini" data-media-copy="' + escapeHtml(ref) + '" data-media-name="' + escapeHtml(file.name.replace(/\.[^.]+$/, "")) + '">复制引用</button>';
-          list.insertBefore(row, list.firstChild);
+          var settle = function () { all.push(entry); added++; done(); };
+          img.onload = function () {
+            try {   /* 缩略图压缩到 112px，控制 localStorage 体积 */
+              var s = Math.min(1, 112 / Math.max(img.width, img.height));
+              var cv = document.createElement("canvas");
+              cv.width = Math.max(1, Math.round(img.width * s));
+              cv.height = Math.max(1, Math.round(img.height * s));
+              cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+              entry.dataUrl = cv.toDataURL("image/jpeg", 0.7);
+            } catch (e) {}
+            URL.revokeObjectURL(url);
+            settle();
+          };
+          img.onerror = function () { URL.revokeObjectURL(url); settle(); };
+          img.src = url;
         });
-        this.value = "";
+        function done() {
+          if (pending > 0 && --pending) return;
+          mediaSave(all);
+          renderMedia();
+          window.uumToast(dup ? "已收录 " + added + " 张，" + dup + " 张已在库中（按路径去重）" : "已收录 " + added + " 张图片");
+        }
       });
 
       document.addEventListener("click", function (e) {
+        var del = e.target.closest("[data-media-del]");
+        if (del) {
+          var all = mediaAll();
+          var i = parseInt(del.dataset.mediaDel, 10);
+          if (all[i] && window.confirm("从引用库移除「" + all[i].name + "」？（不影响已粘贴进文章的引用）")) {
+            all.splice(i, 1);
+            mediaSave(all);
+            renderMedia();
+          }
+          return;
+        }
         var btn = e.target.closest("[data-media-copy]");
         if (!btn) return;
         var text = "![" + btn.dataset.mediaName + "](" + btn.dataset.mediaCopy + ")";
@@ -607,17 +832,12 @@
         document.body.removeChild(ta);
       });
 
-      /* 分类名 → URL 短名自动预填 */
-      $("#c-name").addEventListener("input", function () {
-        if (editingCatSlug) return;
-        var v = this.value.trim();
-        if (/[\u4e00-\u9fa5]/.test(v)) { $("#c-slug").value = ""; return; }
-        $("#c-slug").value = v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      });
-
       renderCats();
       renderPosts();
+      renderFriends();
       resetEditor();
+      resetCatForm();
+      renderMedia();
     })();
   </script>
 </body>

@@ -1,0 +1,101 @@
+/* ==========================================================================
+   search.css —— 全站搜索页（PRD 5.1）
+   视觉与 demo 的搜索页一致：搜索框带图标 / 结果条（左侧作者色条）/ mark 高亮。
+   标签云与作者标识的基础样式在 components.css（标签页共用）。
+   ========================================================================== */
+
+.search-lead {
+  margin: 0 0 18px;
+  font-size: 0.92rem;
+  color: var(--text-2);
+}
+
+.search-box { position: relative; margin: 6px 0 20px; }
+.search-box input {
+  width: 100%;
+  padding: 14px 16px 14px 46px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text-1);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-m);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.search-box input:focus {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.search-box svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.search-meta {
+  font-size: 0.84rem;
+  color: var(--text-3);
+  margin: 0 0 16px;
+}
+
+/* 标签云在搜索页兼作「筛选器」：选中态高亮 */
+.tag-cloud a.is-active {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-deep);
+}
+
+/* ---------- 结果条 ---------- */
+.result-item {
+  display: block;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--item-accent, var(--accent));
+  border-radius: var(--radius-m);
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--t-fast), box-shadow var(--t-fast), border-color var(--t-fast);
+}
+.result-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+.result-item[data-face="uu"] { --item-accent: #ef9f27; }
+.result-item[data-face="mixt"] { --item-accent: #378add; }
+
+.result-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: var(--text-3);
+  margin-bottom: 7px;
+}
+.result-item h3 { margin: 0 0 6px; font-size: 1.04rem; }
+.result-item p { margin: 0; font-size: 0.88rem; color: var(--text-2); line-height: 1.7; }
+.result-snippet { margin-top: 6px !important; font-size: 0.84rem !important; color: var(--text-3) !important; }
+.result-item .chip-row { margin-top: 10px; }
+
+.result-pin {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  border: 1px solid var(--accent-border);
+}
+
+mark {
+  background: var(--accent-soft);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+.search-empty { margin-top: 8px; }
+.search-empty .tag-cloud { justify-content: center; margin: 16px 0 0; }

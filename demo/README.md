@@ -24,7 +24,8 @@ python -m http.server 8080
 | `mixt.html` | `/mixt/` | Mixt 面首页（同构镜像，主题色/内容独立） |
 | `uu-post.html` | `/uu/posts/<slug>/` | UU 文章详情：目录、代码块（行号/复制/着色）、上下篇、跨面引用 |
 | `mixt-post.html` | `/mixt/posts/<slug>/` | Mixt 文章详情：文首合规声明（PRD 3.7）、伪代码、gdb 记录 |
-| `uu-archive.html` | `/uu/writing/` | 归档：按年分组 + 可用的分类筛选 |
+| `uu-archive.html` | `/uu/writing/` | 归档：按年分组 + 统计行 + 年份锚点跳转（方案 C，决策 7.15） |
+| `mixt-archive.html` | `/mixt/writing/` | Mixt 归档（同构镜像） |
 | `uu-category.html` | `/uu/categories/` | UU 分类总览：5 个分类卡片 + 各分类文章列表 |
 | `mixt-category.html` | `/mixt/categories/` | Mixt 分类页：**空分类降级态**（PRD 验收项 7） |
 | `about.html` | `/about/` | 关于本站：双面结构、两位作者、运转方式、技术与备案说明 |

@@ -1,0 +1,14 @@
+[2m19:35:10[22m [34m[content][39m Syncing content
+[31m[InvalidContentEntryDataError][39m [1muu → test-bad-author[22m data does not match collection schema.
+
+  [1mdescription[22m: description 不能少于 60 字符
+
+  [1mHint:[22m
+[33m    See [4mhttps://docs.astro.build/en/guides/content-collections/[24m for more information on content schemas.[39m
+  [1mError reference:[22m
+    [36m[4mhttps://docs.astro.build/en/reference/errors/invalid-content-entry-data-error/[24m[39m
+  [1mLocation:[22m
+    [4mD:\cppsoft\workbuddy\UU&Mixt\src\content\uu\test-bad-author.md:0:0[24m
+  [1mStack trace:[22m
+[2m    at getEntryDataAndImages (file:///D:/cppsoft/workbuddy/UU&Mixt/node_modules/astro/dist/content/utils.js:168:26)
+    at async syncData (D:/cppsoft/workbuddy/UU&Mixt/node_modules/astro/dist/content/loaders/glob.js:97:28)[22m

@@ -1,0 +1,92 @@
+/* tokens.css —— 设计令牌 + 明暗模式 + 双面主题（自 demo/assets/demo.css 原样迁移） */
+/* ---------- 1. 设计令牌 ---------- */
+:root {
+  --font-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, Menlo,
+    "Courier New", monospace;
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 18px;
+  --header-h: 60px;
+  --content-w: 820px;
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-2: 0 12px 32px rgba(15, 23, 42, 0.13);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);       /* PRD 4.2 翻转缓动 */
+  /* 直接压在（虚化/清晰）背景图上的次级文字：比 --text-2 深一档，保 4.5:1 */
+  --on-bg-2: #434d69;
+  --t-fast: 160ms;
+  --t-mid: 300ms;
+}
+
+/* ---------- 2. 明暗模式（全局，两套主题均满足 WCAG AA 正文对比度） ---------- */
+:root {
+  color-scheme: light;
+  --bg: #f5f6f8;
+  --bg-soft: #eceef2;
+  --surface: #ffffff;
+  --surface-2: #fafbfd;
+  --border: #e5e8ee;
+  --border-strong: #d2d7e1;
+  --text-1: #1c2434;
+  --text-2: #59637a;
+  --text-3: #8b93a8;
+  --selection: rgba(59, 130, 246, 0.22);
+  /* 代码块恒定深色（两种模式下观感一致，仿参考博客） */
+  --code-bg: #0f1523;
+  --code-border: #1e2a44;
+  --code-line: #39466a;
+  --code-text: #dbe4f5;
+}
+html[data-mode="dark"] {
+  color-scheme: dark;
+  --bg: #0d121d;
+  --bg-soft: #171e2c;
+  --surface: #151c2a;
+  --surface-2: #1a2233;
+  --border: #28324a;
+  --border-strong: #3a4664;
+  --text-1: #e7ecf5;
+  --text-2: #a7b0c3;
+  --text-3: #6d7890;
+  --selection: rgba(125, 180, 255, 0.28);
+  --on-bg-2: #c3ccdd;
+  --code-bg: #0b101c;
+  --code-border: #1b2540;
+}
+
+/* ---------- 3. 双面主题（强调色取自两位作者的头像占位 SVG） ----------
+   UU  面取 uu.svg   的 #EF9F27（琥珀）
+   Mixt 面取 mixt.svg 的 #378ADD（蓝）
+   --accent      装饰级（填充、边框、代码关键字）
+   --accent-deep 文本级（链接、按钮文字，浅色下 ≥ 4.5:1）           */
+body[data-face="uu"] {
+  --accent: #ef9f27;
+  --accent-deep: #96590a;
+  --accent-soft: rgba(239, 159, 39, 0.13);
+  --accent-border: rgba(239, 159, 39, 0.5);
+}
+html[data-mode="dark"] body[data-face="uu"] {
+  --accent-deep: #f3b254;
+  --accent-soft: rgba(239, 159, 39, 0.15);
+}
+body[data-face="mixt"] {
+  --accent: #378add;
+  --accent-deep: #1b62b5;
+  --accent-soft: rgba(55, 138, 221, 0.11);
+  --accent-border: rgba(55, 138, 221, 0.5);
+}
+html[data-mode="dark"] body[data-face="mixt"] {
+  --accent-deep: #85b9f2;
+  --accent-soft: rgba(55, 138, 221, 0.16);
+}
+/* 入口页 / 共享页：中性强调色，卡片各自取面主题色 */
+body[data-face="shared"] {
+  --accent: #64708c;
+  --accent-deep: #46516e;
+  --accent-soft: rgba(100, 112, 140, 0.1);
+  --accent-border: rgba(100, 112, 140, 0.4);
+}
+html[data-mode="dark"] body[data-face="shared"] {
+  --accent-deep: #a3aec8;
+}

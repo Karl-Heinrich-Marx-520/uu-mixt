@@ -1,0 +1,29 @@
+---
+/**
+ * Hero.astro —— 面首页整屏高清封面（[页面与模板]）
+ * 与 demo 的 .hero 结构一致：清晰图（不虚化）+ veil + 头像 + 面名 + 方向 + 下滑引导。
+ * Props:
+ *   face: "uu" | "mixt"
+ *   name: 面名（UU / Mixt）
+ *   tagline: 方向标签
+ */
+interface Props {
+  face: "uu" | "mixt";
+  name: string;
+  tagline: string;
+}
+const { face, name, tagline } = Astro.props;
+---
+<section class="hero" aria-label={`${name} 的一面 · 封面`}>
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-veil" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <img src={`/assets/avatars/${face}.jpg`} alt={`${name} 的头像`} width="96" height="96">
+    <h1 class="hero-title">{name}<span class="hero-tag">这一面</span></h1>
+    <p class="hero-tagline">{tagline}</p>
+  </div>
+  <a class="hero-scroll" href="#content">
+    <span>下滑查看简介与文章</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+  </a>
+</section>

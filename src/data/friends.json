@@ -1,0 +1,98 @@
+[
+  {
+    "name": "云端牧码",
+    "url": "https://example.com/yunmuma",
+    "avatar": "",
+    "desc": "写云计算与分布式系统的实验记录，偏好可复现的部署清单。"
+  },
+  {
+    "name": "栈外",
+    "url": "https://example.com/zhanwai",
+    "avatar": "",
+    "desc": "聊编程语言之外的事：编译器、运行时与一点哲学。"
+  },
+  {
+    "name": "像素底片",
+    "url": "https://example.com/pixelphoto",
+    "avatar": "",
+    "desc": "复古游戏美术与独立开发日志，偶尔更新像素画教程。"
+  },
+  {
+    "name": "夜航西飞",
+    "url": "https://example.com/nightfly",
+    "avatar": "",
+    "desc": "网络工程方向，BGP 与数据中心网络的踩坑合集。"
+  },
+  {
+    "name": "炉边谈话",
+    "url": "https://example.com/hearth",
+    "avatar": "",
+    "desc": "安全研究员的随笔：漏洞之外，还有生活。"
+  },
+  {
+    "name": "零点客栈",
+    "url": "https://example.com/inn0",
+    "avatar": "",
+    "desc": "后端与数据库，PostgreSQL 深度爱好者。"
+  },
+  {
+    "name": "拾荒者手记",
+    "url": "https://example.com/scavenger",
+    "avatar": "",
+    "desc": "在开源项目里捡宝贝：源码阅读与提交考古。"
+  },
+  {
+    "name": "南方小院",
+    "url": "https://example.com/southyard",
+    "avatar": "",
+    "desc": "自建服务器的折腾史：NAS、家庭实验室与电费账单。"
+  },
+  {
+    "name": "白板与咖啡",
+    "url": "https://example.com/whiteboard",
+    "avatar": "",
+    "desc": "算法竞赛退役选手的复出训练场。"
+  },
+  {
+    "name": "回声谷",
+    "url": "https://example.com/echovalley",
+    "avatar": "",
+    "desc": "音频编程与信号处理，用代码做声音的实验。"
+  },
+  {
+    "name": "折纸引擎",
+    "url": "https://example.com/origami",
+    "avatar": "",
+    "desc": "图形学与渲染管线，WebGPU 尝鲜系列。"
+  },
+  {
+    "name": "慢速快门",
+    "url": "https://example.com/slowshutter",
+    "avatar": "",
+    "desc": "摄影 + 前端，把照片做成会动的网页。"
+  },
+  {
+    "name": "候鸟电台",
+    "url": "https://example.com/migratory",
+    "avatar": "",
+    "desc": "weekly 技术播客的文字稿与延伸阅读。"
+  },
+  {
+    "name": "齿轮与诗",
+    "url": "https://example.com/gearpoem",
+    "avatar": "",
+    "desc": "机械键盘、固件改造与一点工业设计审美。"
+  },
+  {
+    "name": "面包屑导航",
+    "url": "https://example.com/breadcrumb",
+    "avatar": "",
+    "desc": "产品与工程的交叉地带，写原型背后的思考。"
+  },
+  {
+    "name": "北极星组件",
+    "url": "https://example.com/polaris",
+    "avatar": "",
+    "desc": "前端架构与设计系统，组件库的长期主义。"
+  }
+]

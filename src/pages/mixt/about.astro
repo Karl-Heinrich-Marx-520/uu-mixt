@@ -1,0 +1,82 @@
+---
+/**
+ * Mixt 作者页（镜像 UU，只换内容与主题变量）
+ * 结构按 demo 的 uu-about.html：作者信息 + 在做什么 + 这一面的分类索引 + 技术栈 + 联系。
+ */
+import Layout from "../../components/Layout.astro";
+import { categories, categoryCount, published } from "../../lib/content-layer";
+
+const face = "mixt" as const;
+const cats = categories(face);
+const posts = await published(face);
+const catWithCount = await Promise.all(
+  cats.map(async (c) => ({ ...c, count: await categoryCount(face, c.name) }))
+);
+const facts = [
+  { t: "堆与分配器", d: "glibc malloc 的实现细节：chunk 布局、tcache / fastbin 行为与各版本的保护机制差异。" },
+  { t: "利用手法拆解", d: "把常见手法按适用版本、前置条件与代价做成对照表，说明各自在什么场景下会失效。" },
+  { t: "CTF 复盘", d: "记录从信息收集到偏移计算的完整判断链，地址与细节全部打码，只留思路。" },
+  { t: "可复现环境", d: "用容器固定 glibc 版本与调试器配置，让每次实验都能在同一套环境里复现。" },
+];
+const stack = ["PWN", "glibc", "gdb / pwndbg", "IDA", "Python", "Docker", "Linux", "CTF"];
+---
+<Layout
+  face="mixt"
+  flipTo="/uu/"
+  title="关于 Mixt · UU&Mixt"
+  description="Mixt：PWN 二进制安全方向，写漏洞分析、利用技巧与 CTF writeup。"
+>
+  <Fragment slot="nav">
+    <a href="/mixt/">首页</a>
+    <a href="/mixt/writing/">归档</a>
+    <a href="/mixt/categories/">分类</a>
+    <a href="/mixt/about/" aria-current="page">关于</a>
+  </Fragment>
+
+  <section class="author-hero" aria-label="作者信息">
+    <img src="/assets/avatars/mixt.jpg" alt="Mixt 的头像">
+    <div>
+      <h1>Mixt</h1>
+      <p class="author-dir">PWN · 二进制安全 · CTF</p>
+      <p class="author-bio">主攻 PWN 二进制安全。写漏洞分析、利用技巧与 CTF writeup，关注机制层面「为什么可行」与「什么条件下失效」。所有内容遵守合规措辞规则：自建环境、伪代码与打码、不提供可直接复用的完整利用程序。</p>
+    </div>
+  </section>
+
+  <section class="author-section">
+    <h2>在做什么 <small>共 {posts.length} 篇文章</small></h2>
+    <div class="author-facts">
+      {facts.map((f) => (
+        <div class="author-fact">
+          <b>{f.t}</b>
+          <span>{f.d}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {catWithCount.length > 0 && (
+    <section class="author-section">
+      <h2>这一面的分类</h2>
+      <div class="author-links">
+        {catWithCount.map((c) => (
+          <a href={`/mixt/categories/#cat-${c.slug}`}>{c.name}（{c.count} 篇）</a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="author-section">
+    <h2>技术栈</h2>
+    <div class="chip-row">
+      {stack.map((t) => <span class="chip">{t}</span>)}
+    </div>
+  </section>
+
+  <section class="author-section">
+    <h2>联系</h2>
+    <div class="author-links">
+      <a href="/mixt/writing/">看 Mixt 的全部文章</a>
+    </div>
+    <p style="margin-top:16px"><a class="author-cta" href="/mixt/">进入 Mixt 的一面 →</a></p>
+  </section>
+</Layout>

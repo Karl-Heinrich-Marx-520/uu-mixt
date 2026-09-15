@@ -1,0 +1,67 @@
+---
+/**
+ * Mixt 面归档页（镜像 UU：只换内容与主题变量）—— 按年份倒序分组（时间维度视图）
+ * 方案 C（决策 7.15）：统计行 + 年份锚点跳转条；「按分类找」完全交给分类页。
+ */
+import Layout from "../../../components/Layout.astro";
+import { published } from "../../../lib/content-layer";
+import { formatDate } from "../../../lib/format";
+
+const face = "mixt" as const;
+const posts = await published(face);
+
+/* 按年份分组（倒序） */
+const byYear = new Map<number, typeof posts>();
+for (const p of posts) {
+  const y = p.data.date.getFullYear();
+  if (!byYear.has(y)) byYear.set(y, []);
+  byYear.get(y)!.push(p);
+}
+const years = [...byYear.keys()].sort((a, b) => b - a);
+const yearStats = years.map((y) => `${y} 年 ${byYear.get(y)!.length} 篇`).join(" · ");
+---
+<Layout
+  face="mixt"
+  flipTo="/uu/"
+  title="归档 · Mixt 的文章 · UU&Mixt"
+  description="Mixt 一面的全部文章归档，按年份倒序分组，附年份分布统计与锚点跳转。"
+>
+  <Fragment slot="nav">
+    <a href="/mixt/">首页</a>
+    <a href="/mixt/writing/" aria-current="page">归档</a>
+    <a href="/mixt/categories/">分类</a>
+    <a href="/mixt/about/">关于</a>
+  </Fragment>
+
+  <h1 style="font-size:1.5rem;margin:6px 0 22px">归档 <small style="font-size:.85rem;color:var(--text-3);font-weight:400">{posts.length > 0 ? `共 ${posts.length} 篇 · ${yearStats}` : "按年份倒序"}</small></h1>
+
+  {years.length > 1 && (
+    <nav class="archive-nav" aria-label="年份跳转">
+      {years.map((y) => (
+        <a href={`#year-${y}`}>{y} <small>{byYear.get(y)!.length} 篇</small></a>
+      ))}
+    </nav>
+  )}
+
+  {posts.length === 0 && (
+    <div class="empty-state">
+      <h2>还没有可归档的文章</h2>
+      <p>在写作台发布第一篇即可在这里看到。</p>
+    </div>
+  )}
+
+  {years.map((y) => (
+    <Fragment>
+      <h2 class="archive-year" id={`year-${y}`}>{y} <small>{byYear.get(y)!.length} 篇</small></h2>
+      <ul class="archive-list">
+        {byYear.get(y)!.map((p) => (
+          <li class="archive-row">
+            <time datetime={formatDate(p.data.date)}>{formatDate(p.data.date).slice(5)}</time>
+            <a href={`/${face}/posts/${p.data.slug}/`}>{p.data.title}</a>
+            {p.data.category && <span class="chip chip--cat">{p.data.category}</span>}
+          </li>
+        ))}
+      </ul>
+    </Fragment>
+  ))}
+</Layout>

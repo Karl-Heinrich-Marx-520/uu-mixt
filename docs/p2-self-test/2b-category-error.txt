@@ -1,0 +1,1 @@
+[内容校验失败] src/content/uu/test-bad-category.md · 字段「category」· 「不存在的分类」未在本面分类配置中登记（已登记：C++ / 网络编程 / 源码阅读 / 科研复现 / 工程实践）

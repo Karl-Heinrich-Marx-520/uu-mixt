@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>归档 · UU 的文章 · UU&amp;Mixt</title>
-  <meta name="description" content="UU 一面的全部文章归档，按年份倒序分组，支持按分类筛选。">
-  <link rel="stylesheet" href="assets/demo.css?v=7">
+  <meta name="description" content="UU 一面的全部文章归档，按年份倒序分组，附年份分布统计与锚点跳转。">
+  <link rel="stylesheet" href="assets/demo.css?v=16">
 </head>
 <body data-face="uu" data-flip-to="mixt.html">
 
@@ -51,14 +51,7 @@
   <main class="page" id="main">
     <h1 style="font-size:1.5rem;margin:6px 0 22px">归档 <small style="font-size:.85rem;color:var(--text-3);font-weight:400" data-archive-counter>按年份倒序</small></h1>
 
-    <div class="filter-bar" role="group" aria-label="分类筛选">
-      <button class="filter-chip is-active" data-filter="all">全部</button>
-      <button class="filter-chip" data-filter="C++">C++</button>
-      <button class="filter-chip" data-filter="网络编程">网络编程</button>
-      <button class="filter-chip" data-filter="源码阅读">源码阅读</button>
-      <button class="filter-chip" data-filter="科研复现">科研复现</button>
-      <button class="filter-chip" data-filter="工程实践">工程实践</button>
-    </div>
+    <nav class="archive-nav" data-archive-nav aria-label="年份跳转"></nav>
 
     <div data-archive="uu">
       <!-- 无 JS 时保留为空；内容由 assets/demo-store.js + demo.js 渲染 -->
@@ -88,7 +81,8 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
   </button>
 
-  <script src="assets/demo-store.js?v=7"></script>
-  <script src="assets/demo.js?v=7"></script>
+  <script src="assets/demo-store.js?v=9"></script>
+  <script src="assets/demo.js?v=11"></script>
+  <script src="assets/pet.js?v=7"></script>
 </body>
 </html>

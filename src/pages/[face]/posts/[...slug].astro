@@ -1,0 +1,135 @@
+---
+/**
+ * 文章详情页（[页面与模板]）—— 构建期生成，交互与 demo/post.html 一致：
+ * 分类徽章 / 标题 / 作者与日期 / 正文（Markdown + 代码高亮行号复制）/
+ * 自动目录（h2/h3）/ 上下篇（限同面）/ Mixt 面合规声明 / 正文方框拖宽。
+ */
+import { render } from "astro:content";
+import Layout from "../../../components/Layout.astro";
+import { published, categories, type Face } from "../../../lib/content-layer";
+import { charCount, readMinutes, formatWords, formatDate } from "../../../lib/format";
+import categoriesUU from "../../../config/categories-uu.json";
+import categoriesMixt from "../../../config/categories-mixt.json";
+
+export async function getStaticPaths() {
+  const faces: Face[] = ["uu", "mixt"];
+  const paths = [];
+  for (const face of faces) {
+    const posts = await published(face);
+    for (const post of posts) {
+      paths.push({ params: { face, slug: post.data.slug }, props: { post, face } });
+    }
+  }
+  return paths;
+}
+
+const { post, face } = Astro.props;
+const d = post.data;
+const chars = charCount(post.body ?? "");
+const AUTHOR = {
+  uu: { name: "UU", avatar: "/assets/avatars/uu.jpg", other: "mixt", otherName: "Mixt" },
+  mixt: { name: "Mixt", avatar: "/assets/avatars/mixt.jpg", other: "uu", otherName: "UU" },
+} as const;
+const me = AUTHOR[face as Face];
+const other = AUTHOR[me.other as Face];
+
+/* 本面分类配置（空配置面不显示分类标签，PRD 3.5） */
+const cats = face === "uu" ? categoriesUU : categoriesMixt;
+const showCategory = cats.length > 0 && !!d.category;
+
+/* 上下篇（限同面，与 demo 一致：列表按 featured/日期排序后的相邻项） */
+const list = await published(face as Face);
+const idx = list.findIndex((p) => p.data.slug === d.slug);
+const prev = idx > 0 ? list[idx - 1] : null;
+const next = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
+
+/* 目录：从渲染后的正文标题生成（与 demo 的 h2/h3 目录一致） */
+const { Content, headings } = await render(post);
+/* 分享用的正式地址（面路由） */
+const canonical = new URL(`/${face}/posts/${d.slug}/`, Astro.site).href;
+---
+
+<Layout
+  face={face}
+  flipTo={`/${me.other}/`}
+  title={`${d.title} · ${me.name} 的文章 · UU&Mixt`}
+  description={d.description}
+  bodyClass="article-page"
+  scripts={["/scripts/article.js"]}
+>
+  <Fragment slot="nav">
+    <a href={`/${face}/`}>首页</a>
+    <a href={`/${face}/writing/`}>归档</a>
+    <a href={`/${face}/categories/`}>分类</a>
+    <a href={`/${face}/about/`}>关于</a>
+  </Fragment>
+
+  <div class="page">
+    <div class="article-layout">
+      <article>
+        <header class="article-header">
+          {showCategory && <span class="chip chip--cat">{d.category}</span>}
+          <h1>{d.title}</h1>
+          <div class="article-meta">
+            <span class="author"><img src={me.avatar} alt="" width="26" height="26">{me.name}</span>
+            <span class="dot" aria-hidden="true">|</span>
+            <time datetime={formatDate(d.date)}>{formatDate(d.date)}</time>
+            <span class="dot" aria-hidden="true">|</span>
+            <span>{formatWords(chars)} 字 · 约 {readMinutes(chars)} 分钟</span>
+            {/* PRD 5.3 分享：移动端优先系统原生分享，桌面端降级为复制链接。
+                分享地址是该面的正式路由，接收方直达且不播翻转动画（PRD 4.2 / G2）。 */}
+            <button
+              class="share-btn"
+              type="button"
+              data-action="share"
+              data-url={canonical}
+              data-title={d.title}
+              aria-label="分享这篇文章"
+              title="分享（复制链接，移动端调用系统分享）"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 16V3M8 7l4-4 4 4"/></svg>
+              分享
+            </button>
+          </div>
+          {d.updated && +d.updated > +d.date && (
+            <p class="updated-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              最后更新于 {formatDate(d.updated)}
+            </p>
+          )}
+        </header>
+
+        {face === "mixt" && (
+          <div class="notice notice--warn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            <span><strong>合规声明：</strong>本文仅用于安全研究与防御，全部实验在自建环境完成；代码为伪代码或已打码，不包含可直接复用的完整利用程序（PRD 3.7）。</span>
+          </div>
+        )}
+
+        <div class="prose">
+          <Content />
+        </div>
+
+        <nav class="post-nav" aria-label="上一篇与下一篇">
+          {prev ? (
+            <a class="prev" href={`/${face}/posts/${prev.data.slug}/`}><span>上一篇</span><b>{prev.data.title}</b></a>
+          ) : <span />}
+          {next ? (
+            <a class="next" href={`/${face}/posts/${next.data.slug}/`}><span>下一篇</span><b>{next.data.title}</b></a>
+          ) : <span />}
+        </nav>
+      </article>
+
+      {headings.length > 0 && (
+        <aside class="toc">
+          <div class="toc-title">目录</div>
+          <nav>
+            {headings.filter((h) => h.depth === 2 || h.depth === 3).map((h) => (
+              <a href={`#${h.slug}`} class={h.depth === 3 ? "toc-sub" : undefined}>{h.text}</a>
+            ))}
+          </nav>
+        </aside>
+      )}
+    </div>
+  </div>
+</Layout>

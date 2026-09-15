@@ -1,0 +1,35 @@
+---
+/**
+ * 404（共享页，[页面与模板]）
+ * 规格（PRD 4.4）：识别来源面（URL 前缀），提供对应面返回入口 + 搜索入口（搜索在任务包 5，先给占位）；
+ * 不做彩蛋动画。
+ */
+import Layout from "../components/Layout.astro";
+---
+<Layout
+  face="shared"
+  title="页面不存在 · UU&Mixt"
+  description="没有找到这个页面。"
+>
+  <Fragment slot="nav">
+    <a href="/">入口页</a>
+    <a href="/uu/">UU 的一面</a>
+    <a href="/mixt/">Mixt 的一面</a>
+  </Fragment>
+
+  <div class="empty-state" style="margin-top:28px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+    </svg>
+    <h2>404 · 没有找到这个页面</h2>
+    <p>链接可能已经失效，或者地址打错了。可以从下面几个入口重新找：</p>
+    <div class="author-links" style="justify-content:center;margin-top:14px">
+      <a href="/uu/">UU 的一面</a>
+      <a href="/mixt/">Mixt 的一面</a>
+      <a href="/">回到入口页</a>
+    </div>
+    <p style="margin-top:16px">
+      <a class="author-cta" href="/search/">用全站搜索找</a>
+    </p>
+  </div>
+</Layout>

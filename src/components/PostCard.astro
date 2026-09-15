@@ -1,0 +1,39 @@
+---
+/**
+ * PostCard.astro —— 文章卡片（[页面与模板]）
+ * 与 demo 的卡片渲染逐字段一致：置顶徽章 / 日期 / 字数·时长 / 标题 / 分类+标签 / 摘要 / 阅读全文。
+ */
+import { charCount, readMinutes, formatWords } from "../lib/format";
+import type { Post } from "../lib/content-layer";
+import type { Face } from "../lib/content-layer";
+
+interface Props {
+  post: Post;
+  face: Face;
+}
+const { post, face } = Astro.props;
+const d = post.data;
+const words = formatWords(charCount(post.body ?? ""));
+const minutes = readMinutes(charCount(post.body ?? ""));
+const href = `/${face}/posts/${d.slug}/`;
+const tags = (d.tags ?? []).slice(0, 3);
+---
+<a class="post-card" href={href}>
+  <div class="post-meta">
+    {d.featured && (
+      <span class="pin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6l-1 6 3 4H7l3-4-1-6zM12 14v7"/></svg>
+        置顶
+      </span>
+    )}
+    <time datetime={d.date.toISOString().slice(0, 10)}>{d.date.toISOString().slice(0, 10)}</time>
+    <span>{words} 字 · 约 {minutes} 分钟</span>
+  </div>
+  <h2>{d.title}</h2>
+  <div class="chip-row">
+    {d.category && <span class="chip chip--cat">{d.category}</span>}
+    {tags.map((t) => <span class="chip">{t}</span>)}
+  </div>
+  <p class="post-excerpt">{d.description}</p>
+  <span class="read-more">阅读全文 <span class="arr">→</span></span>
+</a>

@@ -1,0 +1,1 @@
+[内容校验失败] src/content/uu/test-dup-slug.md · 字段「slug」冲突 · 「cpp20-coroutine-frame」已被 src/content/uu/cpp20-coroutine-frame.md 使用 · 期望：同面内唯一（slug 一经发布即冻结，请为新文章换标题或手动改短名）

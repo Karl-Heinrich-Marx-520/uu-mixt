@@ -1,0 +1,130 @@
+---
+/**
+ * 入口页（[共享外壳]）—— 四状态翻牌入场
+ * 结构、文案、卡片字段与 demo/index.html 一致；
+ * 卡片统计（文章数 / 最近更新 / 最近发布）由内容层实时生成。
+ */
+import "../styles/tokens.css";
+import "../styles/base.css";
+import "../styles/shell.css";
+import "../styles/face.css";
+import "../styles/entry.css";
+import "../styles/pet.css";
+import { published } from "../lib/content-layer";
+import { formatDate } from "../lib/format";
+import friends from "../data/friends.json";
+
+/* 友链数据（PRD E8）：构建期读 src/data/friends.json 内联进页面，friends.js 只读不请求。
+   `<` 转义为 \u003c，防止数据里出现 </script> 截断标签。 */
+const friendsJson = JSON.stringify(friends).replace(/</g, "\\u003c");
+
+const faces = [
+  { key: "uu" as const, name: "UU", dir: "C++ 后端 · 网络编程 · 科研复现" },
+  { key: "mixt" as const, name: "Mixt", dir: "PWN · 二进制安全 · CTF" },
+];
+
+const cards = await Promise.all(
+  faces.map(async (f) => {
+    const posts = await published(f.key);
+    return {
+      ...f,
+      count: posts.length,
+      latest: posts[0] ?? null,
+    };
+  })
+);
+---
+<!DOCTYPE html>
+<html lang="zh-CN" data-mode="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UU&amp;Mixt · 双作者双面技术博客</title>
+  <meta name="description" content="一个可以整站翻转的双作者博客：UU 写 C++ 后端与网络编程，Mixt 写 PWN 二进制安全。两个人，各占一面。">
+  <link rel="preload" as="image" href="/assets/bg/bg-entry.jpg">
+  <script is:inline id="uum-friends-data" type="application/json" set:html={friendsJson}></script>
+</head>
+<body data-face="shared" data-page="entry" class="entry-has-bg">
+
+  <div class="entry-bg" aria-hidden="true"></div>
+  <div class="entry-veil" aria-hidden="true"></div>
+
+  <button class="icon-btn mode-float" data-action="toggle-mode" aria-label="切换明暗模式" title="切换明暗模式"
+          style="position:fixed;top:18px;right:18px;z-index:80;background:var(--surface)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+    </svg>
+  </button>
+
+  <main class="entry">
+    <h1 class="entry-title">UU<span class="amp">&amp;</span>Mixt</h1>
+    <p class="entry-sub">一个可以整站翻转的双作者博客 —— 两个人，各占一面，互不干涉</p>
+    <nav class="entry-links" aria-label="站点级链接">
+      <a href="/rss.xml">RSS</a>
+      <a href="/search/">全站搜索</a>
+    </nav>
+
+    <!-- 两张作者卡片：S0 并列 → S1 收拢 → S2 翻转 → S3 放大入场 -->
+    <div class="stage" role="group" aria-label="选择要进入的作者面">
+      {cards.map((c) => (
+        <a class={`entry-card entry-card--${c.key}`} href={`/${c.key}/`} data-face={c.key}>
+          <span class="card-front">
+            <img class="avatar" src={`/assets/avatars/${c.key}.jpg`} alt={`${c.name} 的头像`} width="86" height="86">
+            <span class="name">{c.name}</span>
+            <p class="dir">{c.dir}</p>
+            <span class="card-divider" aria-hidden="true"></span>
+            <span class="card-stats">
+              <span><b>{c.count}</b>篇文章</span>
+              <span><b>{c.latest ? formatDate(c.latest.data.date) : "—"}</b>最近更新</span>
+            </span>
+            <span class="card-latest">
+              最近发布
+              <span class="t">{c.latest ? c.latest.data.title : "还没有发布文章"}</span>
+            </span>
+            <span class="card-enter">进入这一面 →</span>
+          </span>
+          <span class="card-back" aria-hidden="true">
+            <span class="mark">U&amp;M</span>
+            <span class="hint">正在进入 {c.name} 的一面</span>
+            <span class="sub">uuandmixt.com/{c.key}/</span>
+          </span>
+        </a>
+      ))}
+    </div>
+
+    <p class="entry-hint" aria-live="polite">选择一张卡片，进入该作者的一面</p>
+
+    <footer class="entry-foot">
+      <p style="margin:0">
+        本站由 UU 与 Mixt 各自独立维护，两面内容互不干涉 ·
+        <a href="/about/">关于本站</a>
+        <span class="sep">·</span>
+        <a href="/admin/">写作台</a>
+      </p>
+      <p class="entry-ext-note">友链均为外部站点，其内容与本站无关（PRD E8）</p>
+      <p class="icp" style="margin-top:6px">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">湘ICP备XXXXXXXX号-1（备案审核中，上线后展示正式备案号）</a>
+      </p>
+    </footer>
+  </main>
+
+  <noscript>
+    <style>.entry-hint{display:none}</style>
+    <p style="text-align:center;color:var(--text-3)">JavaScript 已禁用：卡片可直接点击进入对应作者面（整页跳转）。</p>
+    <!-- 无 JS 兜底（PRD E8）：友链构建期渲染为纯文本列表，卡组只是 JS 增强层 -->
+    <ul class="entry-friends-noscript">
+      {friends.map((f) => (
+        <li>
+          <a href={f.url} target="_blank" rel="noopener">{f.name}</a>
+          <span class="d">{f.desc}</span>
+        </li>
+      ))}
+    </ul>
+  </noscript>
+
+  <script is:inline src="/scripts/core.js"></script>
+  <script is:inline src="/scripts/entry.js"></script>
+  <script is:inline src="/scripts/friends.js" defer></script>
+  <script is:inline src="/scripts/pet.js" defer></script>
+</body>
+</html>

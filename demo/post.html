@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>文章 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 文章详情（内容层渲染）。">
-  <link rel="stylesheet" href="assets/demo.css?v=7">
+  <link rel="stylesheet" href="assets/demo.css?v=16">
 </head>
 <body data-face="uu" class="article-page">
 
@@ -26,9 +26,9 @@
       </a>
       <nav class="nav" data-face-nav aria-label="面导航"></nav>
       <div class="header-actions">
-        <a class="icon-btn" href="search.html" aria-label="全站搜索" title="全站搜索：一次搜索覆盖两面">
+        <button class="icon-btn" data-action="todo" data-msg="全站搜索将在 M6 提供：一次搜索覆盖两面，结果标识所属作者" aria-label="全站搜索" title="全站搜索（M6）">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        </a>
+        </button>
         <button class="icon-btn" data-action="toggle-mode" aria-label="切换明暗模式" title="切换明暗模式">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         </button>
@@ -81,9 +81,9 @@
     <div class="footer-inner">
       <div class="footer-brand">UU<span class="amp">&amp;</span>Mixt</div>
       <nav class="footer-links" aria-label="站点级链接">
-        <a href="search.html">全站搜索</a>
+        <a href="#" data-action="todo" data-msg="全站搜索将在 M6 提供">全站搜索</a>
         <span class="sep">·</span>
-        <a href="tags.html">标签</a>
+        <a href="#" data-action="todo" data-msg="标签页未在本 Demo 中制作，正式实现由构建期生成">标签</a>
         <span class="sep">·</span>
         <a href="about.html">关于本站</a>
         <span class="sep">·</span>
@@ -101,8 +101,8 @@
   </button>
 
   <script src="assets/demo-md.js?v=7"></script>
-  <script src="assets/demo-store.js?v=7"></script>
-  <script src="assets/demo.js?v=7"></script>
+  <script src="assets/demo-store.js?v=9"></script>
+  <script src="assets/demo.js?v=11"></script>
   <script>
     /* 文章详情页：按 ?face=&slug= 从内容层取文章并渲染（正文为 Markdown） */
     (function () {
@@ -113,7 +113,7 @@
         uu: { name: "UU", avatar: "assets/uu.jpg", other: "mixt", otherName: "Mixt",
               home: "uu.html", archive: "uu-archive.html", category: "uu-category.html", about: "uu-about.html" },
         mixt: { name: "Mixt", avatar: "assets/mixt.jpg", other: "uu", otherName: "UU",
-                home: "mixt.html", archive: "mixt-archive.html", category: "mixt-category.html", about: "mixt-about.html" }
+                home: "mixt.html", archive: "", category: "mixt-category.html", about: "mixt-about.html" }
       };
 
       function esc(s) {
@@ -150,7 +150,9 @@
       $("[data-footer-face]").textContent = meta.name + " 的一面 · Demo 版";
       $("[data-face-nav]").innerHTML =
         '<a href="' + meta.home + '">首页</a>' +
-        '<a href="' + meta.archive + '">归档</a>' +
+        (meta.archive
+          ? '<a href="' + meta.archive + '">归档</a>'
+          : '<a href="#" data-action="todo" data-msg="Mixt 面的归档页未在本 Demo 中制作，结构与 UU 面对称">归档</a>') +
         '<a href="' + meta.category + '">分类</a>' +
         '<a href="' + meta.about + '">关于</a>';
       $(".flip-btn").title = "翻到 " + meta.otherName + " 的一面（Alt + ←/→）";
@@ -226,5 +228,6 @@
         (next ? '<a class="next" href="' + href(next) + '"><span>下一篇</span><b>' + esc(next.title) + "</b></a>" : "<span></span>");
     })();
   </script>
+  <script src="assets/pet.js?v=7"></script>
 </body>
 </html>

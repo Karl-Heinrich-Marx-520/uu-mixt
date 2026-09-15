@@ -1,0 +1,297 @@
+/* face.css —— 面首页：左侧栏（作者卡片 + 网站信息）+ Hero 全景 + 常驻虚化背景（自 demo 原样迁移） */
+/* ---------- 7. 面首页：左侧栏 + 文章主栏（demo.css 第 7 节） ---------- */
+.home-layout {
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+.home-side {
+  display: grid;
+  gap: 18px;
+  position: sticky;
+  top: 84px;
+}
+.side-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  padding: 24px 20px 20px;
+  box-shadow: var(--shadow-1);
+}
+.author-card { text-align: center; }
+.side-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent-border);
+}
+.side-name {
+  font-size: 1.18rem;
+  margin: 12px 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.side-name .face-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  border-radius: 6px;
+  padding: 2px 8px;
+  letter-spacing: 0.04em;
+}
+.side-bio {
+  color: var(--text-2);
+  font-size: 0.86rem;
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+.side-stats {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  padding: 12px 0 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.side-stats b { display: block; font-size: 1.18rem; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.side-stats span { font-size: 0.76rem; color: var(--text-3); }
+.follow-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  border-radius: var(--radius-m);
+  background: var(--accent-deep);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.92rem;
+  transition: filter var(--t-fast), transform var(--t-fast);
+}
+.follow-btn svg { width: 17px; height: 17px; }
+.follow-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.side-social {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.side-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  transition: color var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+}
+.side-social a:hover { color: var(--accent-deep); border-color: var(--accent-border); transform: translateY(-2px); }
+.side-social svg { width: 16px; height: 16px; }
+.site-info .side-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.98rem;
+  margin: 0 0 14px;
+  color: var(--text-1);
+}
+.site-info .side-title svg { width: 17px; height: 17px; color: var(--accent-deep); }
+.site-info-list { margin: 0; }
+.site-info-list > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+.site-info-list > div + div { border-top: 1px dashed var(--border); }
+.site-info-list dt { color: var(--text-2); font-size: 0.86rem; flex: none; }
+.site-info-list dd {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* 首页容器比全站 820px 更宽：双栏（侧栏 + 文章栏）需要横向空间，消除大屏两侧空白 */
+.home-page { max-width: 1120px; }
+/* 文章栏方框：与文章页正文方框同款交互（拖左右边调宽，双击恢复默认；edge 样式复用 article.css） */
+.home-main { position: relative; }
+.home-frame {
+  position: relative;
+  max-width: var(--home-w, 100%);
+  margin: 0 auto;
+  padding: 20px 24px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-m);
+}
+.home-frame .section-title { margin-bottom: 14px; }
+.home-frame .notice { margin-bottom: 14px; }
+.home-frame .pager { margin-top: 18px; }
+@media (max-width: 860px) {
+  .home-frame { padding: 16px 16px 18px; }   /* frame-edge 同断点隐藏（复用文章页规则） */
+}
+/* 窄屏：侧栏并入单栏，作者卡横排紧凑（头像跨行居左，信息全部靠右列） */
+@media (max-width: 960px) {
+  .home-layout { grid-template-columns: 1fr; }
+  .home-side { position: static; }
+  .author-card { display: grid; grid-template-columns: 88px minmax(0, 1fr); column-gap: 16px; text-align: left; align-items: start; }
+  .author-card .side-avatar { grid-column: 1; grid-row: 1 / 5; align-self: start; }
+  .author-card .side-name,
+  .author-card .side-bio,
+  .author-card .side-stats,
+  .author-card .follow-btn,
+  .author-card .side-social { grid-column: 2; }
+  .author-card .side-name { justify-content: flex-start; }
+  .side-stats { justify-content: flex-start; margin-bottom: 12px; }
+  .side-social { justify-content: flex-start; margin-top: 12px; }
+}
+
+/* ---------- 13b. 面首页 Hero 全景 + 常驻虚化背景（2026-09-13 v4） ----------
+   进入面首页先看到整屏高清图（清晰）；下滑后正文区以同图虚化铺底。
+   背景图按面注入 CSS 变量，换图只改这两行。 */
+body[data-face="uu"] { --face-bg-img: url("/assets/bg/bg-uu.jpg"); }
+body[data-face="mixt"] { --face-bg-img: url("/assets/bg/bg-mixt.jpg"); }
+
+/* 常驻虚化背景：仅面首页（body.has-hero）启用 */
+.page-bg,
+.page-veil {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.page-bg {
+  z-index: -2;
+  background-image: var(--face-bg-img);
+  background-size: cover;
+  background-position: center;
+  filter: blur(26px) saturate(1.05) brightness(1.24);  /* 用户反馈：虚化背景同步提亮 */
+  transform: scale(1.12); /* 抵消 blur 造成的边缘透明 */
+}
+.page-veil { z-index: -1; background: rgba(245, 246, 248, 0.7); }
+html[data-mode="dark"] .page-veil { background: rgba(13, 18, 29, 0.74); }
+body.has-hero { background: transparent; }
+body.has-hero .page-bg,
+body.has-hero .page-veil { opacity: 1; }
+/* 直接压在虚化背景上的次级文字统一深一档（veil 调薄后仍需 ≥ 4.5:1） */
+body.has-hero .section-title { color: var(--on-bg-2); }
+body.has-hero .pager a,
+body.has-hero .pager span { color: var(--on-bg-2); }
+
+/* Hero：整屏高清图（清晰、不虚化） */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  color: #fff;
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-image: var(--face-bg-img);
+  background-size: cover;
+  background-position: center;
+  filter: brightness(1.24) saturate(1.05);   /* 用户反馈：整体提亮 */
+}
+.hero-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(8, 10, 18, 0.28) 0%, rgba(8, 10, 18, 0.3) 45%, rgba(8, 10, 18, 0.55) 100%);
+}
+.hero-inner { position: relative; z-index: 1; padding: 0 24px; }
+.hero-inner img {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+.hero-title {
+  margin: 18px 0 8px;
+  font-size: 3rem;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+.hero-tag {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 3px 12px;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+}
+.hero-tagline {
+  margin: 0;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
+}
+.hero-scroll {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.82rem;
+  letter-spacing: 0.22em;
+}
+.hero-scroll:hover { color: #fff; }
+.hero-scroll svg { width: 22px; height: 22px; animation: hero-cue 1.8s ease-in-out infinite; }
+@keyframes hero-cue {
+  0%, 100% { transform: translateY(0); opacity: 0.65; }
+  50% { transform: translateY(7px); opacity: 1; }
+}
+
+/* 入口页背景（接口预留）：第三张图到位后，给 index.html 的 <body> 加
+   class="entry-has-bg" 并加入 .entry-bg / .entry-veil 两个 div、
+   把 --entry-bg-img 设为图片路径即可启用。 */
+body[data-face="shared"] {
+  --entry-bg-img: url("/assets/bg/bg-entry.jpg");
+  --entry-link: var(--on-bg-2);
+}
+.entry-bg,
+.entry-veil { position: fixed; inset: 0; pointer-events: none; display: none; }
+.entry-bg {
+  z-index: -2;
+  background-image: var(--entry-bg-img);
+  background-size: cover;
+  background-position: center;
+  filter: brightness(1.15);   /* 用户反馈：入口页背景提亮 */
+}
+.entry-veil { z-index: -1; background: rgba(245, 246, 248, 0.55); }
+html[data-mode="dark"] .entry-veil { background: rgba(13, 18, 29, 0.66); }
+/* 有背景图时，把次级文字压深一档，保证 WCAG AA（≥ 4.5:1） */
+body.entry-has-bg .entry-sub,
+body.entry-has-bg .entry-hint { color: var(--text-1); }
+body.entry-has-bg .entry-links { color: var(--entry-link); }
+body.entry-has-bg .entry-links a:hover { color: var(--accent-deep); }
+body.entry-has-bg { background: transparent; }
+body.entry-has-bg .entry-bg,
+body.entry-has-bg .entry-veil { display: block; }

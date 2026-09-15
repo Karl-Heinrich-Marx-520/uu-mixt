@@ -1,0 +1,413 @@
+/* admin.css —— 写作台：登录门 / 工作台 / 分类时间线 / 媒体（自 demo/assets/demo.css 原样迁移） */
+/* ---------- 13f. 内容工作台（admin.html · M5 原型） ---------- */
+.admin-badge {
+  margin-left: 8px;
+  padding: 2px 9px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text-2);
+}
+.admin-shell { max-width: 1160px; }
+.admin-layout {
+  display: grid;
+  grid-template-columns: 176px 1fr;
+  gap: 22px;
+  margin-top: 20px;
+}
+.admin-side { display: flex; flex-direction: column; gap: 6px; }
+.admin-side-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-s);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.admin-side-item svg { width: 16px; height: 16px; }
+.admin-side-item:hover { background: var(--accent-soft); color: var(--accent-deep); }
+.admin-side-item.is-active {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-deep);
+  font-weight: 600;
+}
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.admin-tabs { display: flex; gap: 4px; padding: 3px; background: var(--bg-soft); border-radius: 999px; }
+.admin-tab {
+  padding: 6px 16px;
+  font: inherit;
+  font-size: 0.86rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.admin-tab:hover { color: var(--text-1); }
+.admin-tab.is-active { background: var(--surface); color: var(--text-1); font-weight: 600; box-shadow: var(--shadow-1); }
+.admin-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 0.88rem;
+  background: var(--accent-deep);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: filter var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+}
+.admin-new svg { width: 15px; height: 15px; }
+.admin-new:hover { filter: brightness(1.12); transform: translateY(-1px); box-shadow: var(--shadow-2); }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.admin-table th {
+  text-align: left;
+  padding: 9px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+}
+.admin-table td { padding: 11px 10px; border-bottom: 1px solid var(--border); }
+.admin-table tr:hover td { background: var(--surface-2); }
+.admin-table td { vertical-align: middle; }
+.admin-table td { vertical-align: middle; }
+.admin-table td:first-child { max-width: 360px; }
+/* 状态 / 操作 合并列：徽章居左、按钮居右、整行不折行——底边只剩一条线，无从错位 */
+.admin-status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  white-space: nowrap;
+}
+.admin-status-actions .admin-row-actions { display: inline-flex; gap: 6px; }
+.admin-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;             /* 与操作按钮同高：底边完全对齐 */
+  padding: 0 12px;
+  font-size: 0.78rem;
+  white-space: nowrap;      /* 状态文字不折行：折行会把行底边线撑乱 */
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-2);
+}
+.admin-pill--pin { background: var(--accent-soft); color: var(--accent-deep); }
+.admin-pill--draft { background: transparent; border: 1px solid var(--border-strong); }
+.admin-editor {
+  margin-top: 22px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+}
+.admin-editor h2 { margin: 0 0 16px; font-size: 1.05rem; }
+.admin-field { margin-bottom: 14px; }
+.admin-field label { display: block; margin-bottom: 6px; font-size: 0.84rem; color: var(--text-2); }
+.admin-field label em { color: var(--accent-deep); font-style: normal; font-size: 0.76rem; }
+.admin-field input,
+.admin-field select,
+.admin-field textarea {
+  width: 100%;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text-1);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+}
+.admin-field textarea { font-family: var(--font-mono); font-size: 0.84rem; line-height: 1.7; resize: vertical; }
+.admin-field input:focus,
+.admin-field select:focus,
+.admin-field textarea:focus { outline: 2px solid var(--accent-border); outline-offset: 1px; }
+.admin-field input[readonly] { color: var(--text-3); }
+.admin-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.admin-checks { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.88rem; color: var(--text-2); }
+.admin-checks label { display: inline-flex; align-items: center; gap: 7px; }
+.admin-note { font-size: 0.8rem; color: var(--text-3); margin: 14px 0 0; }
+.admin-editor-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.admin-btn {
+  padding: 8px 18px;
+  font: inherit;
+  font-size: 0.88rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.admin-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+.admin-btn--ghost:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-deep);
+}
+.admin-btn--primary {
+  background: var(--accent-deep);
+  border: 1px solid var(--accent-deep);
+  color: #fff;
+  transition: filter var(--t-fast), transform var(--t-fast);
+}
+.admin-btn--primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
+@media (max-width: 860px) {
+  .admin-layout { grid-template-columns: 1fr; }
+  .admin-side { flex-direction: row; flex-wrap: wrap; }
+  .admin-field-row { grid-template-columns: 1fr; }
+  .admin-table td:nth-child(2),
+  .admin-table th:nth-child(2) { display: none; }
+}
+
+/* ---------- 13h. 写作台 v2：登录 + 文章 + 分类 + 媒体 ---------- */
+.login-wrap { display: flex; justify-content: center; padding: 40px 0 20px; }
+.login-card {
+  width: min(420px, 100%);
+  padding: 30px 28px 26px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-2);
+  text-align: center;
+}
+.login-card h1 { margin: 0 0 6px; font-size: 1.3rem; }
+.login-card p.sub { margin: 0 0 22px; font-size: 0.88rem; color: var(--text-2); }
+.login-card label { display: block; text-align: left; font-size: 0.84rem; color: var(--text-2); margin-bottom: 6px; }
+.login-card input {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text-1);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+}
+.login-card .login-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 11px 0;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, #d98c1f, #378add);  /* 双面品牌色：琥珀 → 蓝 */
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: filter var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+}
+.login-card .login-btn:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(55, 138, 221, 0.35);
+}
+.login-hint {
+  margin-top: 18px;
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  text-align: left;
+  color: var(--text-2);
+  background: var(--bg-soft);
+  border-radius: var(--radius-s);
+  line-height: 1.8;
+}
+.login-hint code { font-family: var(--font-mono); color: var(--accent-deep); }
+.login-error { margin-top: 12px; font-size: 0.84rem; color: #c0392b; min-height: 1.3em; }
+html[data-mode="dark"] .login-error { color: #ff8a80; }
+
+.admin-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+}
+.admin-user img { width: 34px; height: 34px; border-radius: 50%; }
+.admin-user b { display: block; font-size: 0.9rem; }
+.admin-user span { font-size: 0.76rem; color: var(--text-3); }
+.admin-user .admin-logout {
+  margin-left: auto;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+.admin-user .admin-logout:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-deep);
+}
+
+.admin-panel { display: none; }
+.admin-panel.is-active { display: block; }
+.admin-row-actions { display: flex; gap: 8px; white-space: nowrap; }
+.admin-mini {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 11px;
+  font: inherit;
+  font-size: 0.78rem;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+.admin-mini:hover,
+.admin-mini:focus-visible {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-deep);
+}
+.admin-mini--danger:hover {
+  background: rgba(192, 57, 43, 0.12);
+  border-color: #c0392b;
+  color: #c0392b;
+}
+.admin-table th:last-child,
+.admin-table td:last-child { text-align: right; }
+
+.admin-cat-list { display: grid; gap: 10px; margin-bottom: 20px; }
+.admin-cat-row { cursor: pointer; transition: border-color var(--t-fast), background var(--t-fast); }
+.admin-cat-row:hover { border-color: var(--accent-border); }
+.admin-cat-row.is-open { border-left-color: var(--accent-deep); }
+.admin-cat-head { position: relative; }
+.admin-cat-arrow {
+  position: absolute;
+  right: 0;
+  top: 2px;
+  color: var(--text-3);
+  transition: transform var(--t-fast), color var(--t-fast);
+}
+.admin-cat-row:hover .admin-cat-arrow { color: var(--accent-deep); }
+.admin-cat-row.is-open .admin-cat-arrow { transform: rotate(90deg); color: var(--accent-deep); }
+.admin-cat-timeline {
+  display: none;            /* 收起态；展开由 .is-open 控制（此前 display:block 会压过 hidden，导致收不起来） */
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding: 12px 4px 4px 14px;
+  border-top: 1px dashed var(--border);
+}
+.admin-cat-row.is-open .admin-cat-timeline { display: block; }
+.admin-cat-timeline .archive-row a { font-size: 0.88rem; }
+.admin-cat-none { margin: 0; font-size: 0.84rem; color: var(--text-3); }
+.admin-cat-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-s);
+}
+.admin-cat-row b { font-size: 0.94rem; }
+.admin-cat-row .slug { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-3); }
+.admin-cat-row p { margin: 6px 0 0; font-size: 0.84rem; color: var(--text-2); }
+.admin-cat-empty {
+  padding: 30px 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-m);
+}
+.admin-media-pick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+.admin-media-pick:hover { border-color: var(--accent-border); color: var(--accent-deep); }
+.admin-media-pick svg { width: 18px; height: 18px; }
+.admin-media-list { display: grid; gap: 10px; }
+.admin-media-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+}
+.admin-media-row img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; flex: none; }
+.admin-media-info { min-width: 0; flex: 1; }
+.admin-media-info b { display: block; font-size: 0.84rem; margin-bottom: 4px; }
+.admin-media-ref {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-2);
+  word-break: break-all;
+}
+.admin-toastline { margin: 12px 0 0; font-size: 0.84rem; color: var(--accent-deep); min-height: 1.3em; }
+.admin-hint { font-size: 0.82rem; color: var(--text-3); margin: 0 0 14px; line-height: 1.7; }
+.admin-saved-badge { font-size: 0.76rem; color: var(--text-3); }
+
+
+/* 登录页：暗色门面（默认 data-mode=dark，可用右上角按钮切回浅色） */
+.login-page { padding-top: 8vh; }
+.login-page .login-card { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+html[data-mode="dark"] .login-page .login-card {
+  border-color: var(--border-strong);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+}
+html[data-mode="dark"] body[data-page="admin"] { background: var(--bg); }
+html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
+
+/* ---------- 友链面板小件（自 demo/assets/demo.css 15 节原样迁移） ---------- */
+.admin-friend-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: -5px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.admin-friend-host { font-size: 0.78rem; color: var(--text-3); }

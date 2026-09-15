@@ -80,7 +80,27 @@
         { slug: "engineering", name: "工程实践", desc: "真实项目的架构与踩坑：异步服务器、配置层、优雅退出。" }
       ],
       mixt: []
-    }
+    },
+    /* 友链 = 站点级共享数据（入口页卡组展示，两位作者均可维护；PRD E8）
+       数据形态：名称 / 地址 / 头像（可选，缺省用站名首字）/ 简介 */
+    friends: [
+      { id: "fr-1",  name: "云端牧码",   url: "https://example.com/yunmuma",    avatar: "", desc: "写云计算与分布式系统的实验记录，偏好可复现的部署清单。" },
+      { id: "fr-2",  name: "栈外",       url: "https://example.com/zhanwai",    avatar: "", desc: "聊编程语言之外的事：编译器、运行时与一点哲学。" },
+      { id: "fr-3",  name: "像素底片",   url: "https://example.com/pixelphoto", avatar: "", desc: "复古游戏美术与独立开发日志，偶尔更新像素画教程。" },
+      { id: "fr-4",  name: "夜航西飞",   url: "https://example.com/nightfly",   avatar: "", desc: "网络工程方向，BGP 与数据中心网络的踩坑合集。" },
+      { id: "fr-5",  name: "炉边谈话",   url: "https://example.com/hearth",     avatar: "", desc: "安全研究员的随笔：漏洞之外，还有生活。" },
+      { id: "fr-6",  name: "零点客栈",   url: "https://example.com/inn0",       avatar: "", desc: "后端与数据库，PostgreSQL 深度爱好者。" },
+      { id: "fr-7",  name: "拾荒者手记", url: "https://example.com/scavenger",  avatar: "", desc: "在开源项目里捡宝贝：源码阅读与提交考古。" },
+      { id: "fr-8",  name: "南方小院",   url: "https://example.com/southyard",  avatar: "", desc: "自建服务器的折腾史：NAS、家庭实验室与电费账单。" },
+      { id: "fr-9",  name: "白板与咖啡", url: "https://example.com/whiteboard", avatar: "", desc: "算法竞赛退役选手的复出训练场。" },
+      { id: "fr-10", name: "回声谷",     url: "https://example.com/echovalley", avatar: "", desc: "音频编程与信号处理，用代码做声音的实验。" },
+      { id: "fr-11", name: "折纸引擎",   url: "https://example.com/origami",    avatar: "", desc: "图形学与渲染管线，WebGPU 尝鲜系列。" },
+      { id: "fr-12", name: "慢速快门",   url: "https://example.com/slowshutter",avatar: "", desc: "摄影 + 前端，把照片做成会动的网页。" },
+      { id: "fr-13", name: "候鸟电台",   url: "https://example.com/migratory",  avatar: "", desc: " weekly 技术播客的文字稿与延伸阅读。" },
+      { id: "fr-14", name: "齿轮与诗",   url: "https://example.com/gearpoem",   avatar: "", desc: "机械键盘、固件改造与一点工业设计审美。" },
+      { id: "fr-15", name: "面包屑导航", url: "https://example.com/breadcrumb", avatar: "", desc: "产品与工程的交叉地带，写原型背后的思考。" },
+      { id: "fr-16", name: "北极星组件", url: "https://example.com/polaris",    avatar: "", desc: "前端架构与设计系统，组件库的长期主义。" }
+    ]
   };
 
 
@@ -274,7 +294,9 @@
 
   function db() {
     var d = read();
-    if (!d) { d = clone(SEED); write(d); }
+    if (!d) { d = clone(SEED); write(d); return d; }
+    /* 旧存档惰性迁移：补 friends 集合（不丢弃用户已有文章/分类，VERSION 不动） */
+    if (!d.friends) { d.friends = clone(SEED.friends); write(d); }
     return d;
   }
 
@@ -357,13 +379,17 @@
     },
     updateCategory: function (face, slug, patch) {
       var d = db();
+      var oldName = null;
       d.categories[face] = (d.categories[face] || []).map(function (c) {
-        return c.slug === slug ? Object.assign({}, c, patch) : c;
+        if (c.slug !== slug) return c;
+        oldName = c.name;
+        return Object.assign({}, c, patch);
       });
-      /* 分类改名时同步已发布文章，避免出现孤儿分类 */
-      if (patch.name) {
+      /* 分类改名时同步已发布文章，避免出现孤儿分类。
+         文章的 category 字段存的是分类「名」，同步必须比对旧名而非 slug（v9 修复）。 */
+      if (patch.name && oldName && oldName !== patch.name) {
         d.posts.forEach(function (p) {
-          if (p.face === face && p.category === slug) p.category = patch.name;
+          if (p.face === face && p.category === oldName) p.category = patch.name;
         });
       }
       write(d);
@@ -371,6 +397,39 @@
     removeCategory: function (face, slug) {
       var d = db();
       d.categories[face] = (d.categories[face] || []).filter(function (c) { return c.slug !== slug; });
+      write(d);
+    },
+
+    /** 友链（站点级共享数据；入口页卡组的数据源，写作台维护） */
+    friends: function () {
+      var list = db().friends;
+      return list ? list.slice() : [];
+    },
+    addFriend: function (data) {
+      var d = db();
+      if (!d.friends) d.friends = clone(SEED.friends);
+      if (d.friends.some(function (f) { return f.name === data.name; })) return false;
+      d.friends.push({
+        id: "fr-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: (data.name || "").trim(),
+        url: (data.url || "").trim(),
+        avatar: (data.avatar || "").trim(),
+        desc: (data.desc || "").trim(),
+        createdAt: Date.now()
+      });
+      write(d);
+      return true;
+    },
+    updateFriend: function (id, patch) {
+      var d = db();
+      d.friends = (d.friends || []).map(function (f) {
+        return f.id === id ? Object.assign({}, f, patch) : f;
+      });
+      write(d);
+    },
+    removeFriend: function (id) {
+      var d = db();
+      d.friends = (d.friends || []).filter(function (f) { return f.id !== id; });
       write(d);
     },
 
