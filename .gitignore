@@ -34,3 +34,4 @@ uum-server/uum-server-linux-amd64
 # ── git 灾难事故现场（留查，勿删勿提交）──
 .git.empty-init-20260915/
 .git.broken-20260915/
+.git.broken-*
