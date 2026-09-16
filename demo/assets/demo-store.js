@@ -424,8 +424,19 @@
     },
     removeCategory: function (face, slug) {
       var d = db();
-      d.categories[face] = (d.categories[face] || []).filter(function (c) { return c.slug !== slug; });
+      var list = d.categories[face] || [];
+      var victim = list.filter(function (c) { return c.slug === slug; })[0];
+      if (!victim || victim.name === "未分类") return false;   /* 兜底分类不可删（决策 7.26） */
+      d.categories[face] = list.filter(function (c) { return c.slug !== slug; });
+      /* 级联：该分类文章转入「未分类」；兜底分类缺失时自动种子 */
+      if (!d.categories[face].some(function (c) { return c.name === "未分类"; })) {
+        d.categories[face].push({ slug: "uncategorized", name: "未分类", desc: "未归入其他分类的文章。" });
+      }
+      (d.posts || []).forEach(function (p) {
+        if (p.face === face && p.category === victim.name) p.category = "未分类";
+      });
       write(d);
+      return true;
     },
 
     /** 友链（站点级共享数据；入口页卡组的数据源，写作台维护） */

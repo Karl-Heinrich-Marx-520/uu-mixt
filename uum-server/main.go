@@ -493,6 +493,14 @@ func main() {
 		}
 	}
 
+	// 决策 7.26：启动时把存量文章标签一次性回填进池（幂等；无 delta 不产生提交）。
+	// 兜住「池上线前已存在的文章」——之后每次保存文章都会即时入池。
+	if n, err := store.BackfillTags(); err != nil {
+		log.Printf("[tags] 存量回填失败（服务继续，可重启重试）：%v", err)
+	} else if n > 0 {
+		log.Printf("[tags] 存量回填：%d 个标签入池", n)
+	}
+
 	s := &server{
 		cfg:      cfg,
 		store:    store,
@@ -523,6 +531,7 @@ func main() {
 	mux.HandleFunc("/api/tags/add", s.handleTagsAdd)
 	mux.HandleFunc("/api/tags/rename", s.handleTagsRename)
 	mux.HandleFunc("/api/tags/remove", s.handleTagsRemove)
+	mux.HandleFunc("/api/categories/remove", s.handleCategoryRemove)
 	mux.HandleFunc("/api/rebuild", s.handleRebuild)
 	mux.HandleFunc("/api/pet/chat", s.handlePetChat)
 	mux.HandleFunc("/api/chat", s.handlePetChat) // 兼容别名：pet.js 切到 /api/pet/chat 后移除

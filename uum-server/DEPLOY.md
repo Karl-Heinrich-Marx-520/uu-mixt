@@ -78,6 +78,11 @@ location /api/ {
     proxy_read_timeout 35s;
     client_max_body_size 3m;   # 图片上限 2MB + multipart 开销
 }
+
+# 站内 404 页（dist/404.html 构建自带；盲测轮 1 P2：此前 404 是 Nginx 默认页，
+# 无返回出路且 server 头暴露 nginx 版本——error_page 与 server_tokens 一起配）
+error_page 404 /404.html;
+server_tokens off;
 ```
 
 ## 6. 每日镜像（主库 → GitHub，每天一次 · 决策 7.19 修订）

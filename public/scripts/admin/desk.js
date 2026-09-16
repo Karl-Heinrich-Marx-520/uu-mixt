@@ -828,11 +828,19 @@
     if (el.dataset.delCat) {
       var c2 = state.categories.filter(function (x) { return x.slug === el.dataset.delCat; })[0];
       if (!c2) return;
+      if (c2.name === "未分类") { msg($("[data-cat-msg]"), "「未分类」是兜底分类，不能删除。"); return; }
       var used = state.posts.filter(function (p) { return p.category === c2.name; }).length;
-      if (!window.confirm("删除分类「" + c2.name + "」？" + (used ? "该分类下还有 " + used + " 篇文章，它们会变成未登记分类（构建将失败），建议先改文章分类。" : ""))) return;
-      state.categories = state.categories.filter(function (x) { return x.slug !== c2.slug; });
-      writeCategories()
-        .then(function () { msg($("[data-cat-msg]"), "已删除分类。"); return loadCategories(); })
+      if (!window.confirm("删除分类「" + c2.name + "」？" + (used ? "该分类下还有 " + used + " 篇文章，将一并转入「未分类」。" : ""))) return;
+      msg($("[data-cat-msg]"), "正在提交到仓库…");
+      GH.categoryRemove(c2.name)
+        .then(function (r) {
+          state.categories = state.categories.filter(function (x) { return x.slug !== c2.slug; });
+          if (r && r.cascaded) {
+            state.posts.forEach(function (p) { if (p.category === c2.name) p.category = "未分类"; });
+          }
+          msg($("[data-cat-msg]"), "已删除分类" + (r && r.cascaded ? "，" + r.cascaded + " 篇文章转入「未分类」" : "") + "。");
+          return loadCategories();
+        })
         .catch(function (err) { msg($("[data-cat-msg]"), "提交失败：" + err.message); });
       return;
     }
