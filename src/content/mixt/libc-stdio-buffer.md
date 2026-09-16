@@ -43,14 +43,14 @@ fp->_IO_buf_end  = p + size;
 
 ## 二、例: [TQLCTF 2022] unbelievable write
 
-![c2 的任意地址释放](images/mixt/c3d97da6b99988dab7c595230e56da36.png)
+![c2 的任意地址释放](/images/mixt/c3d97da6b99988dab7c595230e56da36.png)
 本题的漏洞类型如上图所示，其中最关键的是一处 **c2 的任意地址释放**：
 
-![修改 target 内容以获取 flag](images/mixt/9784b1d3dabe6008127a69d875a75d8d.png)
+![修改 target 内容以获取 flag](/images/mixt/9784b1d3dabe6008127a69d875a75d8d.png)
 
 只要能成功改写 `target` 处的内容，就能顺利拿到 flag：
 
-![c1 在使用完 chunk 之后会立即将其释放](images/mixt/3d38d8ce3b70deaff2d6240741c498a6.png)
+![c1 在使用完 chunk 之后会立即将其释放](/images/mixt/3d38d8ce3b70deaff2d6240741c498a6.png)
 
 这导致我在了解 `libc_stdio_buffer`（stdio 缓冲区分配机制）之前的多次尝试全部失败，即使把 chunk 申请到了 `target` 附近，程序也会因为无法通过 `free` 的合法性检查而直接崩溃。
 
@@ -64,13 +64,13 @@ fp->_IO_buf_end  = p + size;
 
 3. **修改对应的 `count`，并准备好 0x1010 的 `count`**，然后通过**字节爆破（成功率约 1/16）**把分配落到 `mp_` 区域附近：
 
-   ![bins 状态](images/mixt/bins.png)
+   ![bins 状态](/images/mixt/bins.png)
 
 4. **修改 `mp_.tcache_bins`**，把 `tcache_bins` 阈值抬高，使得 **0x1010 大小的 chunk 也被当作 tcache chunk** 处理。之后再次进入 c3，便能看到 `target` 被成功改写：
 
-   ![命中 mp_ 区域](images/mixt/mp_.png)
+   ![命中 mp_ 区域](/images/mixt/mp_.png)
 
-   ![target 被成功修改](images/mixt/target.png)
+   ![target 被成功修改](/images/mixt/target.png)
 
 ---
 
@@ -122,6 +122,8 @@ cmd(3)
 cmd(3)
 io.interactive()
 ```
+
+
 
 
 
