@@ -36,6 +36,8 @@ c1在使用过chunk后会立即释放
 
 利用：通过c2释放掉tcache_pthread_struct，申请回来的同时将0x280的count设为8，这样再释放它就会进入unsortbin
 将其切割（布置好count），再合并，会在tcache_pthread_struct上留下libc指针
+通过字节爆破(1/16)
+
 
 
 
