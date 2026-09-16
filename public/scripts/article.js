@@ -20,10 +20,11 @@
           navigator.clipboard.writeText(url).then(function () {
             window.uumToast && window.uumToast("链接已复制，可以直接分享给朋友");
           }, function () {
-            window.uumToast && window.uumToast(url);
+            /* 剪贴板被拒（如无权限环境）：说明原因并给手动复制出路（与 copy-mail 降级一致） */
+            window.uumToast && window.uumToast("复制失败，请手动复制：" + url);
           });
         } else {
-          window.uumToast && window.uumToast(url);
+          window.uumToast && window.uumToast("当前浏览器不支持自动复制，链接：" + url);
         }
       };
       if (navigator.share) {

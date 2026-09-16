@@ -36,7 +36,21 @@
   }
 
   /* ---------- 假后端（仅供自测：接口与真实层一致） ---------- */
+  /* mock 开关：URL 参数 ?mock=1 显式开启，并把标记写入 sessionStorage——
+     登录页跳转 /admin/desk/ 不携带查询串，靠会话标记让 mock 模式跨页存活
+     （盲测轮 1 P1：mock 只认 URL 导致登录后四个面板全 401）。
+     sessionStorage 关标签即清，不会在真实使用中长期驻留。 */
+  var MOCK_FLAG = "uum-desk-mock";
   var mock = /[?&]mock=1/.test(location.search);
+  try {
+    if (mock) {
+      sessionStorage.setItem(MOCK_FLAG, "1");
+    } else if (sessionStorage.getItem(MOCK_FLAG) === "1") {
+      mock = true;
+    }
+  } catch (eMockFlag) { /* storage 不可用时退回仅 URL 参数判定 */ }
+  /* 真实模式显式清标记：防止先 mock 后真实登录的同一会话误入假后端 */
+  if (!mock) { try { sessionStorage.removeItem(MOCK_FLAG); } catch (eMockClr) {} }
   /* v2：种子加入 src/data/friends.json 后升版，旧 mock store（无友链键）自然失效 */
   var MOCK_KEY = "uum-desk-mock-store-v2";
   function mockStore() {
@@ -315,7 +329,8 @@
     /** 校验 token 并返回 { login, face } —— 服务器端验证（替代 GET api.github.com/user） */
     async verifyToken(token) {
       if (mock) {
-        return { login: "Mixt170", face: "mixt" };
+        /* mock 档任意 token 可进；token 含 "uu" 进 UU 面，否则 Mixt 面（盲测两面对称用） */
+        return /uu/i.test(token) ? { login: "UU", face: "uu" } : { login: "Mixt170", face: "mixt" };
       }
       var res;
       try {
@@ -389,6 +404,42 @@
       var q = "path=" + encodeURIComponent(path) + "&message=" + encodeURIComponent(message || "");
       if (sha) q += "&sha=" + encodeURIComponent(sha);
       return request("/api/file?" + q, { method: "DELETE" });
+    },
+
+    /** 删除分类（决策 7.26）：服务端级联——配置条目移除 + 该分类文章 category
+        改「未分类」+ 兜底自动种子，单次提交。返回 {cascaded, fallback, commit}。
+        mock：内存里做同样的级联，语义与真实端点一致。 */
+    async categoryRemove(name) {
+      if (mock) {
+        var store = mockStore();
+        var key = "src/config/categories-" + FACE + ".json";
+        var cats = JSON.parse(store[key] || "[]");
+        var victim = null;
+        cats = cats.filter(function (c) {
+          if (c.name === name) { victim = c; return false; }
+          return true;
+        });
+        if (!victim) return { cascaded: 0, fallback: "未分类", commit: "mock" };
+        var hasFallback = cats.some(function (c) { return c.name === "未分类"; });
+        if (!hasFallback) cats.push({ slug: "uncategorized", name: "未分类", desc: "未归入其他分类的文章。" });
+        store[key] = JSON.stringify(cats, null, 2) + "\n";
+        var cascaded = 0;
+        Object.keys(store).forEach(function (k) {
+          if (k.indexOf("src/content/" + FACE + "/") !== 0 || k.slice(-3) !== ".md") return;
+          var re = new RegExp("^category:[ \\t]*" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[ \\t]*$", "m");
+          if (re.test(store[k])) {
+            store[k] = store[k].replace(re, "category: 未分类");
+            cascaded++;
+          }
+        });
+        mockWrite(store);
+        return { cascaded: cascaded, fallback: "未分类", commit: "mock" };
+      }
+      return request("/api/categories/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name }),
+      });
     },
 
     /** 上传二进制（图片）：multipart 直传，落 public/images/<face>/；
