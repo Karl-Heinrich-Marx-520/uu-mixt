@@ -7,7 +7,7 @@ author: uu
 category: agent01-Python补足
 tags: [Python, C++, 面试]
 featured: false
-draft: true
+draft: false
 ---
 # 课件 · W1 Day 3：作用域与闭包
 
@@ -330,4 +330,5 @@ C++ 把**声明**和**定义**分开：头文件里放声明，源文件里放�
 
 Day 4 · 迭代协议与生成器（差异 #13-16）。
 会讲"生成器只能消费一次"，以及为什么它省内存——这点在 W4 的 SSE 流式解析里直接用得上。
+
 
