@@ -7,7 +7,7 @@ author: mixt
 category: IO_FILE
 tags: [libc_stdio_buffer，tcache_perthread_struct，mp_]
 featured: false
-draft: true
+draft: false
 ---
 # libc_stdio_buffer初始化 
 
@@ -124,6 +124,7 @@ cmd(3)
 cmd(3)
 io.interactive()
 ```
+
 
 
 
