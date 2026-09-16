@@ -52,6 +52,7 @@ fp->_IO_buf_end  = p + size;
 
 ![c1 在使用完 chunk 之后会立即将其释放](/images/mixt/3d38d8ce3b70deaff2d6240741c498a6.png)
 
+c1 在使用完 chunk 之后会立即将其释放
 这导致我在了解 `libc_stdio_buffer`（stdio 缓冲区分配机制）之前的多次尝试全部失败，即使把 chunk 申请到了 `target` 附近，程序也会因为无法通过 `free` 的合法性检查而直接崩溃。
 
 ---
@@ -122,6 +123,7 @@ cmd(3)
 cmd(3)
 io.interactive()
 ```
+
 
 
 
