@@ -1,11 +1,5 @@
 [
   {
-    "name": "折纸引擎",
-    "url": "https://example.com/origami",
-    "avatar": "",
-    "desc": "图形学与渲染管线，WebGPU 尝鲜系列。"
-  },
-  {
     "name": "慢速快门",
     "url": "https://example.com/slowshutter",
     "avatar": "",
