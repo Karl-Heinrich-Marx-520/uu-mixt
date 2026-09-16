@@ -16,5 +16,9 @@
   "qsettings",
   "epoll",
   "tcp",
-  "linux"
+  "linux",
+  "redis",
+  "缓存一致性",
+  "分布式锁",
+  "面试"
 ]
