@@ -460,3 +460,19 @@ html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* 「在做什么」条目行：小标题 + 一句描述 + 删除（决策 7.25，作者页区块的编辑器） */
+.admin-doing-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.admin-doing-row .admin-doing-t { flex: 0 0 32%; min-width: 0; }
+.admin-doing-row .admin-doing-d { flex: 1 1 auto; min-width: 0; }
+.admin-doing-row .admin-doing-x {
+  flex: 0 0 36px;
+  padding: 0;
+  font-size: 1rem;
+  color: var(--text-2);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.admin-doing-row .admin-doing-x:hover { color: #a32d2d; border-color: #a32d2d; }

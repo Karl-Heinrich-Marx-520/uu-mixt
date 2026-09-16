@@ -212,7 +212,7 @@ import "../../styles/admin.css";
         <div class="admin-panel" data-panel-body="friends">
           <p class="admin-hint">
             友链是<strong>站点级共享数据</strong>（与标签池同类，两位作者都可维护）。
-            保存即提交进仓库（<code>src/data/friends.json</code>），由部署方构建上线后入口页卡组可见。
+            保存即提交进仓库（<code>src/data/friends.json</code>）；上线请点侧边菜单的「构建发布」按钮，入口页卡组随即更新。
             对外链接一律 <code>rel="noopener"</code> 新窗口打开；友链为外部站点，与本站无关。
           </p>
           <div class="admin-toolbar">
@@ -271,13 +271,13 @@ import "../../styles/admin.css";
           <div class="admin-media-list" data-media-list></div>
         </div>
 
-        <!-- 设置：个人简介与个人标签（决策 7.21，存 src/config/author-<面>.json，只能改自己那面） -->
+        <!-- 设置：个人简介 / 在做什么 / 技术栈（存 src/config/author-<面>.json，只能改自己那面） -->
         <div class="admin-panel" data-panel-body="settings">
-          <form class="admin-editor" data-bio-editor aria-label="个人简介编辑" novalidate>
-            <h2>个人简介</h2>
+          <form class="admin-editor" data-bio-editor aria-label="个人设置" novalidate>
+            <h2>个人设置</h2>
             <p class="admin-hint" style="margin:0 0 14px">
               展示在自己那一面的侧栏与作者页。保存即提交进仓库（<code data-author-file>src/config/author-.json</code>），
-              由部署方构建上线后可见，不影响已发布文章。
+              上线请点侧边菜单的「构建发布」按钮（约 1-2 分钟前台更新），不影响已发布文章。
             </p>
             <div class="admin-field">
               <label for="s-bio">简介文案（<span data-bio-count>0</span> / 200 字，必填）</label>
@@ -287,8 +287,17 @@ import "../../styles/admin.css";
               <label for="s-tags">个人标签（逗号分隔，展示在作者页姓名下方，≤ 6 个）</label>
               <input id="s-tags" type="text" placeholder="例如：C++ 后端, 网络编程, 科研复现">
             </div>
+            <div class="admin-field">
+              <label>在做什么（作者页「在做什么」区块，≤ 8 条，小标题与描述要成对填写）</label>
+              <div data-doing-list></div>
+              <button type="button" class="admin-btn admin-btn--ghost" data-action="add-doing" style="margin-top:8px">+ 添加一条</button>
+            </div>
+            <div class="admin-field">
+              <label for="s-stack">技术栈（逗号分隔，作者页 chips，≤ 15 个）</label>
+              <input id="s-stack" type="text" placeholder="例如：C++17/20, Boost.Asio, NS-3">
+            </div>
             <div class="admin-editor-actions" style="justify-content:flex-start">
-              <button type="button" class="admin-btn admin-btn--primary" data-action="save-bio">保存简介与标签</button>
+              <button type="button" class="admin-btn admin-btn--primary" data-action="save-bio">保存以上设置</button>
             </div>
             <p class="admin-toastline" data-bio-msg aria-live="polite"></p>
           </form>
@@ -313,6 +322,6 @@ import "../../styles/admin.css";
 
   <script is:inline src="/scripts/core.js"></script>
   <script is:inline src="/scripts/admin/server.js?v=3"></script>
-  <script is:inline src="/scripts/admin/desk.js?v=4"></script>
+  <script is:inline src="/scripts/admin/desk.js?v=5"></script>
 </body>
 </html>

@@ -13,13 +13,8 @@ const posts = await published(face);
 const catWithCount = await Promise.all(
   cats.map(async (c) => ({ ...c, count: await categoryCount(face, c.name) }))
 );
-const facts = [
-  { t: "堆与分配器", d: "glibc malloc 的实现细节：chunk 布局、tcache / fastbin 行为与各版本的保护机制差异。" },
-  { t: "利用手法拆解", d: "把常见手法按适用版本、前置条件与代价做成对照表，说明各自在什么场景下会失效。" },
-  { t: "CTF 复盘", d: "记录从信息收集到偏移计算的完整判断链，地址与细节全部打码，只留思路。" },
-  { t: "可复现环境", d: "用容器固定 glibc 版本与调试器配置，让每次实验都能在同一套环境里复现。" },
-];
-const stack = ["PWN", "glibc", "gdb / pwndbg", "IDA", "Python", "Docker", "Linux", "CTF"];
+/* 在做什么 / 技术栈：author-mixt.json 为唯一数据源（写作台「设置」维护，决策 7.25）；
+   条目为空时整个区块不渲染。 */
 ---
 <Layout
   face="mixt"
@@ -43,17 +38,19 @@ const stack = ["PWN", "glibc", "gdb / pwndbg", "IDA", "Python", "Docker", "Linux
     </div>
   </section>
 
-  <section class="author-section">
-    <h2>在做什么 <small>共 {posts.length} 篇文章</small></h2>
-    <div class="author-facts">
-      {facts.map((f) => (
-        <div class="author-fact">
-          <b>{f.t}</b>
-          <span>{f.d}</span>
-        </div>
-      ))}
-    </div>
-  </section>
+  {author.doing.length > 0 && (
+    <section class="author-section">
+      <h2>在做什么 <small>共 {posts.length} 篇文章</small></h2>
+      <div class="author-facts">
+        {author.doing.map((f) => (
+          <div class="author-fact">
+            <b>{f.t}</b>
+            <span>{f.d}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
 
   {catWithCount.length > 0 && (
     <section class="author-section">
@@ -66,12 +63,14 @@ const stack = ["PWN", "glibc", "gdb / pwndbg", "IDA", "Python", "Docker", "Linux
     </section>
   )}
 
-  <section class="author-section">
-    <h2>技术栈</h2>
-    <div class="chip-row">
-      {stack.map((t) => <span class="chip">{t}</span>)}
-    </div>
-  </section>
+  {author.stack.length > 0 && (
+    <section class="author-section">
+      <h2>技术栈</h2>
+      <div class="chip-row">
+        {author.stack.map((t) => <span class="chip">{t}</span>)}
+      </div>
+    </section>
+  )}
 
   <section class="author-section">
     <h2>联系</h2>

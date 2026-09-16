@@ -497,11 +497,51 @@
     }
   }
 
-  /* ---------- 设置：个人简介与个人标签（决策 7.21，author-<面>.json） ----------
-     读改写整个 JSON + sha 乐观锁，保存即提交进仓库（构建后线上可见）。 */
+  /* ---------- 设置：个人简介 / 在做什么 / 技术栈（author-<面>.json） ----------
+     读改写整个 JSON + sha 乐观锁，保存即提交进仓库（上线走「构建发布」按钮）。 */
   function syncBioCount() {
     var cnt = $("[data-bio-count]");
     if (cnt) cnt.textContent = $("#s-bio").value.length;
+  }
+
+  /* 「在做什么」条目行：小标题 + 一句描述 + 删除；保存时丢弃全空行、拦半空行 */
+  function addDoingRow(t, d) {
+    var list = $("[data-doing-list]");
+    if (!list) return;
+    if (list.querySelectorAll(".admin-doing-row").length >= 8) {
+      toast("「在做什么」最多 8 条");
+      return;
+    }
+    var row = document.createElement("div");
+    row.className = "admin-doing-row";
+    row.innerHTML =
+      '<input class="admin-doing-t" maxlength="24" placeholder="小标题（≤ 24 字）" aria-label="条目小标题">' +
+      '<input class="admin-doing-d" maxlength="120" placeholder="一句描述（≤ 120 字）" aria-label="条目描述">' +
+      '<button type="button" class="admin-doing-x" data-del-doing aria-label="删除这一条" title="删除这一条">×</button>';
+    row.querySelector(".admin-doing-t").value = t || "";
+    row.querySelector(".admin-doing-d").value = d || "";
+    row.querySelector("[data-del-doing]").addEventListener("click", function () { row.remove(); });
+    list.appendChild(row);
+  }
+
+  function renderDoingRows(list) {
+    var host = $("[data-doing-list]");
+    if (!host) return;
+    host.innerHTML = "";
+    (list || []).forEach(function (x) { addDoingRow(x.t, x.d); });
+  }
+
+  function collectDoing() {
+    var out = [], partial = false;
+    var host = $("[data-doing-list]");
+    if (!host) return { list: out, partial: partial };
+    [].forEach.call(host.querySelectorAll(".admin-doing-row"), function (row) {
+      var t = row.querySelector(".admin-doing-t").value.trim();
+      var d = row.querySelector(".admin-doing-d").value.trim();
+      if (t && d) out.push({ t: t, d: d });
+      else if (t || d) partial = true;      /* 半空行：提示补全而不是静默丢弃 */
+    });
+    return { list: out, partial: partial };
   }
 
   async function loadBio() {
@@ -510,23 +550,31 @@
     state.authorSha = r ? r.sha : null;
     $("#s-bio").value = state.author.bio || "";
     $("#s-tags").value = (state.author.tags || []).join(", ");
+    $("#s-stack").value = (state.author.stack || []).join(", ");
+    renderDoingRows(state.author.doing || []);
     syncBioCount();
   }
 
   async function saveBio() {
     var out = $("[data-bio-msg]");
     var bio = $("#s-bio").value.trim();
-    var tags = $("#s-tags").value.split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+    var tags = $("#s-tags").value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
     if (!bio) { msg(out, "简介必填——面页侧栏与作者页都展示它。"); return; }
     if (bio.length > 200) { msg(out, "简介不超过 200 字（当前 " + bio.length + "）。"); return; }
     if (tags.length > 6) { msg(out, "个人标签最多 6 个（当前 " + tags.length + "）。"); return; }
+    var doing = collectDoing();
+    if (doing.partial) { msg(out, "「在做什么」有只填了一半的条目：小标题和描述要成对填写（或整行删掉）。"); return; }
+    if (doing.list.length > 8) { msg(out, "「在做什么」最多 8 条（当前 " + doing.list.length + "）。"); return; }
+    var stack = $("#s-stack").value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
+    if (stack.length > 15) { msg(out, "技术栈最多 15 个（当前 " + stack.length + "）。"); return; }
     try {
       msg(out, "正在提交到仓库…");
-      var text = JSON.stringify({ bio: bio, tags: tags }, null, 2) + "\n";
-      var r = await GH.writeFile(AUTHOR_FILE, text, "config(" + FACE + "): 更新个人简介与标签", state.authorSha);
+      var text = JSON.stringify({ bio: bio, tags: tags, doing: doing.list, stack: stack }, null, 2) + "\n";
+      var r = await GH.writeFile(AUTHOR_FILE, text, "config(" + FACE + "): 更新个人设置", state.authorSha);
       state.authorSha = (r && r.content && r.content.sha) || state.authorSha;
-      state.author = { bio: bio, tags: tags };
-      msg(out, "简介与标签已提交进仓库 → 由部署方构建后线上可见。");
+      state.author = { bio: bio, tags: tags, doing: doing.list, stack: stack };
+      renderDoingRows(doing.list);   /* 回写规范化结果（全空行被丢弃） */
+      msg(out, "已提交进仓库 → 上线请点侧边菜单的「构建发布」按钮（约 1-2 分钟前台更新）。");
     } catch (e) {
       msg(out, "提交失败：" + e.message);
       try { await loadBio(); } catch (e2) {}   /* 写失败以仓库为准回滚本地态 */
@@ -667,6 +715,7 @@
     }
     if (el.dataset.action === "ai-assist") { aiAssist(); return; }
     if (el.dataset.action === "save-bio") { saveBio(); return; }
+    if (el.dataset.action === "add-doing") { addDoingRow("", ""); return; }
     if (el.dataset.action === "site-rebuild") { siteRebuild(); return; }
     if (el.dataset.action === "add-tag") { addPoolTag(); return; }
     if (el.dataset.renameTag) { renamePoolTag(el.dataset.renameTag); return; }

@@ -13,13 +13,8 @@ const posts = await published(face);
 const catWithCount = await Promise.all(
   cats.map(async (c) => ({ ...c, count: await categoryCount(face, c.name) }))
 );
-const facts = [
-  { t: "异步网络服务", d: "基于 Boost.Asio / Beast 的 HTTP 与 TCP 服务，关注优雅退出、线程模型与错误处理路径。" },
-  { t: "拥塞控制科研", d: "复现数据中心集合通信的拥塞控制方案（INT 反馈、窗口与速率调整），在 NS-3 上跑对比实验。" },
-  { t: "桌面客户端", d: "Qt + CMake 的客户端工程，含配置层、单例网络管理器与深色主题界面。" },
-  { t: "源码阅读", d: "带着问题读 muduo、Asio 等工业级库，重点看所有权关系与生命周期边界。" },
-];
-const stack = ["C++17/20", "Boost.Asio", "Boost.Beast", "muduo", "Qt", "CMake", "Linux", "NS-3", "Nginx", "Astro"];
+/* 在做什么 / 技术栈：author-uu.json 为唯一数据源（写作台「设置」维护，决策 7.25）；
+   条目为空时整个区块不渲染。 */
 ---
 <Layout
   face="uu"
@@ -43,17 +38,19 @@ const stack = ["C++17/20", "Boost.Asio", "Boost.Beast", "muduo", "Qt", "CMake", 
     </div>
   </section>
 
-  <section class="author-section">
-    <h2>在做什么 <small>共 {posts.length} 篇文章</small></h2>
-    <div class="author-facts">
-      {facts.map((f) => (
-        <div class="author-fact">
-          <b>{f.t}</b>
-          <span>{f.d}</span>
-        </div>
-      ))}
-    </div>
-  </section>
+  {author.doing.length > 0 && (
+    <section class="author-section">
+      <h2>在做什么 <small>共 {posts.length} 篇文章</small></h2>
+      <div class="author-facts">
+        {author.doing.map((f) => (
+          <div class="author-fact">
+            <b>{f.t}</b>
+            <span>{f.d}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
 
   {catWithCount.length > 0 && (
     <section class="author-section">
@@ -66,12 +63,14 @@ const stack = ["C++17/20", "Boost.Asio", "Boost.Beast", "muduo", "Qt", "CMake", 
     </section>
   )}
 
-  <section class="author-section">
-    <h2>技术栈</h2>
-    <div class="chip-row">
-      {stack.map((t) => <span class="chip">{t}</span>)}
-    </div>
-  </section>
+  {author.stack.length > 0 && (
+    <section class="author-section">
+      <h2>技术栈</h2>
+      <div class="chip-row">
+        {author.stack.map((t) => <span class="chip">{t}</span>)}
+      </div>
+    </section>
+  )}
 
   <section class="author-section">
     <h2>联系</h2>
