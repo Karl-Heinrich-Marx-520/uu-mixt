@@ -131,8 +131,8 @@
               <input id="f-desc" type="text" placeholder="留空 = AI 读正文自动生成一句话摘要">
             </div>
             <div class="admin-field">
-              <label for="f-body">正文（Markdown）</label>
-              <textarea id="f-body" rows="10" placeholder="## 背景&#10;&#10;为什么需要在收到 SIGTERM 时先停 accept……"></textarea>
+              <label for="f-body">正文（Markdown · 支持拖入 .md 文件自动填写）</label>
+              <textarea id="f-body" rows="10" placeholder="## 背景&#10;&#10;为什么需要在收到 SIGTERM 时先停 accept……&#10;&#10;也可以把写好的 .md 文件直接拖进来"></textarea>
             </div>
             <div class="admin-ai-row">
               <button type="button" class="admin-btn admin-btn--ghost admin-btn--ai" data-action="ai-assist">
@@ -1024,6 +1024,46 @@
           window.uumToast("构建发布完成，前台已更新");
         }, 2000);
       }
+
+      /* ---------- 拖拽导入 .md（与正式版同步：拖入文件自动填写正文，frontmatter 空字段一并填充） ---------- */
+      (function () {
+        var box = $("#f-body");
+        if (!box) return;
+        box.addEventListener("dragover", function (e) { e.preventDefault(); box.classList.add("is-dropping"); });
+        box.addEventListener("dragleave", function () { box.classList.remove("is-dropping"); });
+        box.addEventListener("drop", function (e) {
+          e.preventDefault();
+          box.classList.remove("is-dropping");
+          var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (!file) return;
+          if (!/\.(md|markdown|txt)$/i.test(file.name)) { window.uumToast("只支持拖入 .md / .markdown / .txt 文件"); return; }
+          if (file.size > 200 * 1024) { window.uumToast("文件超过 200KB，请精简后再导入"); return; }
+          var reader = new FileReader();
+          reader.onload = function () {
+            var text = String(reader.result || "");
+            if ($("#f-body").value.trim() && !window.confirm("正文已有内容，导入将覆盖现有正文，确定？")) return;
+            var filled = 0, fm = "", rest = text;
+            if (/^---[ \t]*\r?\n/.test(text)) {
+              var nl = text.indexOf("\n") + 1;
+              var closeIdx = text.slice(nl).search(/^---[ \t]*\r?$/m);
+              if (closeIdx !== -1) { fm = text.slice(nl, nl + closeIdx); rest = text.slice(nl + closeIdx).replace(/^---[ \t]*\r?\n?/, ""); }
+            }
+            if (fm) {
+              var pick = function (key) { var m = fm.match(new RegExp("^" + key + ":[ \\t]*\"?([^\"\\r\\n]*)\"?[ \\t]*$", "m")); return m ? m[1].trim() : ""; };
+              if (!$("#f-title").value.trim()) { var t = pick("title"); if (t) { $("#f-title").value = t; filled++; } }
+              if (!$("#f-desc").value.trim()) { var d = pick("description") || pick("desc"); if (d) { $("#f-desc").value = d; filled++; } }
+              if (!$("#f-tags").value.trim()) { var tv = pick("tags").replace(/[\[\]"]/g, "").trim(); if (tv) { $("#f-tags").value = tv; filled++; } }
+              if (!$("#f-date").value) { var dv = (fm.match(/^date:[ \t]*(\d{4}-\d{2}-\d{2})/m) || [])[1]; if (dv) $("#f-date").value = dv; }
+              var cv = pick("category");
+              if (cv) { var hit = store.categories(face).filter(function (c) { return c.name === cv; })[0]; if (hit) fillCatOptions(cv); }
+            }
+            $("#f-body").value = rest;
+            var extra = filled ? "，自动填充 " + filled + " 个 frontmatter 字段" : "";
+            window.uumToast("已导入 " + file.name + "（正文 " + rest.length + " 字" + extra + "）");
+          };
+          reader.readAsText(file, "utf-8");
+        });
+      })();
 
       /* ---------- 标签池（全站共享；重命名/删除同步全部文章） ---------- */
       function renderTagPool() {
