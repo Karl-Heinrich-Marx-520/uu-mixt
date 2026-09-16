@@ -7,7 +7,7 @@ author: mixt
 category: IO_FILE
 tags: [C++, Linux, 网络编程, 面试]
 featured: false
-draft: false
+draft: true
 ---
 程序启动时，stdout/stderr/stdin三个流的缓冲区_IO_buf_base为NULL
 而只有第一次读写这个流时(如调用puts)
@@ -77,6 +77,7 @@ exp:
  31 cmd(3)
  32 cmd(3)
  33 io.interactive()
+
 
 
 
