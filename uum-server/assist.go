@@ -70,13 +70,20 @@ func (s *server) handleAssist(w http.ResponseWriter, r *http.Request) {
 		tooFrequent(w)
 		return
 	}
-	raw, err := io.ReadAll(io.LimitReader(r.Body, 64<<10))
+	raw, err := io.ReadAll(io.LimitReader(r.Body, 512<<10))
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "请求体读取失败。"})
 		return
 	}
 	var req assistRequest
-	if json.Unmarshal(raw, &req) != nil || strings.TrimSpace(req.Title) == "" {
+	if json.Unmarshal(raw, &req) != nil {
+		// 64KB 时代会截断大文章的 JSON 并误报「需要 title」——拆开错误：
+		// 解析失败 = 正文过长或格式问题（512KB 上限内 JSON 均可完整到达，
+		// 超长正文在解析后由 MaxBodyRunes 截断）
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "请求体解析失败：正文过长（AI 只读前 6000 字，建议精简后重试）。"})
+		return
+	}
+	if strings.TrimSpace(req.Title) == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "需要 title（正文可为空）。"})
 		return
 	}
