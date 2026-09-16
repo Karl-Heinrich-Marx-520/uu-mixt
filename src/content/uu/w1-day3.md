@@ -1,5 +1,5 @@
 ---
-title: "课件 · W1 Day3：作用域与闭包"
+title: "实验 · W1 Day3：作用域与闭包"
 slug: w1-day3
 description: "通过可运行实验演示 Python 作用域与闭包：无块作用域、赋值即声明、LEGB 查找、nonlocal 与晚绑定陷阱。"
 date: 2026-09-16
@@ -137,6 +137,7 @@ def later():
 
 print("7) 定义之后调用:", later())
 ```
+
 
 
 
