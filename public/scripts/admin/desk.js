@@ -157,12 +157,12 @@
         "<td>" + esc(p.title) + "</td>" +
         "<td>" + esc(p.category || "—") + "</td>" +
         "<td>" + esc(p.date) + "</td>" +
-        '<td class="admin-status-actions">' + statusPill(p) +
+        '<td class="admin-status-actions"><div class="admin-status-inner">' + statusPill(p) +
           '<span class="admin-row-actions">' +
             '<button class="admin-mini" data-edit="' + esc(p.slug) + '">编辑</button>' +
             '<button class="admin-mini" data-toggle="' + esc(p.slug) + '">' + (p.draft ? "发布" : "转草稿") + "</button>" +
             '<button class="admin-mini admin-mini--danger" data-del="' + esc(p.slug) + '">删除</button>' +
-          "</span></td></tr>";
+          "</span></div></td></tr>";
     }).join("");
   }
 
@@ -408,10 +408,10 @@
         '<td><span class="admin-friend-dot" aria-hidden="true">' + esc((f.name || "?").slice(0, 1)) + "</span>" + esc(f.name) + "</td>" +
         '<td><code class="admin-friend-host">' + esc(hostName) + "</code></td>" +
         "<td>" + esc(f.desc || "—") + "</td>" +
-        '<td class="admin-status-actions"><span class="admin-row-actions">' +
+        '<td class="admin-status-actions"><div class="admin-status-inner"><span class="admin-row-actions">' +
           '<button class="admin-mini" data-edit-friend="' + esc(f.name) + '">编辑</button>' +
           '<button class="admin-mini admin-mini--danger" data-del-friend="' + esc(f.name) + '">删除</button>' +
-        "</span></td></tr>";
+        "</span></div></td></tr>";
     }).join("");
   }
 
@@ -678,10 +678,10 @@
       return "<tr>" +
         '<td><code class="admin-friend-host">' + esc(t) + "</code></td>" +
         "<td>" + tagUseCount(t) + " 篇</td>" +
-        '<td class="admin-status-actions"><span class="admin-row-actions">' +
+        '<td class="admin-status-actions"><div class="admin-status-inner"><span class="admin-row-actions">' +
           '<button class="admin-mini" data-rename-tag="' + esc(t) + '">改名</button>' +
           '<button class="admin-mini admin-mini--danger" data-del-tag="' + esc(t) + '">删除</button>' +
-        "</span></td></tr>";
+        "</span></div></td></tr>";
     }).join("");
   }
 

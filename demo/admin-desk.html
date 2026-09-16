@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>写作台 · UU&amp;Mixt</title>
   <meta name="description" content="UU&Mixt 写作台：管理自己那一面的文章与分类，保存即发布。">
-  <link rel="stylesheet" href="assets/demo.css?v=20">
+  <link rel="stylesheet" href="assets/demo.css?v=21">
 </head>
 <body data-face="shared" data-page="admin">
 
@@ -459,13 +459,13 @@
             "<td>" + escapeHtml(p.title) + "</td>" +
             "<td>" + escapeHtml(p.category || "—") + "</td>" +
             "<td>" + escapeHtml(p.date) + "</td>" +
-            '<td class="admin-status-actions">' +
+            '<td class="admin-status-actions"><div class="admin-status-inner">' +
               statusPill(p) +
               '<span class="admin-row-actions">' +
                 '<button class="admin-mini" data-edit="' + p.id + '">编辑</button>' +
                 '<button class="admin-mini" data-toggle="' + p.id + '">' + (p.draft ? "发布" : "转草稿") + "</button>" +
                 '<button class="admin-mini admin-mini--danger" data-del="' + p.id + '">删除</button>' +
-              "</span>" +
+              "</span></div>" +
             "</td></tr>";
         }).join("");
       }
@@ -733,10 +733,10 @@
             '<td><span class="admin-friend-dot" aria-hidden="true">' + escapeHtml((f.name || "?").slice(0, 1)) + "</span>" + escapeHtml(f.name) + "</td>" +
             '<td><code class="admin-friend-host">' + escapeHtml(hostName) + "</code></td>" +
             "<td>" + escapeHtml(f.desc || "—") + "</td>" +
-            '<td class="admin-status-actions"><span class="admin-row-actions">' +
+            '<td class="admin-status-actions"><div class="admin-status-inner"><span class="admin-row-actions">' +
               '<button class="admin-mini" data-edit-friend="' + f.id + '">编辑</button>' +
               '<button class="admin-mini admin-mini--danger" data-del-friend="' + f.id + '">删除</button>' +
-            "</span></td></tr>";
+            "</span></div></td></tr>";
         }).join("");
       }
 
@@ -1081,10 +1081,10 @@
           return "<tr>" +
             '<td><code class="admin-friend-host">' + escapeHtml(t.name) + "</code></td>" +
             "<td>" + use + "</td>" +
-            '<td class="admin-status-actions"><span class="admin-row-actions">' +
+            '<td class="admin-status-actions"><div class="admin-status-inner"><span class="admin-row-actions">' +
               '<button class="admin-mini" data-rename-tag="' + escapeHtml(t.name) + '">重命名</button>' +
               '<button class="admin-mini admin-mini--danger" data-del-tag="' + escapeHtml(t.name) + '">删除</button>' +
-            "</span></td></tr>";
+            "</span></div></td></tr>";
         }).join("");
       }
 
