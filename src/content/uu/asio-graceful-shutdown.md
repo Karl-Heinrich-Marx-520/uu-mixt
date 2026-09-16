@@ -5,7 +5,7 @@ description: "主线程 accept、IO 线程池、独立逻辑线程的三层模�
 date: 2026-09-05
 author: uu
 category: 工程实践
-tags: [boost-asio, cpp, 优雅退出]
+tags: [C++, 网络编程]
 featured: false
 draft: false
 ---

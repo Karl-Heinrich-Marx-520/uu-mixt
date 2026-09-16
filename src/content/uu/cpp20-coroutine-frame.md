@@ -5,7 +5,7 @@ description: "用 -fcoroutines 编译一段最小协程，对照汇编看 promis
 date: 2026-08-02
 author: uu
 category: C++
-tags: [cpp20, 协程, coroutine-handle]
+tags: [C++, 并发]
 featured: false
 draft: false
 ---
