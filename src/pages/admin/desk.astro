@@ -134,8 +134,8 @@ import "../../styles/admin.css";
               <input id="f-desc" type="text" placeholder="留空 = AI 读正文自动生成一句话摘要">
             </div>
             <div class="admin-field">
-              <label for="f-body">正文（Markdown）</label>
-              <textarea id="f-body" rows="10" placeholder="## 背景&#10;&#10;正文……"></textarea>
+              <label for="f-body">正文（Markdown · 支持拖入 .md 文件自动填写）</label>
+              <textarea id="f-body" rows="10" placeholder="## 背景&#10;&#10;正文……&#10;&#10;也可以把写好的 .md 文件直接拖进来"></textarea>
             </div>
             <div class="admin-ai-row">
               <button type="button" class="admin-btn admin-btn--ghost admin-btn--ai" data-action="ai-assist">
@@ -340,6 +340,6 @@ import "../../styles/admin.css";
 
   <script is:inline src="/scripts/core.js"></script>
   <script is:inline src="/scripts/admin/server.js?v=4"></script>
-  <script is:inline src="/scripts/admin/desk.js?v=7"></script>
+  <script is:inline src="/scripts/admin/desk.js?v=8"></script>
 </body>
 </html>

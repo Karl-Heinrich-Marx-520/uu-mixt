@@ -499,6 +499,73 @@
     }
   }
 
+  /* ---------- 拖拽导入 .md（正文框）：拖入文件自动填写正文，frontmatter 空字段一并填充 ---------- */
+  function initBodyDrop() {
+    var box = $("#f-body");
+    if (!box) return;
+    box.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      box.classList.add("is-dropping");
+    });
+    box.addEventListener("dragleave", function () {
+      box.classList.remove("is-dropping");
+    });
+    box.addEventListener("drop", function (e) {
+      e.preventDefault();
+      box.classList.remove("is-dropping");
+      var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!file) return;
+      if (!/\.(md|markdown|txt)$/i.test(file.name)) { toast("只支持拖入 .md / .markdown / .txt 文件"); return; }
+      if (file.size > 200 * 1024) { toast("文件超过 200KB（写接口上限），请精简后再导入"); return; }
+      var reader = new FileReader();
+      reader.onload = function () {
+        var text = String(reader.result || "");
+        if ($("#f-body").value.trim() && !window.confirm("正文已有内容，导入将覆盖现有正文，确定？")) return;
+        var filled = 0;
+        var fm = "", rest = text;
+        if (/^---[ \t]*\r?\n/.test(text)) {
+          var nl = text.indexOf("\n") + 1;
+          var closeIdx = text.slice(nl).search(/^---[ \t]*\r?$/m);
+          if (closeIdx !== -1) {
+            fm = text.slice(nl, nl + closeIdx);
+            rest = text.slice(nl + closeIdx).replace(/^---[ \t]*\r?\n?/, "");
+          }
+        }
+        if (fm) {
+          var pick = function (key) {
+            var m = fm.match(new RegExp("^" + key + ":[ \\t]*\"?([^\"\\r\\n]*)\"?[ \\t]*$", "m"));
+            return m ? m[1].trim() : "";
+          };
+          if (!$("#f-title").value.trim()) {
+            var t = pick("title");
+            if (t) { $("#f-title").value = t; filled++; }
+          }
+          if (!$("#f-desc").value.trim()) {
+            var d = pick("description") || pick("desc");
+            if (d) { $("#f-desc").value = d; filled++; }
+          }
+          if (!$("#f-tags").value.trim()) {
+            var tv = pick("tags").replace(/[\[\]"]/g, "").trim();
+            if (tv) { $("#f-tags").value = tv; filled++; }
+          }
+          if (!$("#f-date").value) {
+            var dv = (fm.match(/^date:[ \t]*(\d{4}-\d{2}-\d{2})/m) || [])[1];
+            if (dv) $("#f-date").value = dv;
+          }
+          var cv = pick("category");
+          if (cv) {
+            var hit = state.categories.filter(function (c) { return c.name === cv; })[0];
+            if (hit) fillCategoryOptions(cv);
+          }
+        }
+        $("#f-body").value = rest;
+        var extra = filled ? "，自动填充 " + filled + " 个 frontmatter 字段" : "";
+        toast("已导入 " + file.name + "（正文 " + rest.length + " 字" + extra + "）");
+      };
+      reader.readAsText(file, "utf-8");
+    });
+  }
+
   /* ---------- 设置：个人简介 / 在做什么 / 技术栈（author-<面>.json） ----------
      读改写整个 JSON + sha 乐观锁，保存即提交进仓库（上线走「构建发布」按钮）。 */
   function syncBioCount() {
@@ -921,6 +988,7 @@
       resetEditor();
       resetCategoryForm();                           /* 分类表单初始收起（与 demo 一致） */
       resetFriendForm();
+      initBodyDrop();                                /* 正文框拖入 .md 自动填写 */
     } catch (e) {
       msg($("[data-post-msg]"), "加载失败：" + e.message);
     }

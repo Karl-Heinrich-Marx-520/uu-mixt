@@ -2485,3 +2485,10 @@ html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* 正文拖拽导入 .md 高亮（与正式版 admin.css 同步） */
+.admin-editor textarea.is-dropping {
+  outline: 2px dashed var(--accent-deep, #b45309);
+  outline-offset: 2px;
+  background: rgba(180, 83, 9, 0.06);
+}

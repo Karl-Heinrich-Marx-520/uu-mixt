@@ -476,3 +476,10 @@ html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
   cursor: pointer;
 }
 .admin-doing-row .admin-doing-x:hover { color: #a32d2d; border-color: #a32d2d; }
+
+/* 正文拖拽导入 .md 高亮（拖入文件时输入框虚线提示） */
+.admin-editor textarea.is-dropping {
+  outline: 2px dashed var(--accent-deep);
+  outline-offset: 2px;
+  background: color-mix(in srgb, var(--accent-deep) 7%, transparent);
+}
