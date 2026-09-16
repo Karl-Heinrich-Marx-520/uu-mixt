@@ -7,7 +7,7 @@ author: uu
 category: agent01-Python补足
 tags: [Python, agent]
 featured: false
-draft: true
+draft: false
 ---
 # W1-Day1-2-名字绑定与可变性
 
@@ -138,4 +138,5 @@ try:
 except TypeError as e:
     print("6) hash(t) 抛:", type(e).__name__, "-", e)
 ```
+
 
