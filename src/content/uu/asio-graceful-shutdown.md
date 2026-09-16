@@ -3,12 +3,11 @@ title: "用 Boost.Asio 搭一个可优雅退出的异步 TCP 服务器"
 slug: asio-graceful-shutdown
 description: "主线程 accept、IO 线程池、独立逻辑线程的三层模型，加上 signal_set 驱动的停机序列，让服务器可以不丢连接地退出。完整实现与踩坑记录。"
 date: 2026-09-05
-updated: 2026-09-12
 author: uu
 category: 工程实践
 tags: [boost-asio, cpp, 优雅退出]
 featured: true
-draft: false
+draft: true
 ---
 大部分教程写到这里就停了：`io_context::run()` 跑起来，服务器「能跑」。但生产环境里，一个不能体面退出的服务器等于不能上线——重启部署时在途的连接怎么办？半条消息写到一半怎么办？这篇文章记录我在自己的项目里落地的一套**三层线程模型 + 信号驱动的停机序列**，全部基于现代 C++ 写法。
 
@@ -75,3 +74,4 @@ awaitable<void> session(tcp::socket socket) {
 **不要用 umbrella 头文件。**图省事 include 了 `<boost/beast.hpp>`，结果它把 websocket、zlib 全拉进来，在 MSVC 下编译直接雪崩，报错还全是不明所以的别名未定义——真正的元凶藏在前 50 行之外。精确包含 `core.hpp` / `http.hpp` / `ip/tcp.hpp` 之后一次通过。这类坑的通用的排查姿势：从最小编译单元开始二分。
 
 另外，glibc 对象的销毁顺序与 `io_context` 的生命周期也要留心：任何 async 对象都得活过 `run()` 的最后一次返回，否则退出瞬间就是一次 use-after-free。
+
