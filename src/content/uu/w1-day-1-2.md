@@ -5,7 +5,7 @@ description: "从名字绑定与可变性出发，用可运行实验对比 Pytho
 date: 2026-09-16
 author: uu
 category: agent01-Python补足
-tags: [名字绑定, 可变性, 参数传递, is-运算符, cpp]
+tags: [Python, C++]
 featured: false
 draft: false
 ---
