@@ -1,11 +1,11 @@
 ---
-title: "W1-Day1-2-名字绑定与可变性-实验py"
+title: "实验 · W1-Day1-2-名字绑定与可变性"
 slug: w1-day1-2-py
 description: "通过实验代码验证 Python 的名字绑定、对象引用传递、is 与 == 的区别、可变默认参数陷阱、深浅拷贝以及元组的可变性边界。"
 date: 2026-09-16
 author: uu
 category: agent01-Python补足
-tags: [Python, agent]
+tags: [Python, Agent]
 featured: false
 draft: false
 ---
@@ -138,5 +138,6 @@ try:
 except TypeError as e:
     print("6) hash(t) 抛:", type(e).__name__, "-", e)
 ```
+
 
 
