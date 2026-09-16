@@ -5,7 +5,7 @@ description: "通过实验代码验证 Python 的名字绑定、对象引用传�
 date: 2026-09-16
 author: uu
 category: agent01-Python补足
-tags: [Python, Agent]
+tags: [Python]
 featured: false
 draft: false
 ---
@@ -138,6 +138,7 @@ try:
 except TypeError as e:
     print("6) hash(t) 抛:", type(e).__name__, "-", e)
 ```
+
 
 
 
