@@ -5,7 +5,7 @@ description: "通过可运行实验演示 Python 作用域与闭包：无块作�
 date: 2026-09-16
 author: uu
 category: agent01-Python补足
-tags: [Python, Agent]
+tags: [Python]
 featured: false
 draft: true
 ---
@@ -137,4 +137,5 @@ def later():
 
 print("7) 定义之后调用:", later())
 ```
+
 
