@@ -5,7 +5,7 @@ description: "利用 stdio 缓冲区延迟分配与 tcache_perthread_struct 操�
 date: 2026-09-16
 author: mixt
 category: IO_FILE
-tags: [libc_stdio_buffer，tcache_perthread, struct，mp_]
+tags: [libc_stdio_buffer，tcache_perthread_struct，mp_]
 featured: false
 draft: true
 ---
@@ -122,6 +122,7 @@ cmd(3)
 cmd(3)
 io.interactive()
 ```
+
 
 
 
