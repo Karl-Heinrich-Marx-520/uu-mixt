@@ -87,6 +87,10 @@ import "../../styles/admin.css";
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.5-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.5l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4z"/></svg>
           设置
         </button>
+        <button class="admin-side-item" type="button" data-panel="rebuild">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          构建发布
+        </button>
       </aside>
 
       <section class="admin-main">
@@ -301,6 +305,20 @@ import "../../styles/admin.css";
             </div>
             <p class="admin-toastline" data-bio-msg aria-live="polite"></p>
           </form>
+        </div>
+
+        <!-- 构建发布（决策 7.24：服务器端手动触发构建，POST /api/rebuild） -->
+        <div class="admin-panel" data-panel-body="rebuild">
+          <h2>构建发布</h2>
+          <p class="admin-hint" style="margin:0 0 14px">
+            把写作台里的最新内容（文章、分类、标签、简介）重新生成为前台页面。
+            构建约需 1-2 分钟（通常更快），完成后前台立即生效；<strong>构建失败会保留现有页面</strong>，不会开天窗。
+          </p>
+          <div class="admin-editor-actions" style="justify-content:flex-start">
+            <button type="button" class="admin-btn admin-btn--primary" data-action="site-rebuild">重新构建并发布</button>
+          </div>
+          <p class="admin-toastline" data-rebuild-msg aria-live="polite"></p>
+          <pre class="admin-rebuild-log" data-rebuild-log hidden></pre>
         </div>
       </section>
     </div>

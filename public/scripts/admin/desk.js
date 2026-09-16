@@ -701,6 +701,60 @@
     }
   }
 
+  /* ---------- 构建发布（决策 7.24：POST /api/rebuild + 3 秒轮询，×100 看门狗） ---------- */
+  var rebuildBusy = false;
+  async function siteRebuild() {
+    if (rebuildBusy) return;
+    if (!window.confirm("重新构建并发布前台页面？\n约需 1-2 分钟，期间可以继续写作。")) return;
+    var btn = $("[data-action='site-rebuild']");
+    var out = $("[data-rebuild-msg]");
+    var logEl = $("[data-rebuild-log]");
+    rebuildBusy = true;
+    btn.disabled = true;
+    msg(out, "已发起构建请求…");
+    try {
+      var start = await GH.rebuildStart();
+      if (start && start.status === "running") msg(out, "检测到构建已在进行中，等待其完成…");
+      var polls = 0;
+      var timer = setInterval(async function () {
+        polls++;
+        try {
+          var st = await GH.rebuildStatus();
+          if (st && !st.running) {
+            clearInterval(timer);
+            rebuildBusy = false;
+            btn.disabled = false;
+            if (st.exitCode === 0) {
+              msg(out, "构建完成（" + (st.elapsedSec != null ? st.elapsedSec : "?") + " 秒）：前台已更新。");
+              logEl.hidden = true;
+              toast("构建发布完成，前台已更新");
+            } else {
+              msg(out, "构建失败（退出码 " + st.exitCode + "）：前台保持不变，详情见下方日志。");
+              logEl.textContent = st.tail || "（无日志返回）";
+              logEl.hidden = false;
+            }
+          } else if (polls >= 100) {
+            clearInterval(timer);
+            rebuildBusy = false;
+            btn.disabled = false;
+            msg(out, "等待超时（5 分钟）：构建可能仍在后台进行，请稍后刷新页面再查。");
+          } else {
+            msg(out, "构建中…已等待 " + polls * 3 + " 秒");
+          }
+        } catch (e) {
+          clearInterval(timer);
+          rebuildBusy = false;
+          btn.disabled = false;
+          msg(out, "状态查询失败：" + e.message);
+        }
+      }, 3000);
+    } catch (e) {
+      rebuildBusy = false;
+      btn.disabled = false;
+      msg(out, "触发失败：" + e.message);
+    }
+  }
+
   /* ---------- 事件 ---------- */
   doc.addEventListener("click", function (e) {
     var el = e.target.closest(
