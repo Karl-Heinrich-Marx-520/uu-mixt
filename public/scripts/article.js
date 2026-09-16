@@ -9,22 +9,39 @@
   var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ---------- 分享（PRD 5.3） ----------
-     优先 navigator.share（移动端系统分享面板）；不支持或用户取消时降级为复制链接。
+     优先 navigator.share（移动端系统分享面板）；不支持时降级复制链接。
+     复制链：Clipboard API → execCommand（HTTP 非安全上下文没有前者，后者仍可用）→ 手动复制提示。
      链接是该面的正式路由 → 接收方直达正确的一面且不播翻转动画（PRD 4.2 / G2）。 */
+  var legacyCopy = function (text) {
+    try {
+      var ta = doc.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      doc.body.appendChild(ta);
+      ta.select();
+      var done = doc.execCommand("copy");
+      doc.body.removeChild(ta);
+      return !!done;
+    } catch (e) {
+      return false;
+    }
+  };
   [].slice.call(doc.querySelectorAll('[data-action="share"]')).forEach(function (btn) {
     btn.addEventListener("click", function () {
       var url = btn.dataset.url || location.href;
       var title = btn.dataset.title || doc.title;
+      var ok = function () { window.uumToast && window.uumToast("链接已复制，可以直接分享给朋友"); };
+      var manual = function () { window.uumToast && window.uumToast("复制失败，请手动复制：" + url); };
       var fallback = function () {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(url).then(function () {
-            window.uumToast && window.uumToast("链接已复制，可以直接分享给朋友");
-          }, function () {
-            /* 剪贴板被拒（如无权限环境）：说明原因并给手动复制出路（与 copy-mail 降级一致） */
-            window.uumToast && window.uumToast("复制失败，请手动复制：" + url);
+          navigator.clipboard.writeText(url).then(ok, function () {
+            /* 剪贴板被拒：走 execCommand 降级 */
+            legacyCopy(url) ? ok() : manual();
           });
         } else {
-          window.uumToast && window.uumToast("当前浏览器不支持自动复制，链接：" + url);
+          legacyCopy(url) ? ok() : manual();
         }
       };
       if (navigator.share) {

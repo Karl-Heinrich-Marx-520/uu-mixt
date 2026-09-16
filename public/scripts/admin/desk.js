@@ -482,9 +482,11 @@
     var body = $("#f-body").value;
     if (!title) { toast("先填标题，再让 AI 生成"); return; }
     if (!body.trim()) { toast("正文还是空的，AI 没东西可读"); return; }
+    var send = body;
+    if (send.length > 6000) { send = send.slice(0, 6000); toast("正文较长：AI 只读前 6000 字"); }
     aiBusy(true);
     try {
-      var ai = await GH.assist(title, body);
+      var ai = await GH.assist(title, send);
       if (!$("#f-desc").value.trim() && ai.description) $("#f-desc").value = ai.description;
       if (!$("#f-tags").value.trim() && Array.isArray(ai.tags) && ai.tags.length) {
         $("#f-tags").value = ai.tags.join(", ");
