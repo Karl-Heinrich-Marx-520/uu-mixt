@@ -93,6 +93,19 @@
   border-color: var(--card-accent);
   box-shadow: var(--shadow-2);
 }
+/* 小屏（≤640px）S0 改纵向摆牌（PRD 4.3「桌面横向 / 移动纵向」的移动实现）：
+   卡收窄为 80vw，上下错开 ±205px、横偏 ±14px 保留倾斜摆牌感。
+   盲测轮 1 P2：此前固定 300px + ±212px 横错在 375px 视口溢出（mixt 卡 right 565）。 */
+@media (max-width: 640px) {
+  .stage { height: 780px; }
+  .entry-card { width: min(300px, 80vw); }
+  .stage:not(.s1):not(.s2):not(.s3) .entry-card--uu {
+    transform: translate(calc(-50% - 6px), calc(-50% - 205px)) rotate(-8deg);
+  }
+  .stage:not(.s1):not(.s2):not(.s3) .entry-card--mixt {
+    transform: translate(calc(-50% + 6px), calc(-50% + 205px)) rotate(7deg);
+  }
+}
 .entry-card--uu { --card-accent: #ef9f27; --card-deep: #96590a; }
 .entry-card--mixt { --card-accent: #378add; --card-deep: #1b62b5; }
 html[data-mode="dark"] .entry-card--uu { --card-deep: #f3b254; }

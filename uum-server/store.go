@@ -119,6 +119,12 @@ type Store interface {
 	ReadTagPool() ([]string, error)
 	// ApplyTagChange 原子应用一次标签变更（池 + 全站文章级联，单次提交；face 仅入审计尾注）
 	ApplyTagChange(op TagOp, msg, face string) (TagResult, string, error)
+	// BackfillTags 存量回填：把全站文章标签 upsert 进池（决策 7.26，幂等；无 delta 不产生提交）。
+	// 返回实际新入池的标签数。
+	BackfillTags() (int, error)
+	// RemoveCategory 删除本人面分类（决策 7.26）：配置条目移除；该分类文章 category 级联改
+	// 「未分类」；兜底分类缺失时自动种子且本身不可删；单次提交。返回级联文章数与短 commit 号。
+	RemoveCategory(face, name, msg string) (int, string, error)
 }
 
 /* ---------- MockStore：内存实现（-mock 自测） ---------- */
@@ -183,6 +189,16 @@ func (m *MockStore) Write(face, rel string, data []byte, msg, sha string, overwr
 		}
 	}
 	m.data[rel] = data
+	// 决策 7.26：保存文章时标签自动入池（mock 与 GitStore 同语义，不产生提交）
+	if strings.HasPrefix(rel, "src/content/") && strings.HasSuffix(rel, ".md") {
+		if tags, ok := parseFrontmatterTags(string(data)); ok {
+			if pool, perr := mockReadTagPool(m.data); perr == nil {
+				if newPool, added := mergeTagsIntoPool(pool, tags); len(added) > 0 {
+					m.data[TagPoolFile] = marshalTagPool(newPool)
+				}
+			}
+		}
+	}
 	return gitBlobHash(data), "mock", "", nil
 }
 
@@ -405,7 +421,25 @@ func (g *GitStore) Write(face, rel string, data []byte, msg, sha string, overwri
 	if err := os.WriteFile(full, data, 0o644); err != nil {
 		return "", "", "", err
 	}
-	commit, warning, err := g.commit(msg, face, rel)
+	// 决策 7.26：保存文章时 frontmatter 标签自动 upsert 入池，与文章同一次提交。
+	// 池写失败不阻塞保存——池是衍生数据，启动回填/下次保存会补。
+	rels := []string{rel}
+	if strings.HasPrefix(rel, "src/content/") && strings.HasSuffix(rel, ".md") {
+		if tags, ok := parseFrontmatterTags(string(data)); ok {
+			pool, perr := g.ReadTagPool()
+			if perr != nil {
+				log.Printf("[tags] 池读取失败（不阻塞保存）：%v", perr)
+			} else if newPool, added := mergeTagsIntoPool(pool, tags); len(added) > 0 {
+				if werr := g.writePoolFile(newPool); werr == nil {
+					rels = append(rels, TagPoolFile)
+					log.Printf("[tags] 自动入池 %v（face=%s）", added, face)
+				} else {
+					log.Printf("[tags] 池写入失败（不阻塞保存）：%v", werr)
+				}
+			}
+		}
+	}
+	commit, warning, err := g.commit(msg, face, rels...)
 	return gitBlobHash(data), commit, warning, err
 }
 

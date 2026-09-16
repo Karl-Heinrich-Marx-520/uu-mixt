@@ -53,6 +53,8 @@
   margin-left: 6px;
   overflow-x: auto;
   scrollbar-width: none;
+  min-width: 0;   /* flex 子项默认不收缩到内容以下——缺了它 overflow-x 形同虚设，
+                     375px 视口下导航把页头撑破、页面出现横向滚动（盲测轮 1 P2） */
 }
 .nav::-webkit-scrollbar { display: none; }
 .nav a {
@@ -108,6 +110,17 @@
 }
 .flip-btn svg { width: 15px; height: 15px; }
 .flip-btn:hover { background: var(--accent-deep); color: #fff; }
+
+/* ---------- 页头小屏收纳（盲测轮 1 P2：375px 视口横向溢出 32px，「翻到 Mixt」被截断） ----------
+   ≤480px 时翻面按钮收为纯图标（语义由 aria-label/title 兜底），间距收紧；
+   .nav 本身 overflow-x:auto 可滚，不参与溢出。 */
+@media (max-width: 480px) {
+  .header-inner { padding: 0 12px; gap: 8px; }
+  .header-actions { gap: 6px; }
+  .flip-btn { padding: 0 10px; gap: 0; }
+  .flip-text { display: none; }
+  .brand { font-size: 1rem; }
+}
 
 /* ---------- 6. 通用布局 ---------- */
 .page {

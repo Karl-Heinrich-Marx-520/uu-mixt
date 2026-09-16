@@ -888,7 +888,9 @@
         if (el.dataset.delCat) {
           var c2 = store.categories(face).filter(function (c) { return c.slug === el.dataset.delCat; })[0];
           if (!c2) return;
-          if (window.confirm("删除分类「" + c2.name + "」？该分类下的文章会保留，只是不再有分类标签。")) {
+          if (c2.name === "未分类") { window.uumToast("「未分类」是兜底分类，不能删除。"); return; }
+          var used = store.allPosts(face).filter(function (p) { return p.category === c2.name; }).length;
+          if (window.confirm("删除分类「" + c2.name + "」？" + (used ? "该分类下还有 " + used + " 篇文章，将一并转入「未分类」。" : ""))) {
             store.removeCategory(face, c2.slug);
             msg($("[data-cat-msg]"), "已删除分类。");
             renderCats();

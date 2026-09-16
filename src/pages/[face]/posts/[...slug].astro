@@ -55,7 +55,7 @@ const canonical = new URL(`/${face}/posts/${d.slug}/`, Astro.site).href;
   title={`${d.title} · ${me.name} 的文章 · UU&Mixt`}
   description={d.description}
   bodyClass="article-page"
-  scripts={["/scripts/article.js"]}
+  scripts={["/scripts/article.js?v=2"]}
 >
   <Fragment slot="nav">
     <a href={`/${face}/`}>首页</a>

@@ -23,6 +23,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -215,6 +217,78 @@ func validTagName(s string) bool {
 		return false
 	}
 	return !strings.ContainsAny(s, ",[]\"'\\")
+}
+
+/* ---------- 自动入池（决策 7.26：池 = 全站文章标签并集 + 待用） ---------- */
+
+// mergeTagsIntoPool 纯函数：把 tags 中合法且不在池里的追加进去，返回（新池, 实际新增）。
+func mergeTagsIntoPool(pool, tags []string) ([]string, []string) {
+	added := []string{}
+	newPool := append([]string{}, pool...)
+	for _, t := range tags {
+		if !validTagName(t) || containsString(newPool, t) {
+			continue
+		}
+		newPool = append(newPool, t)
+		added = append(added, t)
+	}
+	return newPool, added
+}
+
+func (g *GitStore) writePoolFile(newPool []string) error {
+	return os.WriteFile(filepath.Join(g.repoPath, filepath.FromSlash(TagPoolFile)), marshalTagPool(newPool), 0o644)
+}
+
+// BackfillTags 存量回填：全站文章标签 upsert 进池；无 delta 不产生提交（幂等）。
+// main 启动时调用一次，兜住「池上线前已存在的文章」。
+func (g *GitStore) BackfillTags() (int, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	files, err := g.collectMarkdown()
+	if err != nil {
+		return 0, err
+	}
+	all := []string{}
+	for _, b := range files {
+		if tags, ok := parseFrontmatterTags(string(b)); ok {
+			all = append(all, tags...)
+		}
+	}
+	pool, err := g.ReadTagPool()
+	if err != nil {
+		return 0, err
+	}
+	newPool, added := mergeTagsIntoPool(pool, all)
+	if len(added) == 0 {
+		return 0, nil
+	}
+	if err := g.writePoolFile(newPool); err != nil {
+		return 0, err
+	}
+	if _, _, err := g.commit("config(tags): 存量文章标签回填入池", "", TagPoolFile); err != nil {
+		return 0, err
+	}
+	return len(added), nil
+}
+
+// BackfillTags（MockStore）：内存同语义，不产生提交。
+func (m *MockStore) BackfillTags() (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	all := []string{}
+	for _, tags := range mockScanTags(m.data) {
+		all = append(all, tags...)
+	}
+	pool, err := mockReadTagPool(m.data)
+	if err != nil {
+		return 0, err
+	}
+	newPool, added := mergeTagsIntoPool(pool, all)
+	if len(added) == 0 {
+		return 0, nil
+	}
+	m.data[TagPoolFile] = marshalTagPool(newPool)
+	return len(added), nil
 }
 
 /* ---------- GET /api/tags：汇总（文章标签计数 + 池） ---------- */

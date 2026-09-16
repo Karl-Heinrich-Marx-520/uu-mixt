@@ -163,28 +163,38 @@
 body[data-face="uu"] { --face-bg-img: url("/assets/bg/bg-uu.jpg"); }
 body[data-face="mixt"] { --face-bg-img: url("/assets/bg/bg-mixt.jpg"); }
 
-/* 常驻虚化背景：仅面首页（body.has-hero）启用 */
-.page-bg,
-.page-veil {
+/* 常驻虚化背景：仅面首页（body.has-hero）启用。
+   page-bg-clip：fixed 裁剪容器——.page-bg 的 scale(1.12) 放大绘制区若直接挂在
+   fixed 元素上，Chromium 会把超出视口的部分计入 document scroll area，
+   造成全视口尺寸的横向滚动（375px 溢出 22px / 桌面溢出约 76px，盲测轮 1 P2）。
+   容器自身贴合视口并 overflow:clip，放大后的背景被裁回视口内。 */
+.page-bg-clip {
   position: fixed;
   inset: 0;
+  z-index: -2;
+  overflow: clip;
   pointer-events: none;
   opacity: 0;
   transition: opacity 400ms ease;
 }
 .page-bg {
-  z-index: -2;
+  position: absolute;
+  inset: 0;
   background-image: var(--face-bg-img);
   background-size: cover;
   background-position: center;
   filter: blur(26px) saturate(1.05) brightness(1.24);  /* 用户反馈：虚化背景同步提亮 */
-  transform: scale(1.12); /* 抵消 blur 造成的边缘透明 */
+  transform: scale(1.12); /* 抵消 blur 造成的边缘透明（超出部分由容器裁剪） */
 }
-.page-veil { z-index: -1; background: rgba(245, 246, 248, 0.7); }
+.page-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+body.has-hero .page-bg-clip { opacity: 1; }
 html[data-mode="dark"] .page-veil { background: rgba(13, 18, 29, 0.74); }
 body.has-hero { background: transparent; }
-body.has-hero .page-bg,
-body.has-hero .page-veil { opacity: 1; }
 /* 直接压在虚化背景上的次级文字统一深一档（veil 调薄后仍需 ≥ 4.5:1） */
 body.has-hero .section-title { color: var(--on-bg-2); }
 body.has-hero .pager a,

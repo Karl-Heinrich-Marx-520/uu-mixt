@@ -23,7 +23,7 @@ bad() { fail=$((fail+1)); echo "FAIL  $1"; echo "      body: $(head -c 200 "$BOD
 
 # check <名称> <期望码> <实际码> [body 必含字符串]
 check() {
-  if [ "$2" = "$3" ] && { [ -z "$4" ] || grep -q "$4" "$BODY" 2>/dev/null; }; then
+  if [ "$2" = "$3" ] && { [ -z "${4:-}" ] || grep -q "$4" "$BODY" 2>/dev/null; }; then
     ok "$1"
   else
     bad "$1（期望 $2 实得 $3）"
@@ -83,7 +83,9 @@ check "write 绝对路径 → 400" 400 "$code" "400"
 printf '{"path":"src/content/mixt/big.md","content":"%s"}' "$(printf 'a%.0s' $(seq 1 206000))" > "$TMP/big.json"
 reqfile POST /api/write "$MIXT_TOKEN" "$TMP/big.json"
 check "write 201KB 超限 → 413" 413 "$code" "413"
-req POST /api/write "$MIXT_TOKEN" '{"path":"src/data/friends.json","content":"[]","message":"content(friends): 清空"}'
+req GET "/api/read?path=src/data/friends.json" "$MIXT_TOKEN"
+F_SHA=$(grep -o '"sha":"[a-f0-9]*"' "$BODY" | head -1 | cut -d'"' -f4)
+req POST /api/write "$MIXT_TOKEN" '{"path":"src/data/friends.json","content":"[]","message":"content(friends): 清空","sha":"'"$F_SHA"'"}'
 check "write 站点级友链（Mixt）→ 200" 200 "$code" '"ok"'
 req POST /api/write "$MIXT_TOKEN" '{"path":"src/config/categories-uu.json","content":"[]","message":"m"}'
 check "write 他人分类配置 → 403" 403 "$code" "越权"
@@ -128,6 +130,36 @@ req GET /api/rebuild "$UU_TOKEN"
 check "rebuild 状态（跨 token 可查）→ 200 完成 exit=0" 200 "$code" '"exitCode":0'
 req GET /api/rebuild ""
 check "rebuild 状态未登录 → 401" 401 "$code" "凭据无效"
+
+echo "=== 6.6 标签自动入池（决策 7.26：保存文章 upsert 池）==="
+req GET "/api/read?path=src/content/mixt/tag-upsert-test.md" "$MIXT_TOKEN"
+TAG_SHA=$(grep -o '"sha":"[a-f0-9]*"' "$BODY" | head -1 | cut -d'"' -f4)
+req POST /api/write "$MIXT_TOKEN" '{"path":"src/content/mixt/tag-upsert-test.md","content":"---\ntitle: \"入池测试\"\nslug: tag-upsert-test\ndate: 2026-09-16\nauthor: mixt\ncategory: 堆利用\ntags: [zzz-auto-pool]\n---\n\n正文\n","sha":"'"$TAG_SHA"'","overwrite":false}'
+check "写文章带新标签 → 200" 200 "$code" '"sha"'
+req GET /api/tags "$MIXT_TOKEN"
+check "保存后新标签自动入池（count>0）" 200 "$code" '"zzz-auto-pool"'
+
+echo "=== 6.7 存量回填（BackfillTags：启动幂等，此处验证池 API 侧语义）==="
+req POST /api/tags/add "$MIXT_TOKEN" '{"tag":"zzz-manual-pool"}'
+check "手动入池 → 200" 200 "$code" '"zzz-manual-pool"'
+req POST /api/tags/add "$MIXT_TOKEN" '{"tag":"zzz-manual-pool"}'
+check "重复入池 → 幂等 exists" 200 "$code" '"exists":true'
+
+echo "=== 6.8 分类删除级联「未分类」（决策 7.27）==="
+req GET "/api/read?path=src/config/categories-mixt.json" "$MIXT_TOKEN"
+CAT_SHA=$(grep -o '"sha":"[a-f0-9]*"' "$BODY" | head -1 | cut -d'"' -f4)
+req POST /api/write "$MIXT_TOKEN" '{"path":"src/config/categories-mixt.json","content":"[{\"slug\":\"heap\",\"name\":\"堆利用\",\"desc\":\"d\"},{\"slug\":\"misc\",\"name\":\"杂项\",\"desc\":\"d2\"}]","sha":"'"$CAT_SHA"'"}'
+check "准备分类配置（含堆利用）→ 200" 200 "$code" '"sha"'
+req POST /api/categories/remove "$MIXT_TOKEN" '{"name":"未分类"}'
+check "删兜底分类「未分类」→ 400 拒绝" 400 "$code" "不能删除"
+req POST /api/categories/remove "$UU_TOKEN" '{"name":"堆利用"}'
+check "他人面删分类 → 404" 404 "$code"
+req POST /api/categories/remove "$MIXT_TOKEN" '{"name":"堆利用"}'
+check "删「堆利用」→ 200 且发生级联" 200 "$code" '"cascaded"'
+req GET "/api/read?path=src/content/mixt/tag-upsert-test.md" "$MIXT_TOKEN"
+check "文章 category 已级联为未分类" 200 "$code" "category: 未分类"
+req GET "/api/read?path=src/config/categories-mixt.json" "$MIXT_TOKEN"
+check "配置中「堆利用」已移除且兜底已种子" 200 "$code" "未分类"
 
 echo "=== 7. 桌宠路由（无 Key 上游 → 502 优雅报错）==="
 req POST /api/pet/chat "" '{"messages":[{"role":"user","content":"你好呀"}]}'

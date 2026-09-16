@@ -5,6 +5,9 @@ html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;          /* Hero 下滑 / 归档锚点：平滑滚动 */
   scroll-padding-top: calc(var(--header-h) + 14px); /* 锚点不被 sticky 页头遮挡 */
+  overflow-x: clip;                 /* 视觉层（.page-bg blur 放大 1.12 遮边）超出视口的部分
+                                       不产生横向滚动（盲测轮 1 P2：375px 溢出 22px）。
+                                       用 clip 而非 hidden：clip 不创建滚动容器，sticky 页头不受影响 */
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }   /* 降级：直接跳转 */
