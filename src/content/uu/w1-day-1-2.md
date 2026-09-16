@@ -5,7 +5,7 @@ description: "从名字绑定与可变性出发，用可运行实验对比 Pytho
 date: 2026-09-16
 author: uu
 category: agent01-Python补足
-tags: [Python, agent]
+tags: [Python, Agent]
 featured: false
 draft: false
 ---
@@ -312,6 +312,7 @@ tuple 的"不可变"只管**自己那一层**：它的元素槽位在创建时�
 
 Day 3 · 作用域与闭包（差异 #9-12），见 `W1-Day3-作用域与闭包.md`。
 预告：`lambda k=k: k` 这个修复手段，用的正是**本课模块 4** 的"默认参数在定义时求值一次"。
+
 
 
 
