@@ -7,7 +7,7 @@ author: uu
 category: C++
 tags: [redis, 缓存一致性, 分布式锁, 持久化]
 featured: false
-draft: true
+draft: false
 ---
 # Redis 面试应用手册（C++ 后端实习版）
 
@@ -1323,3 +1323,4 @@ timeout 300
 3. **连项目**——用「问题 → 方案 → 反思」模板把八股变成经历。
 
 祝面试顺利。
+
