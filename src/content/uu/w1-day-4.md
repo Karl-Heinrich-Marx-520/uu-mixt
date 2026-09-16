@@ -7,7 +7,7 @@ author: uu
 category: agent01-Python补足
 tags: [Python, C++, 并发]
 featured: false
-draft: false
+draft: true
 ---
 # 课件 · W1 Day 4：迭代协议与生成器
 
@@ -308,6 +308,7 @@ C++ 里同样一对概念是**物化容器 vs 惰性 view**：`std::vector<int>`
 
 Day 5 · `with` 与异常 ★（差异 #17-20，本周期重点）。
 会讲「为什么 Python 没有确定性析构」——这是 W1 两条必答判据里的第二条，也是 Harness 的 S 层（状态存储）和 L 层（生命周期钩子）的根基。
+
 
 
 
