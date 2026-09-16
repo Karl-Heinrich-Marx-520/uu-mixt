@@ -1,5 +1,5 @@
 ---
-title: "stdio的首次buffer分配初始化"
+title: "libc_stdio_buffer初始化"
 slug: stdio-buffer
 description: "分析 stdio 流首次读写时缓冲区的延迟分配过程，说明控制 malloc 返回值可将 puts 数据写入任意地址。"
 date: 2026-09-16
@@ -24,4 +24,10 @@ f (fp->_IO_buf_base == NULL)
 那么Target就会被写入puts的参数
 
 例：[TQLCTF 2022]unbelievable write
+漏洞类型：
+C:\Users\10935\Documents\Tencent Files\2118458805\nt_qq\nt_data\Pic\2026-09\Ori
+c2有着一个任意地址释放
+C:\Users\10935\Documents\Tencent Files\2118458805\nt_qq\nt_data\Pic\2026-09\Ori
+如果能成功将target中的内容修改，就可以拿到flag
+
 
