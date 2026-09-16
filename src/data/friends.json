@@ -1,23 +1,5 @@
 [
   {
-    "name": "云端牧码",
-    "url": "https://example.com/yunmuma",
-    "avatar": "",
-    "desc": "写云计算与分布式系统的实验记录，偏好可复现的部署清单。"
-  },
-  {
-    "name": "栈外",
-    "url": "https://example.com/zhanwai",
-    "avatar": "",
-    "desc": "聊编程语言之外的事：编译器、运行时与一点哲学。"
-  },
-  {
-    "name": "像素底片",
-    "url": "https://example.com/pixelphoto",
-    "avatar": "",
-    "desc": "复古游戏美术与独立开发日志，偶尔更新像素画教程。"
-  },
-  {
     "name": "夜航西飞",
     "url": "https://example.com/nightfly",
     "avatar": "",
