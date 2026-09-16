@@ -15,7 +15,7 @@ draft: true
 
 ---
 
-## 一、前置知识：stdio 缓冲区的延迟分配
+## 一、stdio 缓冲区的延迟分配
 
 程序刚启动时，`stdout` / `stderr` / `stdin` 三个流的缓冲区 `_IO_buf_base` 均为 `NULL`。
 
@@ -43,36 +43,32 @@ fp->_IO_buf_end  = p + size;
 
 ## 二、例: [TQLCTF 2022] unbelievable write
 
-![漏洞类型](images/mixt/c3d97da6b99988dab7c595230e56da36.png)
+![c2 的任意地址释放](images/mixt/c3d97da6b99988dab7c595230e56da36.png)
 本题的漏洞类型如上图所示，其中最关键的是一处 **c2 的任意地址释放**：
 
-![c2 的任意地址释放](images/mixt/9784b1d3dabe6008127a69d875a75d8d.png)
+![修改 target 内容以获取 flag](images/mixt/9784b1d3dabe6008127a69d875a75d8d.png)
 
 只要能成功改写 `target` 处的内容，就能顺利拿到 flag：
 
-![修改 target 内容以获取 flag](images/mixt/3d38d8ce3b70deaff2d6240741c498a6.png)
+![c1 在使用完 chunk 之后会立即将其释放](images/mixt/3d38d8ce3b70deaff2d6240741c498a6.png)
 
-**一个容易被忽略的坑**：c1 在使用完 chunk 之后会立即将其释放。
-
-这导致我在真正理解 `libc_stdio_buffer`（stdio 缓冲区分配机制）之前的多次尝试全部失败——即便侥幸把 chunk 申请到了 `target` 附近，程序也会因为无法通过 `free` 的合法性检查而直接崩溃。
+这导致我在了解 `libc_stdio_buffer`（stdio 缓冲区分配机制）之前的多次尝试全部失败，即使把 chunk 申请到了 `target` 附近，程序也会因为无法通过 `free` 的合法性检查而直接崩溃。
 
 ---
 
 ## 三、利用思路
 
-整体思路可以拆成四步：
-
 1. **借助 c2 释放掉 `tcache_perthread_struct`**，再把它申请回来，同时将该处 0x280 对应的 `count` 改写为 8。这样一来，再次释放它时它就会绕过 tcache、直接进入 **unsorted bin**。
 
-2. **对这块 chunk 进行切割**（提前布置好各个 bin 的 `count`），随后再将其**合并**。合并的过程中会在 `tcache_perthread_struct` 上残留 libc 指针，从而泄露 libc 地址：
-
-   ![bins 状态](images/mixt/bins.png)
+2. **对这块 chunk 进行切割**（提前布置好切割出来的chunk对应 bin 的 `count`），随后再将其合并。切割之后会在 `tcache_perthread_struct` 上残留 libc 指针：
 
 3. **修改对应的 `count`，并准备好 0x1010 的 `count`**，然后通过**字节爆破（成功率约 1/16）**把分配落到 `mp_` 区域附近：
 
-   ![命中 mp_ 区域](images/mixt/mp_.png)
+   ![bins 状态](images/mixt/bins.png)
 
 4. **修改 `mp_.tcache_bins`**，把 `tcache_bins` 阈值抬高，使得 **0x1010 大小的 chunk 也被当作 tcache chunk** 处理。之后再次进入 c3，便能看到 `target` 被成功改写：
+
+   ![命中 mp_ 区域](images/mixt/mp_.png)
 
    ![target 被成功修改](images/mixt/target.png)
 
@@ -127,15 +123,5 @@ cmd(3)
 io.interactive()
 ```
 
----
 
-## 五、小结
-
-本题的关键在于：
-
-- 利用 stdio **缓冲区延迟分配**的特性，把 `malloc` 的返回地址导向目标位置，从而实现「任意地址写」；
-- 巧妙借助 `tcache_perthread_struct` 的释放与重新申请，制造出 **unsorted bin 残留 libc 指针**的泄露点；
-- 通过修改 `mp_.tcache_bins` 扩大 tcache 的适用范围，让原本不会被当作 tcache chunk 的大尺寸 chunk 也能被利用。
-
-需要特别注意的是 c1 的 **即用即释放** 行为，它会破坏脆弱的堆布局，是本题最容易翻车的地方。
 
