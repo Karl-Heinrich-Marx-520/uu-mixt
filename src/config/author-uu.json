@@ -31,8 +31,6 @@
     "Qt",
     "CMake",
     "Linux",
-    "NS-3",
-    "Nginx",
-    "Astro"
+    "NS-3"
   ]
 }
