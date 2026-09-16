@@ -4,7 +4,7 @@ slug: redis
 description: "面向 C++ 后端实习面试的 Redis 应用手册，覆盖五大基本类型用法、缓存三大问题、分布式锁、事务与持久化选型及生产规范。"
 date: 2026-09-16
 author: uu
-category: C++
+category: 工程实践
 tags: [redis, 缓存一致性, 分布式锁, 持久化]
 featured: false
 draft: false
@@ -1323,4 +1323,5 @@ timeout 300
 3. **连项目**——用「问题 → 方案 → 反思」模板把八股变成经历。
 
 祝面试顺利。
+
 
