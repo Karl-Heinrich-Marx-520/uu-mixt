@@ -310,6 +310,31 @@ func (g *GitStore) abs(rel string) (string, error) {
 	return full, nil
 }
 
+/*
+alignMain 在每次写/删前把工作副本对齐主库 origin/main。
+
+	背景（2026-09-16 事故）：master 从本地直推主库后，work 落后于 origin/main，
+	此时写作台提交的 push 会因非快进被拒（仅 warning），而下一次构建的
+	reset --hard origin/main 会把未推送的作者内容整链销毁。
+	工作副本在两次操作之间总是干净的（每次写/删即提交，mu 串行），这里
+	先对齐再落盘即可保证本提交必然可快进推送。
+*/
+func (g *GitStore) alignMain() error {
+	if _, err := g.git("fetch", "origin"); err != nil {
+		return nil // 主库不可达：沿用当前副本（push 失败仍有 warning 兜底）
+	}
+	// 有未推送的本地提交时绝不能 reset——那会销毁作者内容；
+	// 此时跳过对齐，交给本次提交后 push 失败路径的 rebase 自愈。
+	if out, _ := g.git("rev-list", "--count", "origin/main..HEAD"); strings.TrimSpace(out) != "0" {
+		log.Printf("[store] alignMain: 检测到未推送本地提交，跳过 reset（保留待自愈）")
+		return nil
+	}
+	if _, err := g.git("reset", "--hard", "origin/main"); err != nil {
+		return fmt.Errorf("工作副本对齐主库失败：%w", err)
+	}
+	return nil
+}
+
 func (g *GitStore) List(face, rel string) ([]FileInfo, error) {
 	full, err := g.abs(rel)
 	if err != nil {
@@ -355,6 +380,9 @@ func (g *GitStore) Read(face, rel string) ([]byte, error) {
 func (g *GitStore) Write(face, rel string, data []byte, msg, sha string, overwrite bool) (string, string, string, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	if err := g.alignMain(); err != nil {
+		return "", "", "", err
+	}
 	full, err := g.abs(rel)
 	if err != nil {
 		return "", "", "", err
@@ -384,6 +412,9 @@ func (g *GitStore) Write(face, rel string, data []byte, msg, sha string, overwri
 func (g *GitStore) Delete(face, rel string, msg, sha string) (string, string, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	if err := g.alignMain(); err != nil {
+		return "", "", err
+	}
 	full, err := g.abs(rel)
 	if err != nil {
 		return "", "", err
@@ -543,7 +574,17 @@ func (g *GitStore) commit(msg, face string, rels ...string) (string, string, err
 	}
 	commit := strings.TrimSpace(rev)
 	if _, err := g.git("push", "origin", "HEAD:main"); err != nil {
-		return commit, "已提交到工作副本，但推送主库失败：" + strings.TrimSpace(err.Error()), nil
+		// 自愈重试：主库可能被 master 本地直推领先（非快进）——rebase 本提交后再推一次
+		if _, ferr := g.git("fetch", "origin"); ferr == nil {
+			if _, rerr := g.git("rebase", "origin/main"); rerr == nil {
+				if _, perr := g.git("push", "origin", "HEAD:main"); perr == nil {
+					return commit, "", nil // 重试成功
+				}
+			}
+		}
+		warn := "已提交到工作副本，但推送主库失败（自动重试后仍未成功）：" + strings.TrimSpace(err.Error())
+		log.Printf("[store] push warning: %s", warn)
+		return commit, warn, nil
 	}
 	return commit, "", nil
 }
