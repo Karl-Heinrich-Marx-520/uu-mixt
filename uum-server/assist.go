@@ -20,6 +20,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -39,7 +41,9 @@ type AssistConfig struct {
 
 const defaultAssistSystem = `你是 UU&Mixt 双面技术博客写作台的摘要助手。根据文章标题与正文（Markdown）生成两个字段：
 1. description：一句话摘要，60 到 120 个字符，概括正文的核心内容或结论；不用「本文」「这篇文章」开头，不夸饰。
-2. tags：最多 5 个标签，从正文的技术内容提炼；英文技术词用小写连字符形式（如 boost-beast、graceful-shutdown），中文技术概念可用中文（如 拥塞控制、堆利用）；不要照抄标题里超过两个词。
+2. tags：2 到 4 个【粗粒度】标签，供全站搜索与标签池长期复用。粒度标准：一个技术领域或方向（如 C++、网络编程、并发、数据库、Redis、Linux、拥塞控制、Qt）——同一篇文章换不同侧面仍应复用同一批标签。
+   禁止：组件/机制/函数级的细节词（如 coroutine-handle、boost-asio、graceful-shutdown、qsettings 这类）、文章专属词、教程步骤词。
+   优先从「现有标签池」里选；池里确无合适项才新造同粒度领域词。
 只输出一个 JSON 对象，格式：{"description":"...","tags":["..."]}，不要输出 JSON 以外的任何文字。`
 
 /* ---------- 请求/响应 ---------- */
@@ -106,6 +110,10 @@ func (s *server) handleAssist(w http.ResponseWriter, r *http.Request) {
 	system := s.cfg.Assist.SystemHint
 	if system == "" {
 		system = defaultAssistSystem
+	}
+	/* 标签池感知（决策 7.28）：AI 优先复用池内粗粒度标签，防标签碎片化 */
+	if pool := s.readTagPoolBrief(); pool != "" {
+		system += "\n\n现有标签池（tags 优先从中选取；确无合适项才新造同粒度领域词）：" + pool
 	}
 	msgs := []petMessage{
 		{Role: "system", Content: system},
@@ -229,4 +237,21 @@ func mockAssist(title, body string) (string, []string) {
 		tags = []string{"笔记"}
 	}
 	return desc, tags
+}
+
+/* readTagPoolBrief 读工作副本的标签池，返回顿号串（文件缺失/为空返回空串）。
+   供 assist 提示词做标签池感知（决策 7.28：AI 优先复用池内粗粒度标签）。 */
+func (s *server) readTagPoolBrief() string {
+	if s.cfg.RepoPath == "" {
+		return ""
+	}
+	raw, err := os.ReadFile(filepath.Join(s.cfg.RepoPath, "src", "config", "tag-pool.json"))
+	if err != nil {
+		return ""
+	}
+	var pool []string
+	if json.Unmarshal(raw, &pool) != nil || len(pool) == 0 {
+		return ""
+	}
+	return strings.Join(pool, "、")
 }
