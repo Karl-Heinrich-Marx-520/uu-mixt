@@ -7,7 +7,7 @@ author: uu
 category: agent01-Python补足
 tags: [Python]
 featured: false
-draft: true
+draft: false
 ---
 # W1-Day3-作用域与闭包
 
@@ -137,5 +137,6 @@ def later():
 
 print("7) 定义之后调用:", later())
 ```
+
 
 
