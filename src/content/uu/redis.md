@@ -7,7 +7,7 @@ author: uu
 category: C++
 tags: [redis, 缓存一致性, 分布式锁, 面试]
 featured: false
-draft: true
+draft: false
 ---
 Redis 面试应用手册（C++ 后端实习版）
 面向大厂 C++ 后端实习面试。不讲底层源码原理，只讲三件事：
@@ -854,3 +854,4 @@ timeout 300
 2. 做对比——Stream vs List、Redis 锁 vs ZK 锁、Pipeline vs 事务。
 3. 连项目——用「问题 → 方案 → 反思」模板把八股变成经历。
 祝面试顺利。
+
