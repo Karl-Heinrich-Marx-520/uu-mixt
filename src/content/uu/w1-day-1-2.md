@@ -7,7 +7,7 @@ author: uu
 category: agent01-Python补足
 tags: [Python, agent]
 featured: false
-draft: false
+draft: true
 ---
 # 课件 · W1 Day 1-2：名字绑定与可变性
 
@@ -312,6 +312,7 @@ tuple 的"不可变"只管**自己那一层**：它的元素槽位在创建时�
 
 Day 3 · 作用域与闭包（差异 #9-12），见 `W1-Day3-作用域与闭包.md`。
 预告：`lambda k=k: k` 这个修复手段，用的正是**本课模块 4** 的"默认参数在定义时求值一次"。
+
 
 
 
