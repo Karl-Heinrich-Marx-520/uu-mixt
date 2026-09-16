@@ -44,11 +44,11 @@ fp->_IO_buf_end  = p + size;
 ## 二、例: [TQLCTF 2022] unbelievable write
 
 ![c2 的任意地址释放](/images/mixt/c3d97da6b99988dab7c595230e56da36.png)
-本题的漏洞类型如上图所示，其中最关键的是一处 **c2 的任意地址释放**：
+本题的漏洞类型如上图所示，是 **c2 的任意地址释放**：
 
 ![修改 target 内容以获取 flag](/images/mixt/9784b1d3dabe6008127a69d875a75d8d.png)
 
-只要能成功改写 `target` 处的内容，就能顺利拿到 flag：
+只要能成功改写 `target` 处的内容，就能顺利拿到 flag
 
 ![c1 在使用完 chunk 之后会立即将其释放](/images/mixt/3d38d8ce3b70deaff2d6240741c498a6.png)
 
@@ -64,7 +64,7 @@ c1 在使用完 chunk 之后会立即将其释放
 
 2. **对这块 chunk 进行切割**（提前布置好切割出来的chunk对应 bin 的 `count`），随后再将其合并。切割之后会在 `tcache_perthread_struct` 上残留 libc 指针：
 
-3. **修改对应的 `count`，并准备好 0x1010 的 `count`**，然后通过**字节爆破（成功率约 1/16）**把分配落到 `mp_` 区域附近：
+3. **修改对应的 `count`，并准备好 0x1010 的 `count`**，然后通过 **字节爆破（成功率约 1/16）** 把分配落到 `mp_` 区域附近：
 
    ![bins 状态](/images/mixt/bins.png)
 
@@ -124,6 +124,7 @@ cmd(3)
 cmd(3)
 io.interactive()
 ```
+
 
 
 
