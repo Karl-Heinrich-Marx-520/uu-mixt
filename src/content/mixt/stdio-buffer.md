@@ -1,5 +1,5 @@
 ---
-title: "libc_stdio_buffer初始化"
+title: "libc_stdio_buffer初始化草稿"
 slug: stdio-buffer
 description: "分析 stdio 流首次读写时缓冲区的延迟分配过程，说明控制 malloc 返回值可将 puts 数据写入任意地址。"
 date: 2026-09-16
@@ -77,6 +77,7 @@ exp:
  31 cmd(3)
  32 cmd(3)
  33 io.interactive()
+
 
 
 
