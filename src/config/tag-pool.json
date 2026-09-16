@@ -25,5 +25,10 @@
   "名字绑定",
   "可变性",
   "参数传递",
-  "is-运算符"
+  "is-运算符",
+  "name-binding",
+  "mutable-default-argument",
+  "deep-copy",
+  "object-identity",
+  "tuple"
 ]
