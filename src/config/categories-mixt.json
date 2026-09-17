@@ -3,5 +3,10 @@
     "slug": "io-file",
     "name": "IO_FILE",
     "desc": ""
+  },
+  {
+    "slug": "linux-kernel-pwn",
+    "name": "linux kernel pwn",
+    "desc": ""
   }
 ]
