@@ -9,5 +9,9 @@
   "Agent",
   "Linux",
   "struct，mp_",
-  "UU"
+  "UU",
+  "linux kernel pwn",
+  "ROP",
+  "栈溢出",
+  "整数溢出"
 ]
