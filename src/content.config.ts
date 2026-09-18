@@ -26,13 +26,25 @@ const postSchema = z.object({
   featured: z.boolean().default(false),
 });
 
+// 生成 entry id 时强制转字符串：
+// 写作台生成的 frontmatter 可能出现不带引号的数字 slug（如 `slug: 2026`），
+// YAML 会解析成 number，content-layer 拿它调 id.endsWith() 直接崩溃
+// （withastro/astro#17624 同类根因，2026-09-18 实际事故）。
+// 对已有合法字符串 slug，String() 是恒等变换，entry id 不变。
+const postLoader = (base: string) =>
+  glob({
+    pattern: '*.md',
+    base,
+    generateId: ({ data, entry }) => String(data.slug ?? entry).replace(/\.md$/i, ''),
+  });
+
 const uu = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/uu' }),
+  loader: postLoader('./src/content/uu'),
   schema: postSchema,
 });
 
 const mixt = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/mixt' }),
+  loader: postLoader('./src/content/mixt'),
   schema: postSchema,
 });
 
