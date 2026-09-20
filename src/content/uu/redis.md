@@ -7,7 +7,7 @@ author: uu
 category: 工程实践
 tags: [Redis, 面试]
 featured: false
-draft: true
+draft: false
 ---
 # Redis 面试应用手册（C++ 后端实习版）
 
@@ -1323,6 +1323,7 @@ timeout 300
 3. **连项目**——用「问题 → 方案 → 反思」模板把八股变成经历。
 
 祝面试顺利。
+
 
 
 
