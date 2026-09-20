@@ -7,7 +7,7 @@ author: uu
 category: C++
 tags: [C++, 并发]
 featured: false
-draft: false
+draft: true
 ---
 ## 最小协程
 
@@ -30,3 +30,4 @@ task<void> f() {
 `co_await` 的第一个动作是把「返回地址」换成 `resume` 的地址 —— 所以「暂停即返回、恢复即跳回」在机器层面就是一次普通的函数调用与返回。
 
 > 踩坑：把大对象放进协程帧会让帧膨胀；能 `move` 进帧的就别让它留在栈上被整份拷贝。
+
