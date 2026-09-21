@@ -12,5 +12,8 @@
   "ROP",
   "栈溢出",
   "整数溢出",
-  "异步编程"
+  "异步编程",
+  "libc_stdio_buffer",
+  "tcache_perthread_struct",
+  "mp_"
 ]
