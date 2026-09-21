@@ -477,7 +477,8 @@ pwndbg> x/40gx 0xffffc9000018ff58
 * 也可以`ROPgadget --binary vmlinux --depth 30 > gadgets.txt`
   `grep -B2 -A2 'iretq' gadgets.txt | grep -B5 'swapgs'`
 
-> 那么我是如何在`kgadget`中找到它的呢？`gdb`崩溃的时候它正好在附近，就这么莫名奇妙
+> 那么我是如何在`kgadget`中找到它的呢？`gdb`崩溃的时候它正好在附近，莫名奇妙的
+
 
 
 
