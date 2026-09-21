@@ -1,12 +1,13 @@
 /**
- * vine.js —— 点击藤蔓生长环绕效果（demo 验收版）
+ * vine.js —— 点击藤蔓生长环绕效果（demo 验收版 v2，2026-09-21）
  *
- * 点击页面任意处：从点击点长出 3 条螺旋卷须（描边生长动画），
- * 沿途冒出叶片，卷须末端结一颗金色小星（呼应小怪物头上的星星），
- * 约 0.9 秒整体淡出。全部自包含：动态创建 SVG + Web Animations，无 CSS 依赖。
+ * 点击页面任意处：
+ *   ① 光标切换到图集（assets/cursors.js 清单）的下一张；
+ *   ② 从点击点长出 3 条螺旋卷须（约 1 圈，紧凑半径），
+ *      沿途冒出叶片，末端结一颗金色小星（呼应小怪物头顶的星星），
+ *      约 0.9 秒整体淡出。
+ * 全部自包含：动态创建 SVG + Web Animations，无 CSS 依赖。
  * prefers-reduced-motion 时整体禁用。
- *
- * 引入：<script src="assets/vine.js"></script>（body 内任意位置，demo.js 之前）
  */
 (function () {
   "use strict";
@@ -15,7 +16,25 @@
 
   var NS = "http://www.w3.org/2000/svg";
   var GREEN = "#4e9a3c", GREEN_LITE = "#7cc35a", GOLD = "#e8b93c", GOLD_DEEP = "#d9a327";
-  var SIZE = 260, R = SIZE / 2;
+  var SIZE = 220, R = SIZE / 2;
+
+  /* ---------- 光标图集轮换：每次点击切到下一张（清单 assets/cursors.js） ---------- */
+  var CUR = (window.UUM_CURSORS && window.UUM_CURSORS.length ? window.UUM_CURSORS : [{ src: "assets/cursor.png", x: 32, y: 36 }]);
+  var curIdx = 0;
+  CUR.forEach(function (c) { var im = new Image(); im.src = c.src; }); /* 预加载：切换不闪默认光标 */
+  function nextCursor() {
+    curIdx = (curIdx + 1) % CUR.length;
+    var c = CUR[curIdx];
+    /* 关键：--uum-cursor 里的相对 url 按【使用它的样式表】(demo.css，位于 assets/ 下)
+       解析——Chrome 会把清单里的 assets/xxx 拼成 assets/assets/xxx，故这里剥掉前缀 */
+    var cssUrl = c.src.replace(/^assets\//, "");
+    doc.documentElement.style.setProperty("--uum-cursor", 'url("' + cssUrl + '") ' + c.x + " " + c.y);
+  }
+
+  /* ---------- 藤蔓几何参数集中定义（路径与叶片/星星定位共用，避免两处漂移） ---------- */
+  function turnsOf(phase) { return 1.02 + (phase % 3) * 0.08; }   /* 约 1 圈 */
+  function dirOf(phase) { return (phase | 0) % 2 ? 1 : -1; }
+  function radAt(t) { return 3 + t * (R - 48); }                  /* 最大半径 62，整体收紧 */
 
   function el(name, attrs) {
     var n = doc.createElementNS(NS, name);
@@ -23,14 +42,13 @@
     return n;
   }
 
-  /* 螺旋卷须路径：从中心向外绕 1.6~2 圈，带轻微波动（藤蔓的不规则感） */
+  /* 螺旋卷须路径：从中心向外绕约 1 圈，带轻微波动（藤蔓的不规则感） */
   function tendrilPath(phase) {
-    var dir = (phase | 0) % 2 ? 1 : -1;
-    var turns = 1.55 + (phase % 3) * 0.12, steps = 28, pts = [];
+    var dir = dirOf(phase), turns = turnsOf(phase), steps = 28, pts = [];
     for (var s = 0; s <= steps; s++) {
       var t = s / steps;
       var ang = phase + dir * t * turns * 2 * Math.PI;
-      var rad = 3 + t * (R - 14) + Math.sin(t * 10 + phase * 2.3) * 3.2;
+      var rad = radAt(t) + Math.sin(t * 10 + phase * 2.3) * 3.2;
       pts.push([R + Math.cos(ang) * rad, R + Math.sin(ang) * rad * 0.94]);
     }
     return "M" + pts.map(function (p) { return p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" L ");
@@ -53,6 +71,8 @@
   }
 
   doc.addEventListener("click", function (e) {
+    nextCursor();
+
     var svg = el("svg", {
       viewBox: "0 0 " + SIZE + " " + SIZE,
       width: SIZE, height: SIZE,
@@ -78,7 +98,7 @@
         d: tendrilPath(phase),
         fill: "none",
         stroke: i === 1 ? GREEN_LITE : GREEN,
-        "stroke-width": 2.6,
+        "stroke-width": 2.4,
         "stroke-linecap": "round"
       });
       svg.appendChild(path);
@@ -92,9 +112,8 @@
       /* 沿途两片叶子：外层 g 用 attribute transform 定位（CSS 不认无单位 translate），
          内层 path 只做 CSS scale 动画 —— 定位与动画分层，两层语法各自合法 */
       [0.5, 0.78].forEach(function (t, k) {
-        var steps = 28;
-        var ang = phase + ((phase | 0) % 2 ? 1 : -1) * t * (1.55 + (phase % 3) * 0.12) * 2 * Math.PI;
-        var rad = 3 + t * (R - 14);
+        var ang = phase + dirOf(phase) * t * turnsOf(phase) * 2 * Math.PI;
+        var rad = radAt(t);
         var x = R + Math.cos(ang) * rad, y = R + Math.sin(ang) * rad * 0.94;
         var deg = ((ang * 180) / Math.PI + (k ? 40 : -70)).toFixed(0);
         var g = el("g", { transform: "translate(" + x.toFixed(1) + " " + y.toFixed(1) + ") rotate(" + deg + ")" });
@@ -108,11 +127,11 @@
       });
 
       /* 末端小星：卷须长到头时 pop 出来（同样 g 定位 + 内层 CSS 动画） */
-      var endAng = phase + ((phase | 0) % 2 ? 1 : -1) * (1.55 + (phase % 3) * 0.12) * 2 * Math.PI;
-      var endRad = 3 + (R - 14);
+      var endAng = phase + dirOf(phase) * turnsOf(phase) * 2 * Math.PI;
+      var endRad = radAt(1);
       var sx = R + Math.cos(endAng) * endRad, sy = R + Math.sin(endAng) * endRad * 0.94;
       var gs = el("g", { transform: "translate(" + sx.toFixed(1) + " " + sy.toFixed(1) + ")" });
-      var star = el("path", { d: starPath(i === 1 ? 9 : 7), fill: i === 1 ? GOLD : GOLD_DEEP, transform: "scale(0)" });
+      var star = el("path", { d: starPath(i === 1 ? 13 : 10), fill: i === 1 ? GOLD : GOLD_DEEP, transform: "scale(0)" });
       gs.appendChild(star);
       svg.appendChild(gs);
       star.animate(

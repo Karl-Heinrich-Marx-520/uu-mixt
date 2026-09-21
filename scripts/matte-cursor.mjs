@@ -82,14 +82,37 @@ for (let y = 0; y < H; y++)
   }
 
 const cleaned = sharp(data, { raw: { width: W, height: H, channels: C } });
+
+/* 手动算 alpha 包围盒（sharp trim 对残留边缘像素不稳，自己算完全可控） */
+let minX = W, minY = H, maxX = 0, maxY = 0;
+for (let y = 0; y < H; y++)
+  for (let x = 0; x < W; x++)
+    if (data[(y * W + x) * C + 3] > 8) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+const bw = maxX - minX + 1, bh = maxY - minY + 1;
+const boxed = sharp(data, {
+  raw: { width: W, height: H, channels: C },
+}).extract({ left: minX, top: minY, width: bw, height: bh });
+
 await cleaned.clone().png().toFile("demo/assets/mascot.png");
-await cleaned
-  .clone()
+/* 光标图：bbox 裁掉透明留白让主体撑满画幅（48px 时怪物只占一半会糊成"黑眼圈"），
+   64px 是现代桌面浏览器光标的稳妥上限，细节保留度好 */
+await boxed.clone()
   .resize(48, 48, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
   .png()
   .toFile("demo/assets/cursor.png");
+/* 光标图集第 2 张（水平翻转演示轮换机制；用户后续传图按清单追加） */
+await boxed.clone()
+  .flop()
+  .resize(48, 48, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .png()
+  .toFile("demo/assets/cursor-b.png");
 
 /* 抠图质量统计 */
 let transparent = 0;
 for (let p = 0; p < W * H; p++) if (data[p * C + 3] === 0) transparent++;
-console.log(`matte-cursor: ${W}x${H} → mascot.png(原尺寸) + cursor.png(48px)，透明占比 ${(transparent / (W * H) * 100).toFixed(1)}%`);
+console.log(`matte-cursor: ${W}x${H} → mascot.png(原尺寸) + cursor.png/cursor-b.png(48px, bbox ${bw}x${bh} @${minX},${minY})，透明占比 ${(transparent / (W * H) * 100).toFixed(1)}%`);
