@@ -9,7 +9,7 @@ tags: [linux kernel pwn, ret2dir, 堆喷, nokaslr]
 featured: false
 draft: false
 ---
-#一.函数分析
+# 一.函数分析
 
 ### kgadget_ioctl
 
@@ -163,7 +163,7 @@ int __fastcall kgadget_open(inode *__inode, file *__file)
 
 > 这个函数也没用
 
-#二.思路
+# 二.思路
 
 就是在exp中用`mmap申请大量区域（堆喷）`
 
@@ -285,6 +285,7 @@ int main(int argc,char **argv){
         "syscall;"
         );
 }```
+
 
 
 
