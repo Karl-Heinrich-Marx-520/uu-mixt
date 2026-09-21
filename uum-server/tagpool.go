@@ -53,6 +53,11 @@ type TagResult struct {
 
 var tagLineRe = regexp.MustCompile(`(?m)^tags:[ \t]*\[([^\]]*)\][ \t]*$`)
 
+/* 决策 7.28 修订：全角逗号/顿号曾随值整体进入标签（libc-stdio-buffer 事故：
+   tags 被当成一个巨型标签，池/搜索/篇数全部错位）——解析时统一作为分隔符
+   切开；存量脏数据在文件下次被写路径触碰时随 replaceFrontmatterTags 自动规范化。 */
+var tagSepRe = regexp.MustCompile(`[,，、]`)
+
 func parseFrontmatterTags(text string) ([]string, bool) {
 	m := tagLineRe.FindStringSubmatch(text)
 	if m == nil {
@@ -63,7 +68,7 @@ func parseFrontmatterTags(text string) ([]string, bool) {
 		return []string{}, true
 	}
 	tags := []string{}
-	for _, p := range strings.Split(inner, ",") {
+	for _, p := range tagSepRe.Split(inner, -1) {
 		t := strings.Trim(strings.TrimSpace(p), `"'`)
 		if t != "" {
 			tags = append(tags, t)
@@ -235,14 +240,41 @@ func mergeTagsIntoPool(pool, tags []string) ([]string, []string) {
 	return newPool, added
 }
 
+// removeTagFromPool 纯函数：从池中移除单个标签（不存在则原样返回）。
+func removeTagFromPool(pool []string, tag string) []string {
+	next := make([]string, 0, len(pool))
+	for _, t := range pool {
+		if t != tag {
+			next = append(next, t)
+		}
+	}
+	return next
+}
+
 func (g *GitStore) writePoolFile(newPool []string) error {
 	return os.WriteFile(filepath.Join(g.repoPath, filepath.FromSlash(TagPoolFile)), marshalTagPool(newPool), 0o644)
 }
 
+// scanUsedTags 扫描工作副本全部文章的标签并集（写路径出池判定用）。
+func (g *GitStore) scanUsedTags() (map[string]bool, error) {
+	files, err := g.collectMarkdown()
+	if err != nil {
+		return nil, err
+	}
+	used := map[string]bool{}
+	for _, b := range files {
+		if tags, ok := parseFrontmatterTags(string(b)); ok {
+			for _, t := range tags {
+				used[t] = true
+			}
+		}
+	}
+	return used, nil
+}
+
 // BackfillTags 存量回填：全站文章标签 upsert 进池；无 delta 不产生提交（幂等）。
 // main 启动时调用一次，兜住「池上线前已存在的文章」。
-func (g *GitStore) BackfillTags() (int, error) {
-	g.mu.Lock()
+func (g *GitStore) BackfillTags() (int, error) {	g.mu.Lock()
 	defer g.mu.Unlock()
 	files, err := g.collectMarkdown()
 	if err != nil {

@@ -36,7 +36,7 @@ const github = "https://github.com/Karl-Heinrich-Marx-520";
     <a href="/uu/about/">关于</a>
   </Fragment>
 
-  <Hero face="uu" name="UU" tagline="C++ 后端 · 网络编程 · 源码阅读 · 科研复现 · 工程实践" />
+  <Hero face="uu" name="UU" tagline={author.tags.join(" · ") || "C++ 后端 · 网络编程 · 科研复现"} />
 
   <div class="page home-page" id="content">
     <div class="home-layout">

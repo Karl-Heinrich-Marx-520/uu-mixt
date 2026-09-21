@@ -189,13 +189,42 @@ func (m *MockStore) Write(face, rel string, data []byte, msg, sha string, overwr
 		}
 	}
 	m.data[rel] = data
-	// 决策 7.26：保存文章时标签自动入池（mock 与 GitStore 同语义，不产生提交）
+	// 决策 7.26/7.28 修订：mock 与 GitStore 同语义（入池 + 出池，不产生提交）
 	if strings.HasPrefix(rel, "src/content/") && strings.HasSuffix(rel, ".md") {
-		if tags, ok := parseFrontmatterTags(string(data)); ok {
-			if pool, perr := mockReadTagPool(m.data); perr == nil {
-				if newPool, added := mergeTagsIntoPool(pool, tags); len(added) > 0 {
-					m.data[TagPoolFile] = marshalTagPool(newPool)
+		newTags, _ := parseFrontmatterTags(string(data))
+		var oldTags []string
+		if ok {
+			oldTags, _ = parseFrontmatterTags(string(cur))
+		}
+		if pool, perr := mockReadTagPool(m.data); perr == nil {
+			changed := false
+			if len(newTags) > 0 {
+				var added []string
+				pool, added = mergeTagsIntoPool(pool, newTags)
+				changed = changed || len(added) > 0
+			}
+			drop := []string{}
+			for _, t := range oldTags {
+				if !containsString(newTags, t) && !containsString(drop, t) {
+					drop = append(drop, t)
 				}
+			}
+			if len(drop) > 0 {
+				used := map[string]bool{}
+				for _, tags := range mockScanTags(m.data) {
+					for _, t := range tags {
+						used[t] = true
+					}
+				}
+				for _, t := range drop {
+					if !used[t] && containsString(pool, t) {
+						pool = removeTagFromPool(pool, t)
+						changed = true
+					}
+				}
+			}
+			if changed {
+				m.data[TagPoolFile] = marshalTagPool(pool)
 			}
 		}
 	}
@@ -421,18 +450,51 @@ func (g *GitStore) Write(face, rel string, data []byte, msg, sha string, overwri
 	if err := os.WriteFile(full, data, 0o644); err != nil {
 		return "", "", "", err
 	}
-	// 决策 7.26：保存文章时 frontmatter 标签自动 upsert 入池，与文章同一次提交。
+	// 决策 7.26/7.28 修订：保存文章时 frontmatter 标签与池双向同步（同一次提交）：
+	//   入池——新标签 upsert；出池——旧标签因本次保存不再被任何文章引用时回收
+	//   （「待用」语义只保留给作者手动 add 的标签，自动入池的随最后一篇文章移除而回收）。
 	// 池写失败不阻塞保存——池是衍生数据，启动回填/下次保存会补。
 	rels := []string{rel}
 	if strings.HasPrefix(rel, "src/content/") && strings.HasSuffix(rel, ".md") {
-		if tags, ok := parseFrontmatterTags(string(data)); ok {
-			pool, perr := g.ReadTagPool()
-			if perr != nil {
-				log.Printf("[tags] 池读取失败（不阻塞保存）：%v", perr)
-			} else if newPool, added := mergeTagsIntoPool(pool, tags); len(added) > 0 {
-				if werr := g.writePoolFile(newPool); werr == nil {
-					rels = append(rels, TagPoolFile)
+		newTags, _ := parseFrontmatterTags(string(data))
+		var oldTags []string
+		if len(cur) > 0 {
+			oldTags, _ = parseFrontmatterTags(string(cur))
+		}
+		if pool, perr := g.ReadTagPool(); perr != nil {
+			log.Printf("[tags] 池读取失败（不阻塞保存）：%v", perr)
+		} else {
+			changed := false
+			if len(newTags) > 0 {
+				var added []string
+				pool, added = mergeTagsIntoPool(pool, newTags)
+				if len(added) > 0 {
+					changed = true
 					log.Printf("[tags] 自动入池 %v（face=%s）", added, face)
+				}
+			}
+			drop := []string{}
+			for _, t := range oldTags {
+				if !containsString(newTags, t) && !containsString(drop, t) {
+					drop = append(drop, t)
+				}
+			}
+			if len(drop) > 0 {
+				if used, uerr := g.scanUsedTags(); uerr != nil {
+					log.Printf("[tags] 全站标签扫描失败（不阻塞保存）：%v", uerr)
+				} else {
+					for _, t := range drop {
+						if !used[t] && containsString(pool, t) {
+							pool = removeTagFromPool(pool, t)
+							changed = true
+							log.Printf("[tags] 「%s」已无文章引用，自动出池（face=%s）", t, face)
+						}
+					}
+				}
+			}
+			if changed {
+				if werr := g.writePoolFile(pool); werr == nil {
+					rels = append(rels, TagPoolFile)
 				} else {
 					log.Printf("[tags] 池写入失败（不阻塞保存）：%v", werr)
 				}

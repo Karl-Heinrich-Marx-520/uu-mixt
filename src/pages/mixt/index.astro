@@ -36,7 +36,7 @@ const github = "https://github.com/Mixt170";
     <a href="/mixt/about/">关于</a>
   </Fragment>
 
-  <Hero face="mixt" name="Mixt" tagline="PWN · 二进制安全 · 漏洞分析 · CTF writeup" />
+  <Hero face="mixt" name="Mixt" tagline={author.tags.join(" · ") || "PWN · 二进制安全 · CTF"} />
 
   <div class="page home-page" id="content">
     <div class="home-layout">

@@ -13,14 +13,18 @@ import "../styles/pet.css";
 import { published } from "../lib/content-layer";
 import { formatDate } from "../lib/format";
 import friends from "../data/friends.json";
+import authorUu from "../config/author-uu.json";
+import authorMixt from "../config/author-mixt.json";
 
 /* 友链数据（PRD E8）：构建期读 src/data/friends.json 内联进页面，friends.js 只读不请求。
    `<` 转义为 \u003c，防止数据里出现 </script> 截断标签。 */
 const friendsJson = JSON.stringify(friends).replace(/</g, "\\u003c");
 
+/* 卡片关键词 = 作者个人标签（author-<面>.json 的 tags，写作台「设置」可维护），
+   与面首页 hero、关于本站同源；json 缺失/为空时退回定稿文案。 */
 const faces = [
-  { key: "uu" as const, name: "UU", dir: "C++ 后端 · 网络编程 · 科研复现" },
-  { key: "mixt" as const, name: "Mixt", dir: "PWN · 二进制安全 · CTF" },
+  { key: "uu" as const, name: "UU", dir: authorUu.tags.join(" · ") || "C++ 后端 · 网络编程 · 科研复现" },
+  { key: "mixt" as const, name: "Mixt", dir: authorMixt.tags.join(" · ") || "PWN · 二进制安全 · CTF" },
 ];
 
 const cards = await Promise.all(

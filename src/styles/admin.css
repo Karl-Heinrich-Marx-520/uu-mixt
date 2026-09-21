@@ -91,8 +91,11 @@
 .admin-table td { vertical-align: middle; }
 .admin-table td { vertical-align: middle; }
 .admin-table td:first-child { max-width: 360px; }
-/* 状态 / 操作 合并列：徽章居左、按钮居右、整行不折行——底边只剩一条线，无从错位 */
-.admin-status-actions {
+/* 状态 / 操作 合并列：徽章居左、按钮居右、整行不折行。
+   注意：td 本身必须保持 table-cell——历史上这里写过 display:flex，
+   会让状态格脱离表格行高协调（底边线上浮 22px，行分隔线错位）。 */
+.admin-status-actions { vertical-align: middle; }
+.admin-status-inner {
   display: flex;
   align-items: center;
   justify-content: flex-end;

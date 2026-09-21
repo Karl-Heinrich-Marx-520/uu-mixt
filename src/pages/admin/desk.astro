@@ -265,7 +265,8 @@ import "../../styles/admin.css";
         <div class="admin-panel" data-panel-body="media">
           <p class="admin-hint">
             上传的图片会落到仓库的 <code>public/images/&lt;面&gt;/</code>，构建后可通过
-            <code>/images/&lt;面&gt;/文件名</code> 访问。上传后点「复制引用」把 Markdown 图片语法粘进正文即可。
+            <code>/images/&lt;面&gt;/文件名</code> 访问。上传后点「复制引用」把 Markdown 图片语法粘进正文即可；
+            下方列表是本面已上传的全部图片，可随时复制引用或删除（删除前确认没有文章在用）。
           </p>
           <label class="admin-media-pick">
             <input type="file" accept="image/*" multiple id="media-input" hidden>
@@ -273,6 +274,7 @@ import "../../styles/admin.css";
             选择本地图片（可多选）→ 上传并生成引用
           </label>
           <div class="admin-media-list" data-media-list></div>
+          <p class="admin-hint" data-media-empty hidden>本面还没有上传过图片——从上面选择本地图片即可开始。</p>
         </div>
 
         <!-- 设置：个人简介 / 在做什么 / 技术栈（存 src/config/author-<面>.json，只能改自己那面） -->
@@ -340,6 +342,6 @@ import "../../styles/admin.css";
 
   <script is:inline src="/scripts/core.js"></script>
   <script is:inline src="/scripts/admin/server.js?v=4"></script>
-  <script is:inline src="/scripts/admin/desk.js?v=8"></script>
+  <script is:inline src="/scripts/admin/desk.js?v=9"></script>
 </body>
 </html>

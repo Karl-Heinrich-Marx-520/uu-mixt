@@ -13,8 +13,12 @@ BASE="${BASE:-http://127.0.0.1:8791}"
 UU_TOKEN="${UU_TOKEN:-dev-uu-token}"
 MIXT_TOKEN="${MIXT_TOKEN:-dev-mixt-token}"
 export no_proxy="*" NO_PROXY="*"   # 本机自测必须直连：沙箱/系统代理会拦 127.0.0.1
-TMP="${TMPDIR:-/tmp}/uum-selftest.$$"
+# 临时目录用脚本 cwd 相对路径：Windows 上 system32 原生 curl 不认 MSYS 的 /tmp
+# 虚拟路径（-o 落盘失败→状态码正常但 body 断言全挂），Git Bash 里 TMP 又可能为空；
+# 相对路径两边都认。trap 收尾清理。
+TMP="uum-selftest.$$"
 mkdir -p "$TMP"
+trap 'rm -rf "$TMP"' EXIT
 BODY="$TMP/body.json"
 
 pass=0; fail=0
