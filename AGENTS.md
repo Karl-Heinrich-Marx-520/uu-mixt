@@ -187,6 +187,7 @@
 | 22 | **本机安全策略会 SIGTERM 杀 git merge / clone / https helper 子进程，且 `.git` 写入被回滚**（refs 消失、index 重置、反复执行反复损坏；非沙箱也复现）——fetch / update-ref / commit 等轻操作幸存 | **网络与大操作走 SSH 通道 + 服务器侧执行**：本地配 `server` remote（`ssh://…/srv/uum/repo.git`）；两线合并、对象补全都在服务器 /tmp clone 里做完再推回；本地只做 reset / rm / checkout 级别的轻操作。push 一律 `git push server main`，不再依赖 GitHub https helper | 2026-09-15 |
 | 23 | **Astro content layer 缓存陷阱**：删文章后 `rm -rf .astro`（构建缓存）无效，`node_modules/.astro/data-store.json` 才是真正的数据存储缓存——不清它，构建仍读旧索引，已删文章照常出现在产物里（本次「删除后前台不变」bug 的第二个叠加根因） | 构建脚本在 `npm run build` 前先 `rm -rf node_modules/.astro`（uum-rebuild.sh 已内置）；本地排查「内容改了产物没变」先清它再构建 | 2026-09-15 |
 | 24 | **master 直推 bare 主库以 root 落盘，夺走 uum 服务写权限 → P0 数据销毁链**：uum 的 push 被拒只体现在 API warning（前端当时不显示），work 副本堆积未推送提交，下次构建的 `reset --hard origin/main` 把作者内容整链销毁（实测丢 redis 文章/友链/简介，靠孤儿对象救回） | 三层防（已全部落地）：① bare 库 `core.sharedRepository=group` + 全树 chgrp uum/chmod g+w/目录 g+s——root 推完 uum 仍可写（已实战验证）；② GitStore 每次 写/删 前 fetch 对齐 origin/main，**检测到未推送本地提交时跳过 reset**（防自毁），push 失败自动 rebase 重试一次；③ master 每次直推后 `chown -R uum:uum /srv/uum/repo.git`。数据恢复：work 的 reflog/孤儿 hash 里 `git show <hash>:<path>` 取各文件终态，单恢复提交重放 | 2026-09-16 |
+| 25 | **同一文件的多个 Edit 并行发出会相互覆盖（写竞态）**：一条消息里对同一文件发多个编辑，工具各自读-改-写整份文件，后写者基于旧内容，先写者的改动被静默吞掉——本次 desk.js 5 处编辑丢 4 处、store.go 丢 1 处，且编译与冒烟全绿（改动恰好落在未执行路径），差点带病上线 | 同一文件的多处修改**必须串行**（一次一个 Edit 等结果）或合并为单个 Edit/脚本；批量修改后用特征 grep 复核每处都在，再进编译与自测 | 2026-09-21 |
 
 ---
 
