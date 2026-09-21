@@ -9,10 +9,19 @@
 .toc {
   position: sticky;
   top: calc(var(--header-h) + 26px);
+  /* 目录长于视口时可独立滚动（此前溢出视口底部且无法滚动，长文后半目录不可见） */
+  max-height: calc(100vh - var(--header-h) - 52px);
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
   font-size: 0.85rem;
   border-left: 2px solid var(--border);
   padding-left: 4px;
 }
+.toc::-webkit-scrollbar { width: 6px; }
+.toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.toc::-webkit-scrollbar-track { background: transparent; }
 .toc-title {
   font-size: 0.76rem;
   font-weight: 600;
