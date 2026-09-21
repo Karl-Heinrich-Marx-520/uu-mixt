@@ -9,7 +9,7 @@
   var doc = document;
 
   /* ---------- 明暗模式（localStorage 持久化；支持页级默认主题） ---------- */
-  var pageDefault = doc.documentElement.dataset.defaultMode || "light";
+  var pageDefault = doc.documentElement.dataset.defaultMode || "dark";
   var savedMode = pageDefault;
   try { savedMode = localStorage.getItem("uum-mode") || pageDefault; } catch (e) {}
   doc.documentElement.dataset.mode = savedMode;

@@ -10,7 +10,7 @@
   var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ---------- 明暗模式 ---------- */
-  var pageDefault = doc.documentElement.dataset.defaultMode || "light";
+  var pageDefault = doc.documentElement.dataset.defaultMode || "dark";
   var savedMode = pageDefault;
   try { savedMode = localStorage.getItem("uum-demo-mode") || pageDefault; } catch (e) {}
   doc.documentElement.dataset.mode = savedMode;
