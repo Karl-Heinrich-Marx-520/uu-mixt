@@ -15,5 +15,8 @@
   "异步编程",
   "libc_stdio_buffer",
   "tcache_perthread_struct",
-  "mp_"
+  "mp_",
+  "ret2dir",
+  "堆喷",
+  "nokaslr"
 ]

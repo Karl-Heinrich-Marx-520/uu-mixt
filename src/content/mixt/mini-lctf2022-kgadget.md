@@ -5,7 +5,7 @@ description: "MINI-LCTF2022 kgadget 是一道 Linux 内核 pwn 题，通过内�
 date: 2026-09-21
 author: mixt
 category: IO_FILE
-tags: [linux kernel pwn, ROP, 栈溢出, Linux]
+tags: [linux kernel pwn, ret2dir, 堆喷, nokaslr]
 featured: false
 draft: true
 ---
@@ -285,5 +285,6 @@ int main(int argc,char **argv){
         "syscall;"
         );
 }```
+
 
 
