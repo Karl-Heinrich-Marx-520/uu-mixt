@@ -249,7 +249,8 @@
       description: $("#f-desc").value.trim(),
       date: $("#f-date").value,
       category: $("#f-cat").value || "",
-      tags: $("#f-tags").value.split(",").map(function (t) { return t.trim(); }).filter(Boolean),
+      /* 决策 7.28 修订：全角逗号/顿号同为分隔符（历史上整串进过一个标签，计数全错） */
+      tags: $("#f-tags").value.split(/[,，、]/).map(function (t) { return t.trim(); }).filter(Boolean),
       featured: $("#f-featured").checked,
       draft: $("#f-draft").checked,
       body: $("#f-body").value,
@@ -736,16 +737,41 @@
     }
   }
 
-  /* ---------- 媒体（真实上传 + 引用生成） ---------- */
-  function insertMediaRow(name, dataUrl, reference) {
+  /* ---------- 媒体（真实上传 + 已有列表 + 引用生成 + 删除） ---------- */
+  function mediaReference(name) {
+    return "![" + name.replace(/\.[^.]+$/, "") + "](/images/" + FACE + "/" + name + ")";
+  }
+  function insertMediaRow(name, imgSrc, reference, path, sha) {
     var list = $("[data-media-list]");
     var row = doc.createElement("div");
     row.className = "admin-media-row";
-    row.innerHTML = '<img src="' + dataUrl + '" alt="">' +
+    row.innerHTML = '<img src="' + imgSrc + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
       '<div class="admin-media-info"><b>' + esc(name) + "</b>" +
       '<code class="admin-media-ref">' + esc(reference) + "</code></div>" +
-      '<button class="admin-mini" data-media-copy="' + esc(reference) + '">复制引用</button>';
+      '<button class="admin-mini" data-media-copy="' + esc(reference) + '">复制引用</button>' +
+      '<button class="admin-mini" data-media-del="' + esc(path) + '" data-media-sha="' + esc(sha || "") + '">删除</button>';
     list.insertBefore(row, list.firstChild);
+  }
+
+  /* 打开媒体面板时拉取仓库里已有的图片列表（listDir 返回 name/path/sha） */
+  async function loadMedia() {
+    var list = $("[data-media-list]");
+    var empty = $("[data-media-empty]");
+    if (!list) return;
+    try {
+      var files = await GH.listDir(IMAGE_DIR);
+      files = files.filter(function (f) {
+        return f.type === "file" && /\.(png|jpe?g|gif|webp|svg|avif|ico)$/i.test(f.name);
+      });
+      list.innerHTML = "";
+      if (empty) empty.hidden = files.length > 0;
+      files.forEach(function (f) {
+        insertMediaRow(f.name, "/images/" + FACE + "/" + f.name, mediaReference(f.name), f.path, f.sha);
+      });
+    } catch (e) {
+      list.innerHTML = "";
+      if (empty) empty.hidden = false;
+    }
   }
 
   async function handleMediaFiles(files) {
@@ -760,9 +786,10 @@
       var safeName = file.name.replace(/[^\w.-]/g, "-");
       var path = IMAGE_DIR + "/" + safeName;
       try {
-        await GH.uploadBinary(path, base64, "media(" + FACE + "): 上传 " + safeName);
-        var reference = "![" + safeName.replace(/\.[^.]+$/, "") + "](/images/" + FACE + "/" + safeName + ")";
-        insertMediaRow(safeName, "data:" + file.type + ";base64," + base64, reference);
+        var r = await GH.uploadBinary(path, base64, "media(" + FACE + "): 上传 " + safeName);
+        insertMediaRow(safeName, "data:" + file.type + ";base64," + base64, mediaReference(safeName), path, (r && r.sha) || "");
+        var emp = $("[data-media-empty]");
+        if (emp) emp.hidden = true;
         toast("已上传到 " + path);
       } catch (e) {
         toast("上传失败：" + e.message);
@@ -825,9 +852,9 @@
   }
 
   /* ---------- 事件 ---------- */
-  doc.addEventListener("click", function (e) {
+  doc.addEventListener("click", async function (e) {
     var el = e.target.closest(
-      "[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat],[data-edit-friend],[data-del-friend],[data-media-copy],[data-rename-tag],[data-del-tag]"
+      "[data-action],[data-edit],[data-toggle],[data-del],[data-edit-cat],[data-del-cat],[data-edit-friend],[data-del-friend],[data-media-copy],[data-media-del],[data-rename-tag],[data-del-tag]"
     );
     if (!el) return;
 
@@ -858,6 +885,20 @@
       var ok = false;
       try { ok = doc.execCommand("copy", false, text); } catch (err) { ok = false; }
       toast(ok ? "引用已复制，粘贴到正文即可" : "复制失败，请手动选中复制");
+      return;
+    }
+    if (el.dataset.mediaDel) {
+      var mpath = el.dataset.mediaDel;
+      var mname = mpath.split("/").pop();
+      if (!window.confirm("删除图片 " + mname + "？\n正文中引用它的地方会变成裂图，请先确认没有文章在用。")) return;
+      try {
+        await GH.removeFile(mpath, "media(" + FACE + "): 删除 " + mname, el.dataset.mediaSha || "");
+        var mrow = el.closest(".admin-media-row");
+        if (mrow) mrow.remove();
+        toast("已删除 " + mname);
+      } catch (e) {
+        toast("删除失败：" + e.message);
+      }
       return;
     }
     if (el.dataset.edit) { openEditor(el.dataset.edit); return; }
@@ -961,6 +1002,7 @@
       [].slice.call(doc.querySelectorAll("[data-panel-body]")).forEach(function (p) {
         p.classList.toggle("is-active", p.dataset.panelBody === btn.dataset.panel);
       });
+      if (btn.dataset.panel === "media") loadMedia();   /* 每次进入媒体面板都刷新仓库列表 */
     });
   });
 
