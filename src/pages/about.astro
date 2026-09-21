@@ -7,6 +7,8 @@
  */
 import Layout from "../components/Layout.astro";
 import { published } from "../lib/content-layer";
+import authorUu from "../config/author-uu.json";
+import authorMixt from "../config/author-mixt.json";
 
 const [uuPosts, mixtPosts] = await Promise.all([published("uu"), published("mixt")]);
 ---
@@ -28,8 +30,8 @@ const [uuPosts, mixtPosts] = await Promise.all([published("uu"), published("mixt
     <h2>这是什么结构？</h2>
     <p>站点有两个互不干涉的面：</p>
     <ul>
-      <li><strong>UU 的一面</strong>（<code>/uu/</code>）：C++ 后端、网络编程、源码阅读、科研复现与工程实践。当前 {uuPosts.length} 篇文章。</li>
-      <li><strong>Mixt 的一面</strong>（<code>/mixt/</code>）：PWN 二进制安全、漏洞分析与 CTF writeup。当前 {mixtPosts.length} 篇文章。</li>
+      <li><strong>UU 的一面</strong>（<code>/uu/</code>）：{authorUu.tags.join("、") || "C++ 后端、网络编程、科研复现"}。当前 {uuPosts.length} 篇文章。</li>
+      <li><strong>Mixt 的一面</strong>（<code>/mixt/</code>）：{authorMixt.tags.join("、") || "PWN 二进制安全、CTF"}。当前 {mixtPosts.length} 篇文章。</li>
     </ul>
     <p>两面的<strong>内容、导航、主题色、分类体系与作者页完全隔离</strong>——你在一面看不到另一面的任何文章；共享的只有域名、视觉外壳、翻转组件、入口页、标签池、全站搜索与 RSS。</p>
     <p>主题色也各归各：UU 面是琥珀，Mixt 面是蓝。翻转时整个站点连同配色一起转过去。</p>
