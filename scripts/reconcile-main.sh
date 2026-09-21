@@ -31,7 +31,10 @@ ssh -i "$KEY" root@47.116.143.98 "
 "
 
 echo "[3/4] 本地对齐服务器 main"
-GIT_SSH_COMMAND="$GIT_SSH" git fetch server
-git merge --ff-only server/main
+# 本机安全策略可能回滚 refs/remotes/ 的落盘（踩坑 #22 变体：fetch 显示成功、
+# remote-tracking ref 消失，merge server/main 报 not something we can merge）——
+# fetch 指定分支走 FETCH_HEAD（单文件），不依赖 remote-tracking ref。
+GIT_SSH_COMMAND="$GIT_SSH" git fetch server main
+git merge --ff-only FETCH_HEAD
 
 echo "[4/4] 完成：本地与服务器 main = $(git rev-parse --short HEAD)"
