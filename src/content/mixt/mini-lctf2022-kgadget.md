@@ -9,11 +9,11 @@ tags: [linux kernel pwn, ret2dir, 堆喷, nokaslr]
 featured: false
 draft: false
 ---
-# 一.分析
+# [MINI-LCTF2022]kgadget
 
-## kgadget.ko
+## 一.分析
 
-### kgadget_ioctl
+### 1.kgadget_ioctl
 
 ```kgadget_ioctl
 __int64 __fastcall kgadget_ioctl(file *__file, unsigned int cmd, unsigned __int64 param)
@@ -102,7 +102,7 @@ __`__fentry__`__是内核`ftrace`函数追踪的入口钩子，分析时可以�
 
 
 
-### kgadget_write
+### 2.kgadget_write
 
 ```kgadget_write
 __int64 __fastcall kgadget_write(__int64 a1, __int64 a2)
@@ -129,7 +129,7 @@ __int64 __fastcall kgadget_write(__int64 a1, __int64 a2)
 
 
 
-### kgadget_read
+### 3.kgadget_read
 
 ```kgadget_read
 ssize_t __fastcall kgadget_read(file *__file, char *user_buf, size_t size, loff_t *__loff)
@@ -150,7 +150,7 @@ ssize_t __fastcall kgadget_read(file *__file, char *user_buf, size_t size, loff_
 
 
 
-### kgadget_open
+### 4.kgadget_open
 
 ```kgadget_open
 int __fastcall kgadget_open(inode *__inode, file *__file)
@@ -165,9 +165,7 @@ int __fastcall kgadget_open(inode *__inode, file *__file)
 
 > 这个函数也没用
 
-# 二.思路
-
-## physmap spray
+## 二.思路
 
 就是在exp中用`mmap申请大量区域（堆喷）`
 
@@ -203,9 +201,7 @@ for(;idx < (page_size/8 - 0x10);idx++){
 
 必须用内部函数把`CR3页表`切回用户态才行
 
-# 三.Exploit
-
-## exp
+## 三.Exploit
 
 ```c
 #include <stdio.h>
@@ -291,6 +287,7 @@ int main(int argc,char **argv){
         "syscall;"
         );
 }```
+
 
 
 
