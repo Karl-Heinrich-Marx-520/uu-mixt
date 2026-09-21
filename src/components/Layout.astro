@@ -49,6 +49,7 @@ const bodyClasses = [hasHero ? "has-hero" : "", bodyClass].filter(Boolean).join(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
   {description && <meta name="description" content={description}>}
   {hasHero && <link rel="preload" as="image" href={`/assets/bg/bg-${face}.jpg`}>}
   {/* RSS 自动发现（PRD 5.4）：面页给该面的 feed，共享页给全站合流 feed */}
