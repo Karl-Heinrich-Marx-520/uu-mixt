@@ -2493,3 +2493,12 @@ html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
   outline-offset: 2px;
   background: rgba(180, 83, 9, 0.06);
 }
+
+/* ============ 站点鼠标样式：小怪物（demo 验收版，2026-09-21） ============ */
+/* hotspot(26,30) 对准怪物嘴部，让"点击点"落在怪物目光/嘴上；
+   cursor 是继承属性，input/textarea 的 UA text 光标自动保留（输入不受影响）；
+   链接与按钮的 UA pointer 覆盖继承，需显式指定才统一成小怪物。 */
+html, body,
+a, button, [data-action], label, summary {
+  cursor: url("cursor.png") 26 30, auto;
+}
