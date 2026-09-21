@@ -7,7 +7,7 @@ author: mixt
 category: IO_FILE
 tags: [linux kernel pwn, ret2dir, 堆喷, nokaslr]
 featured: false
-draft: true
+draft: false
 ---
 #一.函数分析
 
@@ -285,6 +285,7 @@ int main(int argc,char **argv){
         "syscall;"
         );
 }```
+
 
 
 
