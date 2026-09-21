@@ -9,7 +9,9 @@ tags: [linux kernel pwn, ret2dir, 堆喷, nokaslr]
 featured: false
 draft: false
 ---
-# 一.函数分析
+# 一.分析
+
+## kgadget.ko
 
 ### kgadget_ioctl
 
@@ -165,6 +167,8 @@ int __fastcall kgadget_open(inode *__inode, file *__file)
 
 # 二.思路
 
+## physmap spray
+
 就是在exp中用`mmap申请大量区域（堆喷）`
 
 并整页整页的布置ROP
@@ -200,6 +204,8 @@ for(;idx < (page_size/8 - 0x10);idx++){
 必须用内部函数把`CR3页表`切回用户态才行
 
 # 三.Exploit
+
+## exp
 
 ```c
 #include <stdio.h>
@@ -285,6 +291,7 @@ int main(int argc,char **argv){
         "syscall;"
         );
 }```
+
 
 
 
