@@ -7,7 +7,7 @@ author: uu
 category: C++
 tags: [C++, 并发, 异步编程]
 featured: false
-draft: true
+draft: false
 ---
 # C++ std::atomic 精讲
 
@@ -365,4 +365,5 @@ if (p == nullptr) {
 如果面试官聊到无锁容器/无锁栈，记住一个关键词就够了——**ABA 问题**：CAS 只比较"值一样"，不比较"历史"，地址被 A→B→A 折腾过之后 CAS 会误判"没变过"；工业界的解法是给指针带版本号或延迟内存回收。被问到时答出"知道有这回事 + 关键词"，比硬撑着展开要稳。
 
 > 参考：[cppreference - std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic)、《C++ Concurrency in Action》第 5 章
+
 
