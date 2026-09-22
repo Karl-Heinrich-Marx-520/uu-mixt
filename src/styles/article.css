@@ -164,7 +164,7 @@
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: 0.95rem;
-  line-height: 1.75;
+  line-height: 1.55;
   color: var(--code-text);
   counter-reset: line;
   tab-size: 4;
@@ -329,13 +329,15 @@ body.is-resizing { cursor: col-resize; user-select: none; }
   --astro-code-token-string-expression: #a5d97e;
   --astro-code-token-constant: #d2a8ff;
   --astro-code-token-parameter: #a9c1e8;
-  --astro-code-token-comment: #6f80a8;
+  --astro-code-token-comment: #ffffff;
   --astro-code-token-punctuation: #7e8db0;
   --astro-code-token-link: #7ab3ff;
 }
 /* Shiki 的 token span 全部是内联 style，无法用类选择器加粗；
    借内联样式里出现的变量名精准命中关键字 span */
 .code-block pre [style*="--astro-code-token-keyword"] { font-weight: 600; }
+/* 注释改白色后用斜体与正文代码区分，避免混作一片 */
+.code-block pre [style*="--astro-code-token-comment"] { font-style: italic; }
 /* 行号由 .cl + counter 提供；Shiki 的空行 span 也保持整行高度 */
 .code-block .line:empty::after { content: " "; }
 
