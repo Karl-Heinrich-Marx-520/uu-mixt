@@ -1,12 +1,16 @@
 /**
- * matte-cursor.mjs —— 小怪物抠透明底（泛洪填充版）
+ * matte-cursor.mjs —— 形象图抠透明底 + 生成站点光标（泛洪填充版）
  *
  * 为什么不用"白色全局替换"：眼白/高光也是浅色，全局替换会毁图。
  * 改用四角泛洪（flood fill）：只把与背景色【连通】的近白区域转透明，
  * 眼白被眼眶包围不与外部连通，天然安全；再对边缘做软 alpha 去白边。
+ * （若原图本身就是透明底，泛洪不会命中任何像素，等价于直接 bbox 裁剪，同样安全。）
  *
- * 输入：用户提供的原图（720px，浅灰白底）
- * 输出：demo/assets/cursor.png（48px 光标）+ demo/assets/mascot.png（720px 透明原图）
+ * 输入：形象原图（任意尺寸，浅色底或已透明）
+ * 输出：demo/assets/mascot-<名>.png（720px 透明档案）
+ *       demo/assets/cursor-<名>.png（48px 光标）
+ *       <名> = 输入文件去掉扩展名的主名
+ * 之后手动在 demo/assets/cursors.js 清单追加一行 {src, x, y}（x/y 热点看主体脸部）。
  * 用法：node scripts/matte-cursor.mjs "<原图路径>"
  */
 import sharp from "sharp";
@@ -17,6 +21,7 @@ if (!SRC || !fs.existsSync(SRC)) {
   console.error("用法：node scripts/matte-cursor.mjs <原图路径>");
   process.exit(1);
 }
+const base = SRC.replace(/\.[^.]+$/, "").split(/[\\/]/).pop();
 
 const { data, info } = await sharp(SRC)
   .ensureAlpha()
@@ -98,21 +103,16 @@ const boxed = sharp(data, {
   raw: { width: W, height: H, channels: C },
 }).extract({ left: minX, top: minY, width: bw, height: bh });
 
-await cleaned.clone().png().toFile("demo/assets/mascot.png");
-/* 光标图：bbox 裁掉透明留白让主体撑满画幅（48px 时怪物只占一半会糊成"黑眼圈"），
+await cleaned.clone().png().toFile(`demo/assets/mascot-${base}.png`);
+/* 光标图：bbox 裁掉透明留白让主体撑满画幅（48px 时主体只占一半会糊成一团），
    64px 是现代桌面浏览器光标的稳妥上限，细节保留度好 */
 await boxed.clone()
   .resize(48, 48, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
   .png()
-  .toFile("demo/assets/cursor.png");
-/* 光标图集第 2 张（水平翻转演示轮换机制；用户后续传图按清单追加） */
-await boxed.clone()
-  .flop()
-  .resize(48, 48, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-  .png()
-  .toFile("demo/assets/cursor-b.png");
+  .toFile(`demo/assets/cursor-${base}.png`);
 
 /* 抠图质量统计 */
 let transparent = 0;
 for (let p = 0; p < W * H; p++) if (data[p * C + 3] === 0) transparent++;
-console.log(`matte-cursor: ${W}x${H} → mascot.png(原尺寸) + cursor.png/cursor-b.png(48px, bbox ${bw}x${bh} @${minX},${minY})，透明占比 ${(transparent / (W * H) * 100).toFixed(1)}%`);
+console.log(`matte-cursor: ${W}x${H} → mascot-${base}.png(原尺寸) + cursor-${base}.png(48px, bbox ${bw}x${bh} @${minX},${minY})，透明占比 ${(transparent / (W * H) * 100).toFixed(1)}%`);
+console.log(`下一步：demo/assets/cursors.js 清单追加  { src: "assets/cursor-${base}.png", x: <热点x>, y: <热点y> }（热点取主体脸部/视觉中心在 48px 图上的落点）`);

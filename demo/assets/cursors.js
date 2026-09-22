@@ -5,6 +5,5 @@
  * （x/y = 热点，点击点在图上的落点；一般取 32 36 附近）。
  */
 window.UUM_CURSORS = [
-  { src: "assets/cursor.png",   x: 24, y: 27 },
-  { src: "assets/cursor-b.png", x: 24, y: 27 },
+  { src: "assets/cursor-orange.png", x: 24, y: 24 },
 ];
