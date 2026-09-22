@@ -49,3 +49,15 @@ button { font-family: inherit; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============ 站点鼠标样式：小橘子（2026-09-22，demo 定稿后接线） ============ */
+/* 当前光标走 CSS 变量 --uum-cursor（vine.js 每次点击后切到图集下一张，
+   清单见 /scripts/cursors.js）；cursor 是继承属性，input/textarea 的 UA
+   text 光标自动保留（输入不受影响）；链接与按钮的 UA pointer 覆盖继承，
+   需显式指定才统一。图必须用绝对路径：打包后的 CSS 位于 /_astro/ 哈希目录，
+   相对 url 的解析基准不可靠。 */
+:root { --uum-cursor: url("/cursor-orange.png") 24 24; }
+html, body,
+a, button, [data-action], label, summary {
+  cursor: var(--uum-cursor), auto;
+}
