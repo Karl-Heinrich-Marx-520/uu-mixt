@@ -25,6 +25,29 @@ export default defineConfig({
       theme: 'css-variables',
       // 保留 Shiki 的逐行 span（.line → 由 rehype 插件改名为 .cl，供行号 CSS 使用）
       wrap: true,
+      // 语言别名：文章里的描述性栅栏标签 → Shiki 真实语言。
+      // Shiki 按标签全名精确匹配（kgadget_ioctl ≠ kgadget），匹配失败会
+      // 静默回落 plaintext 整块失去着色——按实际出现过的标签逐一登记。
+      langAlias: {
+        redis: 'sh',
+        exp: 'python',
+        read: 'python',
+        init: 'sh',
+        kgadget_ioctl: 'c',
+        kgadget_write: 'c',
+        kgadget_read: 'c',
+        kgadget_open: 'c',
+        pt_rgs: 'c',
+        pt_regs: 'c',
+        struct: 'c',
+        run_vm: 'c',
+        read_u64_le: 'c',
+        vm_push: 'c',
+        vm_pop: 'c',
+        qmemcpy: 'asm',
+        regs: 'asm',
+        return: 'text',
+      },
     },
   },
 });

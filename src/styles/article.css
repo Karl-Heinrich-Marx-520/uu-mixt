@@ -114,7 +114,7 @@
 .prose blockquote p { margin: 0.3em 0; }
 .prose code {
   font-family: var(--font-mono);
-  font-size: 0.86em;
+  font-size: 0.9em;
   background: var(--bg-soft);
   border: 1px solid var(--border);
   padding: 0.1em 0.42em;
@@ -160,14 +160,17 @@
 .copy-btn svg { width: 12px; height: 12px; }
 .code-block pre {
   margin: 0;
-  padding: 13px 15px;
+  padding: 15px 18px;
   overflow-x: auto;
   font-family: var(--font-mono);
-  font-size: 0.845rem;
-  line-height: 1.78;
+  font-size: 0.95rem;
+  line-height: 1.75;
   color: var(--code-text);
   counter-reset: line;
   tab-size: 4;
+}
+@media (max-width: 640px) {
+  .code-block pre { font-size: 0.88rem; padding: 12px 14px; }
 }
 .code-block .line { display: block; }
 .code-block .line::before {
@@ -312,20 +315,27 @@ body.is-resizing { cursor: col-resize; user-select: none; }
   .article-page .article-layout > article { padding: 22px 18px 20px; }
 }
 
-/* Shiki（css-variables 主题）→ demo 同款配色：关键字用所在面的主题色 */
+/* Shiki（css-variables 主题）：Astro 输出的 token span 引用的是
+   --astro-code-token-* 前缀（不是 --shiki-*，此前写错前缀导致整套配色
+   从未生效、代码块一片单色）。色板按深色代码底 #0f1523 调校，
+   六个色相族 + 关键字加粗，让各类 token 拉开层次；
+   关键字沿用所在面的主题色（双面身份延伸进代码块）。 */
 .code-block pre {
-  --shiki-foreground: var(--code-text);
-  --shiki-background: transparent;
-  --shiki-token-keyword: var(--accent);
-  --shiki-token-string: #9ece7d;
-  --shiki-token-string-expression: #9ece7d;
-  --shiki-token-comment: #5d6b8c;
-  --shiki-token-constant: #e0af68;
-  --shiki-token-function: #c0caf5;
-  --shiki-token-parameter: #dbe4f5;
-  --shiki-token-punctuation: #8b9bc4;
-  --shiki-token-link: #6fb7ff;
+  --astro-code-foreground: #d6e2f5;
+  --astro-code-background: transparent;
+  --astro-code-token-keyword: var(--accent);
+  --astro-code-token-function: #5fd0e8;
+  --astro-code-token-string: #a5d97e;
+  --astro-code-token-string-expression: #a5d97e;
+  --astro-code-token-constant: #d2a8ff;
+  --astro-code-token-parameter: #a9c1e8;
+  --astro-code-token-comment: #6f80a8;
+  --astro-code-token-punctuation: #7e8db0;
+  --astro-code-token-link: #7ab3ff;
 }
+/* Shiki 的 token span 全部是内联 style，无法用类选择器加粗；
+   借内联样式里出现的变量名精准命中关键字 span */
+.code-block pre [style*="--astro-code-token-keyword"] { font-weight: 600; }
 /* 行号由 .cl + counter 提供；Shiki 的空行 span 也保持整行高度 */
 .code-block .line:empty::after { content: " "; }
 

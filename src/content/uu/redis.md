@@ -112,7 +112,7 @@ draft: false
 
 **命令**
 
-```
+```redis
 SET k v                # 设置
 GET k                  # 获取
 SETEX k 10 v           # 设值 + 10秒过期
@@ -151,7 +151,7 @@ MSET/MGET              # 批量
 
 **命令**
 
-```
+```redis
 HSET k f v / HGET k f        # 设/取单个字段
 HMSET k f1 v1 f2 v2          # 批量设
 HMGET k f1 f2                # 批量取
@@ -177,7 +177,7 @@ HDEL k f                     # 删字段
 
 **命令**
 
-```
+```redis
 LPUSH k v / RPUSH k v        # 左/右插入
 LPOP k / RPOP k              # 左/右弹出
 BLPOP k 5 / BRPOP k 5        # 阻塞弹出（5秒超时）
@@ -203,7 +203,7 @@ LLEN k                       # 长度
 
 **命令**
 
-```
+```redis
 SADD k m / SREM k m       # 增/删
 SMEMBERS k                # 取全部（大集合慎用）
 SISMEMBER k m             # 是否存在
@@ -232,7 +232,7 @@ SPOP k / SRANDMEMBER k    # 随机弹出/随机取
 
 **命令**
 
-```
+```redis
 ZADD k 100 m                 # 添加，score=100
 ZSCORE k m                   # 取分值
 ZINCRBY k 1 m                # 分值自增
@@ -293,7 +293,7 @@ ZREM k m                     # 删除
 
 **命令**
 
-```
+```redis
 SETBIT k offset 1        # 设置某位为1
 GETBIT k offset          # 获取某位
 BITCOUNT k               # 统计1的个数
@@ -327,7 +327,7 @@ BITOP AND dest k1 k2     # 按位运算
 
 **核心命令：`BITFIELD`**
 
-```
+```redis
 BITFIELD k GET u8 0                    # 读：从第0位起，读8位无符号整数
 BITFIELD k SET u8 0 255                # 写：从第0位起，写8位，值为255
 BITFIELD k INCRBY u8 0 10              # 自增：第0位起8位，加10
@@ -348,7 +348,7 @@ BITFIELD k GET u8 0 GET u8 8 GET u8 16 # 一次读多个字段
 
 **`#` 语法简化（实用）**：`u8 #0` 表示「第 0 个 8 位字段」，会自动按类型宽度递增偏移。
 
-```
+```redis
 BITFIELD k SET u8 #0 100    # 等价于 SET u8 0 100
 BITFIELD k SET u8 #1 200    # 等价于 SET u8 8 200
 ```
@@ -357,7 +357,7 @@ BITFIELD k SET u8 #1 200    # 等价于 SET u8 8 200
 
 `INCRBY` 时如果超出范围，用 `OVERFLOW` 指定行为（默认 `WRAP`）：
 
-```
+```redis
 BITFIELD k OVERFLOW WRAP INCRBY u8 0 10    # 回绕（默认，255+1=0）
 BITFIELD k OVERFLOW SAT INCRBY u8 0 10     # 饱和（255+1 仍是 255）
 BITFIELD k OVERFLOW FAIL INCRBY u8 0 10    # 失败（返回 nil，不执行）
@@ -394,7 +394,7 @@ BITFIELD k OVERFLOW FAIL INCRBY u8 0 10    # 失败（返回 nil，不执行）
 
 **命令**
 
-```
+```redis
 PFADD k e1 e2         # 添加元素
 PFCOUNT k             # 统计基数
 PFMERGE dest k1 k2    # 合并多个
@@ -425,7 +425,7 @@ PFMERGE dest k1 k2    # 合并多个
 
 **命令**
 
-```
+```redis
 GEOADD k 116.40 39.90 北京              # 添加位置
 GEOPOS k 北京                           # 查坐标
 GEODIST k 北京 上海 km                  # 两点距离
@@ -447,7 +447,7 @@ GEOSEARCH k FROMMEMBER 北京 BYRADIUS 10 km  # 更灵活的查询
 
 **命令**
 
-```
+```redis
 XADD k * f v                              # 添加消息（*自动生成ID）
 XLEN k                                    # 消息数
 XRANGE k - +                              # 范围查询
@@ -492,7 +492,7 @@ XTRIM k MAXLEN 1000                       # 裁剪长度
 
 **命令**
 
-```
+```redis
 SUBSCRIBE ch1 ch2       # 订阅频道
 PUBLISH ch msg          # 发布消息
 PSUBSCRIBE news.*       # 模式订阅（支持通配符）
@@ -711,7 +711,7 @@ PUBSUB CHANNELS         # 查看活跃频道
 
 **加锁**
 
-```
+```redis
 SET lock_key unique_value NX PX 30000
 ```
 
@@ -729,7 +729,7 @@ if redis.call("GET", KEYS[1]) == ARGV[1] then
 else
     return 0
 end
-```
+```redis
 
 * **先比对 value 再删除**：防止 A 超时后删了 B 的锁。
 * **必须用 Lua**：保证「判断 + 删除」是原子的，否则判断后锁被抢走就会删错。
@@ -813,7 +813,7 @@ SET k2 v2          # 入队
 EXEC               # 执行所有命令
 DISCARD            # 放弃事务
 WATCH k            # 乐观锁：监视 key，被改则 EXEC 失败
-```
+```redis
 
 **三个关键特性（面试必问）**
 
@@ -840,7 +840,7 @@ if val > 0:
     MULTI
     DECR stock
     EXEC        # 如果 stock 被别人改了，EXEC 返回 nil，重试
-```
+```redis
 
 > **面试话术**「Redis 事务用 MULTI 开、EXEC 执行，命令先入队再批量执行。要讲清三点：
 > ① **不支持回滚**——入队时错误整个不执行，执行时错误其他命令照常执行。设计原因是为了保持简单和性能，Redis 认为执行期错误是编程错误，不该靠回滚兜底。
@@ -877,7 +877,7 @@ if val > 0:
 EVAL "script" 1 key arg        # 执行脚本
 SCRIPT LOAD "script"           # 预加载，返回 SHA1
 EVALSHA sha1 1 key arg         # 按 SHA1 执行（省带宽）
-```
+```redis
 
 **核心优势**：
 
@@ -1004,7 +1004,7 @@ EVALSHA sha1 1 key arg         # 按 SHA1 执行（省带宽）
 业务名:对象名:id:字段
 例：user:profile:1001:name
     order:detail:20230901
-```
+```redis
 
 * **用冒号分层**，便于管理和排查。
 * **避免过长**——key 本身占内存。
@@ -1170,7 +1170,7 @@ SET k v NX PX 10000                # 分布式锁
 INCR k / DECR k / INCRBY k 5       # 计数
 MSET/MGET                          # 批量
 APPEND k v / STRLEN k              # 追加/长度
-```
+```redis
 
 ### Hash
 
@@ -1181,7 +1181,7 @@ HGETALL k                          # 取全部
 HINCRBY k f 1                      # 字段自增
 HDEL k f / HLEN k                  # 删/数量
 HSCAN k 0                          # 渐进遍历
-```
+```redis
 
 ### List
 
@@ -1191,7 +1191,7 @@ LPOP/RPOP                          # 弹出
 BLPOP k 5 / BRPOP k 5              # 阻塞弹出
 LRANGE k 0 -1 / LTRIM k 0 9        # 范围/裁剪
 LLEN k                             # 长度
-```
+```redis
 
 ### Set
 
@@ -1201,7 +1201,7 @@ SMEMBERS / SISMEMBER               # 全部/判断
 SINTER/SUNION/SDIFF                # 交并差
 SCARD k                            # 数量
 SPOP / SRANDMEMBER                 # 随机弹出/随机取
-```
+```redis
 
 ### ZSet
 
@@ -1213,7 +1213,7 @@ ZREVRANGE k 0 9                    # 降序取前10
 ZRANK / ZREVRANK                   # 排名
 ZRANGEBYSCORE k 90 100             # 分数范围
 ZREM k m                           # 删除
-```
+```redis
 
 ### Bitmap / HyperLogLog / GEO
 
@@ -1224,7 +1224,7 @@ PFADD k e1 / PFCOUNT k / PFMERGE
 GEOADD k 116.40 39.90 北京
 GEODIST k 北京 上海 km
 GEORADIUS k 116.40 39.90 10 km
-```
+```redis
 
 ### Bitfield
 
@@ -1235,7 +1235,7 @@ BITFIELD k INCRBY u8 0 10           # 自增
 BITFIELD k GET u8 0 GET u8 8        # 一次读多个字段（不同偏移）
 BITFIELD k SET u8 #1 200            # #1 = 第1个8位字段（自动算偏移）
 BITFIELD k OVERFLOW SAT INCRBY u8 0 1  # 饱和溢出（封顶计数）
-```
+```redis
 
 > type 写法：`u`无符号 / `i`有符号 + 位数，如 `u8`、`i16`、`u63`（u 最大 63 位，i 最大 64 位）
 > 溢出模式：`WRAP`（回绕，默认）/ `SAT`（饱和）/ `FAIL`（失败）
@@ -1251,7 +1251,7 @@ XACK k g id                        # 确认
 XPENDING k g                       # 查看未确认
 XCLAIM k g c 60000 id              # 转移
 XTRIM k MAXLEN 1000                # 裁剪
-```
+```redis
 
 ### Pub/Sub
 
@@ -1259,7 +1259,7 @@ XTRIM k MAXLEN 1000                # 裁剪
 SUBSCRIBE ch / PSUBSCRIBE news.*
 PUBLISH ch msg
 PUBSUB CHANNELS
-```
+```redis
 
 ### 事务 / Lua
 
@@ -1269,7 +1269,7 @@ WATCH k / UNWATCH
 EVAL "script" 1 key arg
 SCRIPT LOAD "script"
 EVALSHA sha1 1 key arg
-```
+```redis
 
 ### Key 通用
 
@@ -1280,7 +1280,7 @@ EXPIRE k 10 / TTL k                # 过期
 TYPE k / EXISTS k                  # 类型/存在
 MEMORY USAGE k                     # 内存占用
 OBJECT ENCODING k                  # 底层编码（调试）
-```
+```redis
 
 ### 服务端 / 排查
 
@@ -1292,7 +1292,7 @@ SLOWLOG GET 10                     # 慢查询
 INFO / INFO memory / INFO replication
 DBSIZE                             # key 数量
 CONFIG SET maxmemory 2gb
-```
+```redis
 
 ### 常用配置
 
@@ -1304,7 +1304,7 @@ appendfsync everysec
 aof-use-rdb-preamble yes           # 混合持久化
 save 900 1                         # RDB 规则
 timeout 300
-```
+```redis
 
 ***
 

