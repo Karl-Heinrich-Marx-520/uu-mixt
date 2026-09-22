@@ -164,7 +164,7 @@
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: 0.95rem;
-  line-height: 1.55;
+  line-height: 1.4;
   color: var(--code-text);
   counter-reset: line;
   tab-size: 4;
