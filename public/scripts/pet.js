@@ -371,7 +371,7 @@
       return "友链卡片在入口页！点牌堆它们会连成一排带倾斜的卡链，悬停还能看介绍～";
     }
     if (/备案|服务器|域名|上线|部署|进展|建站/.test(q)) {
-      return "域名 uuandmixt.com 已经注册好啦，ICP 备案审核中——通过之前用 IP:8080 预览。上线后这里会挂上正式备案号！";
+      return "网站已经正式上线啦：现在就是 <a href=\"/\">https://uuandmixt.com</a> 本尊——HTTPS 全站、页脚挂着 ICP 备案号，部署在阿里云轻量服务器上，作者在写作台点一下就能重新构建发布～";
     }
     if (/你是谁|你是什么|能做|会什么|名字/.test(q)) {
       return "我是小鹿呀，这个博客的向导 🦌 两面的文章、两位作者、建站状态我都知道——博客之外的我可不会哦。";
@@ -404,9 +404,9 @@
   }
   function ragContext(q) {
     var posts = store.raw();
-    if (!posts || !posts.length) return "";
+    if (!posts || !posts.length) return null;
     var terms = bigrams(q);
-    if (!terms.length) return "";
+    if (!terms.length) return null;
     var scored = posts.map(function (p) {
       var title = p.title || "", desc = p.description || "", tags = (p.tags || []).join(" "),
           cat = p.category || "", text = (p.text || "").slice(0, 1200);
@@ -423,23 +423,33 @@
     }).filter(function (x) { return x.sc >= 5; })
       .sort(function (a, b) { return b.sc - a.sc; })
       .slice(0, 4);
-    if (!scored.length) return "";
-    return scored.map(function (x) {
-      var p = x.p;
-      return "《" + p.title + "》（" + p.author + " · " + (p.date || "") +
-        (p.category ? " · 分类：" + p.category : "") + "）：" +
-        (p.description || (p.text || "").slice(0, 120)) + "…";
-    }).join("\n");
+    if (!scored.length) return null;
+    return {
+      count: scored.length,
+      text: scored.map(function (x) {
+        var p = x.p;
+        return "《" + p.title + "》（" + p.author + " · " + (p.date || "") +
+          (p.category ? " · 分类：" + p.category : "") + "）：" +
+          (p.description || (p.text || "").slice(0, 120)) + "…";
+      }).join("\n")
+    };
   }
 
-  /* ---------- LLM 轨道：/api/chat（供应商可插拔，见 pet-server/README） ---------- */
-  var CHAT_ENDPOINT = "/api/chat";
-  var LLM_TIMEOUT = 9000;        /* 单次请求超时 */
-  var llm = { down: false, fails: 0, retryAt: 0 };   /* 连续失败 2 次静默降级，每 5 分钟重探 */
+  /* ---------- LLM 轨道：/api/pet/chat（供应商可插拔，见 pet-server/README） ---------- */
+  var CHAT_ENDPOINT = "/api/pet/chat";   /* 2026-09-23：从兼容别名 /api/chat 切到正式路径 */
+  var LLM_TIMEOUT = 12000;       /* 单次请求超时（与后端 timeoutSec 12 对齐） */
+  var llm = { down: false, fails: 0, retryAt: 0, quotaHit: false };  /* 连续失败 2 次静默降级，每 5 分钟重探；quotaHit=日配额用完 */
   function askLLM(q) {
     if (llm.down && Date.now() < llm.retryAt) return Promise.resolve(null);
     var rag = ragContext(q);
-    var content = q + (rag ? "\n\n【站内资料】\n" + rag + "\n（回答可引用上面的文章名与作者）" : "");
+    var ragCount = rag ? rag.count : 0;
+    var content = q;
+    if (rag) {
+      content += "\n\n【站内资料】\n" + rag.text + "\n（回答可引用上面的文章名与作者）";
+    } else {
+      /* 明确告知本次无命中，防模型在没资料时凭空编造站内内容 */
+      content += "\n\n【站内资料】本次检索没有命中站内文章——请只依据对话与你的系统设定回答；若问题超出博客范围，可爱地引导用户问站内话题。";
+    }
     var msgs = history.slice(-8).map(function (m) {
       return { role: m.role === "user" ? "user" : "assistant", content: m.text };
     });
@@ -456,14 +466,15 @@
       if (!r.ok) throw new Error("http " + r.status);
       return r.json();
     }).then(function (d) {
-      llm.fails = 0; llm.down = false;
+      llm.fails = 0; llm.down = false; llm.quotaHit = false;
       var text = d && typeof d.reply === "string" ? d.reply.trim() : "";
       if (!text) throw new Error("empty");
       /* 兜底截断：max_tokens 已限，这里防异常长答（约 160 字） */
       if (text.length > 170) text = text.slice(0, 168) + "…";
-      return { text: text, via: d.via || "AI", model: d.model || "" };
-    }).catch(function () {
+      return { text: text, via: d.via || "AI", model: d.model || "", ragCount: ragCount };
+    }).catch(function (err) {
       if (timer) clearTimeout(timer);
+      if (err && err.message === "http 429") llm.quotaHit = true;   /* 日配额用完：文案要分型 */
       llm.fails++;
       if (llm.fails >= 2) { llm.down = true; llm.retryAt = Date.now() + 5 * 60 * 1000; }
       return null;                                 /* 降级信号：respond 回落规则轨道 */
@@ -530,24 +541,30 @@
     pushHistory("user", q);
     playAction("is-nod");                          /* 回答时点头 */
     var t = typing();
+    /* LLM 若 1.3s 内没回话（点头演完），切「探头张望」表达思考中 */
+    var thinkTimer = setTimeout(function () { if (busy) playAction("is-look"); }, 1300);
     var fallbackDelay = 420 + Math.random() * 380; /* 规则轨道保留自然延迟 */
     var fell = false;
     function ruleFallback() {
       if (fell) return;
       fell = true;
+      clearTimeout(thinkTimer);
       var text = cute(answer(q));
       t.remove();
-      bubble(text, "pet", true, "小鹿本地");
+      /* 降级要可感知：配额用完与普通降级文案分型 */
+      bubble(text, "pet", true,
+        llm.quotaHit ? "小鹿本地 · 今日 AI 额度已用完" : "小鹿本地 · AI 通道忙");
       pushHistory("pet", text.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " "));
       busy = false;
     }
     var started = Date.now();
     askLLM(q).then(function (res) {
       if (res) {
+        clearTimeout(thinkTimer);
         var wait = Math.max(0, 500 - (Date.now() - started));  /* 太快也缓一缓，像在思考 */
         setTimeout(function () {
           t.remove();
-          lastVia = res.via || "AI";
+          lastVia = (res.via || "AI") + (res.ragCount ? " · 参考 " + res.ragCount + " 篇站内文章" : "");
           typewriter(res.text, function () {
             pushHistory("pet", res.text);
             busy = false;

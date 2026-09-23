@@ -534,7 +534,6 @@ func main() {
 	mux.HandleFunc("/api/categories/remove", s.handleCategoryRemove)
 	mux.HandleFunc("/api/rebuild", s.handleRebuild)
 	mux.HandleFunc("/api/pet/chat", s.handlePetChat)
-	mux.HandleFunc("/api/chat", s.handlePetChat) // 兼容别名：pet.js 切到 /api/pet/chat 后移除
 	mux.HandleFunc("/healthz", s.handleHealth)
 
 	log.Printf("uum-server: listen=%s mock=%v tokens=%d petModel=%s repo=%s",

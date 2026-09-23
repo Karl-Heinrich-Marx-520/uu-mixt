@@ -18,7 +18,7 @@
     "baseUrl": "https://api.deepseek.com",
     "model": "deepseek-chat",
     "apiKeyEnv": "UUM_LLM_KEY",
-    "timeoutSec": 30,
+    "timeoutSec": 12,
     "maxTokens": 300,
     "temperature": 0.8,
     "perIPPerMin": 10,
