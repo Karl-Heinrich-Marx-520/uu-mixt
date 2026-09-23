@@ -19,7 +19,7 @@
   var SIZE = 220, R = SIZE / 2;
 
   /* ---------- 光标图集轮换：每次点击切到下一张（清单 assets/cursors.js） ---------- */
-  var CUR = (window.UUM_CURSORS && window.UUM_CURSORS.length ? window.UUM_CURSORS : [{ src: "assets/cursor-orange.png", x: 24, y: 24 }]);
+  var CUR = (window.UUM_CURSORS && window.UUM_CURSORS.length ? window.UUM_CURSORS : [{ src: "assets/cursor-orange.png", x: 16, y: 16 }]);
   var curIdx = 0;
   CUR.forEach(function (c) { var im = new Image(); im.src = c.src; }); /* 预加载：切换不闪默认光标 */
   function nextCursor() {

@@ -5,5 +5,5 @@
  * 在下面数组追加一行 {src, x, y}（x/y = 热点，点击点在图上的落点，一般取脸部中心）。
  */
 window.UUM_CURSORS = [
-  { src: "/cursor-orange.png", x: 24, y: 24 },
+  { src: "/cursor-orange.png", x: 16, y: 16 },
 ];

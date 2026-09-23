@@ -2499,7 +2499,7 @@ html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
    清单见 assets/cursors.js）；cursor 是继承属性，input/textarea 的 UA
    text 光标自动保留（输入不受影响）；链接与按钮的 UA pointer 覆盖继承，
    需显式指定才统一。 */
-:root { --uum-cursor: url("cursor-orange.png") 24 24; }
+:root { --uum-cursor: url("cursor-orange.png") 16 16; }
 html, body,
 a, button, [data-action], label, summary {
   cursor: var(--uum-cursor), auto;
