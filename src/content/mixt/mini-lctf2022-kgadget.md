@@ -54,7 +54,7 @@ __`__fentry__`__是内核`ftrace`函数追踪的入口钩子，分析时可以�
 
 * qmemcpy的操作有些迷惑，看不太懂
 
-```qmemcpy
+```asm
 .text.unlikely:000000000000011C                 mov     rbx, [param]
 .text.unlikely:000000000000011F kgadget_ptr = rbx                       ; void (*)(void)
 .text.unlikely:000000000000011F                 mov     __file, offset unk_370
@@ -481,6 +481,7 @@ pwndbg> x/40gx 0xffffc9000018ff58
   `grep -B2 -A2 'iretq' gadgets.txt | grep -B5 'swapgs'`
 
 > 那么我是如何在`kgadget`中找到它的呢？`gdb`崩溃的时候它正好在附近，莫名奇妙的
+
 
 
 
