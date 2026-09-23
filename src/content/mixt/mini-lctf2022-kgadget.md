@@ -104,7 +104,7 @@ __`__fentry__`__是内核`ftrace`函数追踪的入口钩子，分析时可以�
 
 ### 2.kgadget_write
 
-```txt
+```text
 __int64 __fastcall kgadget_write(__int64 a1, __int64 a2)
 {
   _fentry__(a1, a2);
@@ -481,6 +481,7 @@ pwndbg> x/40gx 0xffffc9000018ff58
   `grep -B2 -A2 'iretq' gadgets.txt | grep -B5 'swapgs'`
 
 > 那么我是如何在`kgadget`中找到它的呢？`gdb`崩溃的时候它正好在附近，莫名奇妙的
+
 
 
 
