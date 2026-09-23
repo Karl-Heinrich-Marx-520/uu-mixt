@@ -21,14 +21,14 @@ draft: false
 
 只有**第一次**对该流进行读写时（例如调用 `puts`），才会触发下面的逻辑：
 
-```c
+```text
 if (fp->_IO_buf_base == NULL)
     _IO_file_doallocate(fp);
 ```
 
 在 `_IO_file_doallocate` 内部，会执行如下操作：
 
-```c
+```text
 size = _IO_BUFSIZ;              // 一般为 0x1000
 p = malloc(size);
 fp->_IO_buf_base = p;
@@ -78,7 +78,7 @@ c1 在使用完 chunk 之后会立即将其释放
 
 ## 四、Exploit
 
-```python
+```text
 from pwn import *
 
 io = process(b'./pwn_patched', stdout=PIPE)
@@ -124,6 +124,7 @@ cmd(3)
 cmd(3)
 io.interactive()
 ```
+
 
 
 
