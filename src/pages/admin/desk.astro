@@ -133,8 +133,14 @@ import "../../styles/admin.css";
               <label for="f-desc"><em class="admin-ai-badge">AI 托管</em>description（列表页与搜索结果使用，≤120 字符，留空自动生成）</label>
               <input id="f-desc" type="text" placeholder="留空 = AI 读正文自动生成一句话摘要">
             </div>
-            <div class="admin-field">
-              <label for="f-body">正文（Markdown · 支持拖入 .md 文件自动填写）</label>
+            <div class="admin-field" data-body-field>
+              <div class="admin-field-head">
+                <label for="f-body">正文（Markdown · 支持拖入 .md 文件自动填写）</label>
+                <button type="button" class="admin-btn admin-btn--ghost admin-full-btn" data-action="body-fullscreen" aria-pressed="false" title="全屏编辑（Esc 退出）">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                  <span data-full-label>全屏</span>
+                </button>
+              </div>
               <textarea id="f-body" rows="10" placeholder="## 背景&#10;&#10;正文……&#10;&#10;也可以把写好的 .md 文件直接拖进来"></textarea>
             </div>
             <div class="admin-ai-row">
@@ -342,6 +348,6 @@ import "../../styles/admin.css";
 
   <script is:inline src="/scripts/core.js"></script>
   <script is:inline src="/scripts/admin/server.js?v=4"></script>
-  <script is:inline src="/scripts/admin/desk.js?v=9"></script>
+  <script is:inline src="/scripts/admin/desk.js?v=10"></script>
 </body>
 </html>

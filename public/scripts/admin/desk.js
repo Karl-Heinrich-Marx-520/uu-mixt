@@ -863,6 +863,7 @@
       location.href = "/admin/";
       return;
     }
+    if (el.dataset.action === "body-fullscreen") { toggleBodyFullscreen(el); return; }
     if (el.dataset.action === "ai-assist") { aiAssist(); return; }
     if (el.dataset.action === "save-bio") { saveBio(); return; }
     if (el.dataset.action === "add-doing") { addDoingRow("", ""); return; }
@@ -1050,4 +1051,30 @@
       msg($("[data-tagpool-msg]"), "标签池加载失败：" + e.message);
     }
   })();
+
+  /* ---------- 正文编辑器全屏切换（2026-09-23）：按钮进/出，Esc 退出 ---------- */
+  function toggleBodyFullscreen(btn) {
+    var field = btn.closest(".admin-field");
+    if (!field) return;
+    var ta = field.querySelector("textarea");
+    var on = field.classList.toggle("is-fullscreen");
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    var label = btn.querySelector("[data-full-label]");
+    if (label) label.textContent = on ? "退出全屏" : "全屏";
+    doc.body.classList.toggle("admin-editor-lock", on);
+    if (on && ta) ta.focus();
+  }
+  doc.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var field = doc.querySelector(".admin-field.is-fullscreen");
+    if (!field) return;
+    field.classList.remove("is-fullscreen");
+    doc.body.classList.remove("admin-editor-lock");
+    var btn = field.querySelector('[data-action="body-fullscreen"]');
+    if (btn) {
+      btn.setAttribute("aria-pressed", "false");
+      var label = btn.querySelector("[data-full-label]");
+      if (label) label.textContent = "全屏";
+    }
+  });
 })();

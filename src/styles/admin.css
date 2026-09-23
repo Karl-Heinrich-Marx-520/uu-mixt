@@ -486,3 +486,45 @@ html[data-mode="dark"] .login-hint { background: rgba(255, 255, 255, 0.04); }
   outline-offset: 2px;
   background: color-mix(in srgb, var(--accent-deep) 7%, transparent);
 }
+
+/* ---------- 正文编辑器全屏切换（2026-09-23） ----------
+   label 与「全屏」按钮同行；全屏态整个 .admin-field 提为 fixed 覆盖视口，
+   label 行保留（按钮原地变「退出全屏」），textarea 撑满剩余高度。
+   Esc 退出由 desk.js 处理；body 锁滚防底层页面跟着滚。 */
+.admin-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.admin-field-head label { margin-bottom: 0; }
+.admin-full-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  flex: none;
+}
+.admin-full-btn svg { width: 13px; height: 13px; }
+.admin-field.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  margin: 0;
+  background: var(--bg);
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.admin-field.is-fullscreen .admin-field-head { flex: none; }
+.admin-field.is-fullscreen textarea {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  font-size: 0.95rem;
+}
+body.admin-editor-lock { overflow: hidden; }
