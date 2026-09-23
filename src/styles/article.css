@@ -129,10 +129,10 @@
 /* 提示框（合规声明 / 信息说明） */
 
 
-/* 代码块：恒定深色 + 行号 + 复制（参考博客的阅读体验） */
+/* 代码块：恒定亮色（仿 GitHub Light，2026-09-23 按 Mixt 反馈从深色多色板收敛）+ 行号 + 复制 */
 .code-block {
-  background: var(--code-bg);
-  border: 1px solid var(--code-border);
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
   border-radius: var(--radius-m);
   margin: 1.5em 0;
   overflow: hidden;
@@ -143,8 +143,8 @@
   justify-content: space-between;
   padding: 7px 8px 7px 15px;
   font-size: 0.76rem;
-  color: #7f90b3;
-  border-bottom: 1px solid var(--code-border);
+  color: #57606a;
+  border-bottom: 1px solid #d0d7de;
   font-family: var(--font-mono);
 }
 .copy-btn {
@@ -153,14 +153,14 @@
   gap: 5px;
   border: none;
   background: transparent;
-  color: #7f90b3;
+  color: #57606a;
   font-size: 0.76rem;
   padding: 4px 10px;
   border-radius: 7px;
   cursor: pointer;
   transition: color var(--t-fast), background var(--t-fast);
 }
-.copy-btn:hover { color: #dbe4f5; background: rgba(255, 255, 255, 0.07); }
+.copy-btn:hover { color: #1f2328; background: #e9edf2; }
 .copy-btn svg { width: 12px; height: 12px; }
 .code-block pre {
   margin: 0;
@@ -169,7 +169,7 @@
   font-family: var(--font-mono);
   font-size: 0.95rem;
   line-height: 1.4;
-  color: var(--code-text);
+  color: #1f2328;
   counter-reset: line;
   tab-size: 4;
 }
@@ -183,7 +183,7 @@
   display: inline-block;
   width: 1.9em;
   margin-right: 1.3em;
-  color: var(--code-line);
+  color: #8c959f;
   text-align: right;
   user-select: none;
 }
@@ -321,27 +321,22 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 
 /* Shiki（css-variables 主题）：Astro 输出的 token span 引用的是
    --astro-code-token-* 前缀（不是 --shiki-*，此前写错前缀导致整套配色
-   从未生效、代码块一片单色）。色板按深色代码底 #0f1523 调校，
-   六个色相族 + 关键字加粗，让各类 token 拉开层次；
-   关键字沿用所在面的主题色（双面身份延伸进代码块）。 */
+   从未生效）。2026-09-23 按 Mixt 反馈从深色多色板收敛为仿 GitHub Light：
+   白/浅灰底 + 官方 Primer 语法色（keyword 红 / function 紫 / constant 蓝 /
+   string 深蓝 / comment 灰），不加粗不斜体，靠颜色本身区分。 */
 .code-block pre {
-  --astro-code-foreground: #d6e2f5;
+  --astro-code-foreground: #1f2328;
   --astro-code-background: transparent;
-  --astro-code-token-keyword: var(--accent);
-  --astro-code-token-function: #5fd0e8;
-  --astro-code-token-string: #a5d97e;
-  --astro-code-token-string-expression: #a5d97e;
-  --astro-code-token-constant: #d2a8ff;
-  --astro-code-token-parameter: #a9c1e8;
-  --astro-code-token-comment: #ffffff;
-  --astro-code-token-punctuation: #7e8db0;
-  --astro-code-token-link: #7ab3ff;
+  --astro-code-token-keyword: #cf222e;
+  --astro-code-token-function: #8250df;
+  --astro-code-token-string: #0a3069;
+  --astro-code-token-string-expression: #0a3069;
+  --astro-code-token-constant: #0550ae;
+  --astro-code-token-parameter: #953800;
+  --astro-code-token-comment: #6e7781;
+  --astro-code-token-punctuation: #57606a;
+  --astro-code-token-link: #0550ae;
 }
-/* Shiki 的 token span 全部是内联 style，无法用类选择器加粗；
-   借内联样式里出现的变量名精准命中关键字 span */
-.code-block pre [style*="--astro-code-token-keyword"] { font-weight: 600; }
-/* 注释改白色后用斜体与正文代码区分，避免混作一片 */
-.code-block pre [style*="--astro-code-token-comment"] { font-style: italic; }
 /* 行号由 .cl + counter 提供；Shiki 的空行 span 也保持整行高度 */
 .code-block .line:empty::after { content: " "; }
 
