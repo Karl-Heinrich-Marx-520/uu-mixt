@@ -129,13 +129,47 @@
 /* 提示框（合规声明 / 信息说明） */
 
 
-/* 代码块：恒定亮色（仿 GitHub Light，2026-09-23 按 Mixt 反馈从深色多色板收敛）+ 行号 + 复制 */
+/* 代码块：仿 GitHub 双主题（2026-09-23）——亮色模式 GitHub Light，暗夜模式 GitHub Dark，
+   色值取 Primer 官方。颜色全部抽成 --cb-* 局部变量，html[data-mode="dark"] 一处覆盖。
+   行号 + 复制 + 折叠按钮。 */
 .code-block {
-  background: #f6f8fa;
-  border: 1px solid #d0d7de;
+  --cb-bg: #f6f8fa;
+  --cb-border: #d0d7de;
+  --cb-head: #57606a;
+  --cb-line: #8c959f;
+  --cb-fg: #1f2328;
+  --cb-hover-bg: #e9edf2;
+  --cb-hover-fg: #1f2328;
+  --cb-tok-keyword: #cf222e;
+  --cb-tok-function: #8250df;
+  --cb-tok-string: #0a3069;
+  --cb-tok-constant: #0550ae;
+  --cb-tok-parameter: #953800;
+  --cb-tok-comment: #6e7781;
+  --cb-tok-punctuation: #57606a;
+  --cb-tok-link: #0550ae;
+  background: var(--cb-bg);
+  border: 1px solid var(--cb-border);
   border-radius: var(--radius-m);
   margin: 1.5em 0;
   overflow: hidden;
+}
+html[data-mode="dark"] .code-block {
+  --cb-bg: #0d1117;
+  --cb-border: #30363d;
+  --cb-head: #8b949e;
+  --cb-line: #6e7681;
+  --cb-fg: #e6edf3;
+  --cb-hover-bg: rgba(240, 246, 252, 0.1);
+  --cb-hover-fg: #e6edf3;
+  --cb-tok-keyword: #ff7b72;
+  --cb-tok-function: #d2a8ff;
+  --cb-tok-string: #a5d6ff;
+  --cb-tok-constant: #79c0ff;
+  --cb-tok-parameter: #ffa657;
+  --cb-tok-comment: #8b949e;
+  --cb-tok-punctuation: #c9d1d9;
+  --cb-tok-link: #a5d6ff;
 }
 .code-head {
   display: flex;
@@ -143,8 +177,8 @@
   justify-content: space-between;
   padding: 7px 8px 7px 15px;
   font-size: 0.76rem;
-  color: #57606a;
-  border-bottom: 1px solid #d0d7de;
+  color: var(--cb-head);
+  border-bottom: 1px solid var(--cb-border);
   font-family: var(--font-mono);
 }
 .copy-btn {
@@ -153,14 +187,14 @@
   gap: 5px;
   border: none;
   background: transparent;
-  color: #57606a;
+  color: var(--cb-head);
   font-size: 0.76rem;
   padding: 4px 10px;
   border-radius: 7px;
   cursor: pointer;
   transition: color var(--t-fast), background var(--t-fast);
 }
-.copy-btn:hover { color: #1f2328; background: #e9edf2; }
+.copy-btn:hover { color: var(--cb-hover-fg); background: var(--cb-hover-bg); }
 .copy-btn svg { width: 12px; height: 12px; }
 .code-block pre {
   margin: 0;
@@ -169,7 +203,7 @@
   font-family: var(--font-mono);
   font-size: 0.95rem;
   line-height: 1.4;
-  color: #1f2328;
+  color: var(--cb-fg);
   counter-reset: line;
   tab-size: 4;
 }
@@ -183,7 +217,7 @@
   display: inline-block;
   width: 1.9em;
   margin-right: 1.3em;
-  color: #8c959f;
+  color: var(--cb-line);
   text-align: right;
   user-select: none;
 }
@@ -321,22 +355,27 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 
 /* Shiki（css-variables 主题）：Astro 输出的 token span 引用的是
    --astro-code-token-* 前缀（不是 --shiki-*，此前写错前缀导致整套配色
-   从未生效）。2026-09-23 按 Mixt 反馈从深色多色板收敛为仿 GitHub Light：
-   白/浅灰底 + 官方 Primer 语法色（keyword 红 / function 紫 / constant 蓝 /
-   string 深蓝 / comment 灰），不加粗不斜体，靠颜色本身区分。 */
+   从未生效）。token 色全部走 --cb-tok-* 局部变量，亮/暗两套 GitHub Primer
+   官方值见 .code-block 与 html[data-mode="dark"] .code-block 的定义处。 */
 .code-block pre {
-  --astro-code-foreground: #1f2328;
+  --astro-code-foreground: var(--cb-fg);
   --astro-code-background: transparent;
-  --astro-code-token-keyword: #cf222e;
-  --astro-code-token-function: #8250df;
-  --astro-code-token-string: #0a3069;
-  --astro-code-token-string-expression: #0a3069;
-  --astro-code-token-constant: #0550ae;
-  --astro-code-token-parameter: #953800;
-  --astro-code-token-comment: #6e7781;
-  --astro-code-token-punctuation: #57606a;
-  --astro-code-token-link: #0550ae;
+  --astro-code-token-keyword: var(--cb-tok-keyword);
+  --astro-code-token-function: var(--cb-tok-function);
+  --astro-code-token-string: var(--cb-tok-string);
+  --astro-code-token-string-expression: var(--cb-tok-string);
+  --astro-code-token-constant: var(--cb-tok-constant);
+  --astro-code-token-parameter: var(--cb-tok-parameter);
+  --astro-code-token-comment: var(--cb-tok-comment);
+  --astro-code-token-punctuation: var(--cb-tok-punctuation);
+  --astro-code-token-link: var(--cb-tok-link);
 }
+
+/* 折叠/展开：head 左侧箭头按钮（article.js 注入，data-action="fold-code" 委托）。
+   收起只藏 pre，头部语言标签与按钮保留；无 JS 时按钮不注入、代码恒展开。 */
+.fold-btn svg { display: block; width: 13px; height: 13px; transition: transform var(--t-fast); }
+.code-block.is-collapsed .fold-btn svg { transform: rotate(-90deg); }
+.code-block.is-collapsed > pre { display: none; }
 /* 行号由 .cl + counter 提供；Shiki 的空行 span 也保持整行高度 */
 .code-block .line:empty::after { content: " "; }
 

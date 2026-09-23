@@ -76,10 +76,23 @@
     pre.removeAttribute("style");   /* 交给 .code-block 的 CSS 变量接管配色 */
   });
 
-  /* 补一键复制按钮（与 demo 的 copy-code 一致） */
+  /* 补一键复制按钮（与 demo 的 copy-code 一致）+ 折叠按钮 */
   [].slice.call(doc.querySelectorAll(".code-block")).forEach(function (block) {
     var head = block.querySelector(".code-head");
-    if (!head || head.querySelector(".copy-btn")) return;
+    if (!head) return;
+    if (!head.querySelector(".fold-btn")) {
+      var fold = doc.createElement("button");
+      fold.className = "copy-btn fold-btn";
+      fold.type = "button";
+      fold.setAttribute("data-action", "fold-code");
+      fold.setAttribute("aria-expanded", "true");
+      fold.setAttribute("aria-label", "收起代码");
+      fold.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+        'stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+      head.insertBefore(fold, head.firstChild);
+    }
+    if (head.querySelector('[data-action="copy-code"]')) return;
     var btn = doc.createElement("button");
     btn.className = "copy-btn";
     btn.type = "button";
@@ -123,6 +136,17 @@
       doc.body.removeChild(ta);
       return ok;
     }
+  });
+
+  /* 折叠/展开代码块：切 is-collapsed 类，CSS 藏 pre、箭头旋转 */
+  doc.addEventListener("click", function (e) {
+    var btn = e.target.closest('[data-action="fold-code"]');
+    if (!btn) return;
+    var block = btn.closest(".code-block");
+    if (!block) return;
+    var collapsed = block.classList.toggle("is-collapsed");
+    btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    btn.setAttribute("aria-label", collapsed ? "展开代码" : "收起代码");
   });
 
   /* ---------- 目录：点击即时高亮 + 滚动位置追踪（与 demo 一致） ---------- */
