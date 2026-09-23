@@ -86,8 +86,12 @@
 .updated-note svg { width: 13px; height: 13px; }
 
 /* 正文排版 */
-.prose { font-size: 1.02rem; }
-.prose p { margin: 1em 0; text-align: justify; }
+/* 排版增强（灵感来自 Telari 阅读器的中文排版质感，2026-09-23 评估后落地 web 可达部分）：
+   hanging-punctuation 标点悬挂（Safari）、text-wrap: pretty 段落级断行防孤字（Chrome 117+）、
+   text-autospace 中西文自动间距——三者均为渐进增强，不支持的浏览器自动忽略 */
+.prose { font-size: 1.02rem; hanging-punctuation: first allow-end; }
+.prose p { margin: 1em 0; text-align: justify; text-wrap: pretty; text-autospace: normal; }
+.prose h2, .prose h3, .prose h4 { text-wrap: balance; }
 .prose h2 {
   font-size: 1.42rem;
   margin: 2.1em 0 0.8em;
@@ -101,7 +105,7 @@
   scroll-margin-top: calc(var(--header-h) + 20px);
 }
 .prose ul, .prose ol { padding-left: 1.5em; }
-.prose li { margin: 0.4em 0; }
+.prose li { margin: 0.4em 0; text-wrap: pretty; }
 .prose strong { color: var(--accent-deep); }
 .prose blockquote {
   margin: 1.3em 0;
