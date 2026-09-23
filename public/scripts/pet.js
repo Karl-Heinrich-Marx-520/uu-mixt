@@ -261,7 +261,7 @@
   head.title = "按住可拖动对话栏";
 
   head.addEventListener("pointerdown", function (e) {
-    if (e.target.closest(".pet-close")) return;    /* 关闭按钮照常点击，不触发拖动 */
+    if (e.target.closest(".pet-close, .pet-clear")) return;    /* 关闭/清空按钮照常点击，不触发拖动（pointerdown 被 preventDefault 会吞掉后续 click） */
     if (e.button !== 0 && e.pointerType === "mouse") return;
     dActive = true;
     drawerPinned = true;                           /* 手动拖过 → 固定于落点（存档在抬手时写入） */
