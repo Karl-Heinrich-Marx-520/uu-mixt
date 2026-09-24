@@ -69,7 +69,7 @@ counter.store(42);        // 写
 counter.exchange(100);    // 设为 100，返回旧值
 
 counter.fetch_add(1);     // 原子 +1，返回【加之前】的旧值
-counter++;                // 等价写法，返回【加之后】的新值（注意区别）
+++counter;                // 返回【加之后】的新值（注意区别）
 
 counter.fetch_sub(1);     // 原子 -1
 ```
@@ -147,7 +147,7 @@ while (!ready.load(std::memory_order_acquire)) // ③ 等标志
 
 **注意它也不是魔法**：线程 1 刚写完，线程 2 并不保证"立刻"读到新值，仍可能读到旧值——并发程序的正确性靠的是设计好同步点（join、condition\_variable、acquire/release 配对），而不是光把变量改成 atomic 就万事大吉。
 
-专业的说，它只保证 seq\_cst 类型的内存操作对于所有线程存在全局顺序一致性，但不保证某个操作在这个串行化里排在哪，所以它无法限制并发线程的执行时序交错。详细踩坑可见 three threads with two false 场景（此篇文档按下不表）
+专业的说，它只保证 seq\_cst 类型的内存操作对于所有线程存在全局顺序一致性，但不保证某个操作在这个串行化里排在哪，所以它无法限制并发线程的执行时序交错。详细踩坑可见 three threads with two false 场景（此篇文档按下不表）。
 
 * 另外还有个 `acq_rel`（读改写操作两头都管，如自旋锁内部），知道名字即可。
 
@@ -291,7 +291,7 @@ public:
 
 使用纪律：临界区必须极短、不能有 I/O，否则自旋的线程白烧 CPU；这种场景该用 mutex 让出 CPU。
 
-### 6.5 线程安全单例：mcpp标准答案两步走
+### 6.5 线程安全单例：标准答案两步走
 
 **首选：Meyers 单例**（C++11 起标准保证局部 static 初始化线程安全，一行搞定）：
 
@@ -361,7 +361,4 @@ if (p == nullptr) {
 如果面试官聊到无锁容器/无锁栈，记住一个关键词就够了——**ABA 问题**：CAS 只比较"值一样"，不比较"历史"，地址被 A→B→A 折腾过之后 CAS 会误判"没变过"；工业界的解法是给指针带版本号或延迟内存回收。被问到时答出"知道有这回事 + 关键词"，比硬撑着展开要稳。
 
 > 参考：[cppreference - std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic)、《C++ Concurrency in Action》第 5 章
-
-
-
 
