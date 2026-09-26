@@ -81,6 +81,17 @@ const github = "https://github.com/Mixt170";
             <div><dt>最后更新时间</dt><dd data-si-updated data-latest={latest || undefined}>{latest ? humanAgo(daysSince(latest)) : "—"}</dd></div>
           </dl>
         </section>
+
+        <!-- 公告栏（写作台「个人设置」维护，author.notice 留空即整卡隐藏） -->
+        {author.notice && (
+          <section class="side-card notice-board">
+            <h2 class="side-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-7v18L3 15v-4z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+              公告
+            </h2>
+            <p class="notice-text">{author.notice}</p>
+          </section>
+        )}
       </aside>
 
       <div class="home-main">

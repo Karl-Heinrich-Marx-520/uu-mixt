@@ -305,3 +305,16 @@ body.entry-has-bg .entry-links a:hover { color: var(--accent-deep); }
 body.entry-has-bg { background: transparent; }
 body.entry-has-bg .entry-bg,
 body.entry-has-bg .entry-veil { display: block; }
+
+/* ---------- 公告栏（面首页侧栏，网站信息下方；author.notice 非空才渲染） ---------- */
+.notice-board .side-title svg { width: 17px; height: 17px; color: var(--accent-deep); }
+.notice-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--text-2);
+  white-space: pre-line;          /* 作者在写作台手写的换行原样呈现 */
+  word-break: break-word;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent-soft, var(--accent-border));
+}

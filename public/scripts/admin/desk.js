@@ -620,6 +620,7 @@
     state.authorSha = r ? r.sha : null;
     $("#s-bio").value = state.author.bio || "";
     $("#s-tags").value = (state.author.tags || []).join(", ");
+    $("#s-notice").value = state.author.notice || "";
     $("#s-stack").value = (state.author.stack || []).join(", ");
     renderDoingRows(state.author.doing || []);
     syncBioCount();
@@ -637,12 +638,14 @@
     if (doing.list.length > 8) { msg(out, "「在做什么」最多 8 条（当前 " + doing.list.length + "）。"); return; }
     var stack = $("#s-stack").value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
     if (stack.length > 15) { msg(out, "技术栈最多 15 个（当前 " + stack.length + "）。"); return; }
+    var notice = $("#s-notice").value.trim();
+    if (notice.length > 150) { msg(out, "公告不超过 150 字（当前 " + notice.length + "）。"); return; }
     try {
       msg(out, "正在提交到仓库…");
-      var text = JSON.stringify({ bio: bio, tags: tags, doing: doing.list, stack: stack }, null, 2) + "\n";
+      var text = JSON.stringify({ bio: bio, notice: notice, tags: tags, doing: doing.list, stack: stack }, null, 2) + "\n";
       var r = await GH.writeFile(AUTHOR_FILE, text, "config(" + FACE + "): 更新个人设置", state.authorSha);
       state.authorSha = (r && r.content && r.content.sha) || state.authorSha;
-      state.author = { bio: bio, tags: tags, doing: doing.list, stack: stack };
+      state.author = { bio: bio, notice: notice, tags: tags, doing: doing.list, stack: stack };
       renderDoingRows(doing.list);   /* 回写规范化结果（全空行被丢弃） */
       msg(out, "已提交进仓库 → 上线请点侧边菜单的「构建发布」按钮（约 1-2 分钟前台更新）。");
     } catch (e) {

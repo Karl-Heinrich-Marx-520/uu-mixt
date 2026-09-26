@@ -300,6 +300,10 @@ import "../../styles/admin.css";
               <input id="s-tags" type="text" placeholder="例如：C++ 后端, 网络编程, 科研复现">
             </div>
             <div class="admin-field">
+              <label for="s-notice">首页公告（展示在面首页侧栏「网站信息」下方，≤ 150 字，留空即隐藏公告栏）</label>
+              <textarea id="s-notice" rows="3" maxlength="150" placeholder="例如：博客已全站 HTTPS 上线，欢迎体验新功能～（可换行）"></textarea>
+            </div>
+            <div class="admin-field">
               <label>在做什么（作者页「在做什么」区块，≤ 8 条，小标题与描述要成对填写）</label>
               <div data-doing-list></div>
               <button type="button" class="admin-btn admin-btn--ghost" data-action="add-doing" style="margin-top:8px">+ 添加一条</button>
@@ -348,6 +352,6 @@ import "../../styles/admin.css";
 
   <script is:inline src="/scripts/core.js"></script>
   <script is:inline src="/scripts/admin/server.js?v=4"></script>
-  <script is:inline src="/scripts/admin/desk.js?v=10"></script>
+  <script is:inline src="/scripts/admin/desk.js?v=11"></script>
 </body>
 </html>
