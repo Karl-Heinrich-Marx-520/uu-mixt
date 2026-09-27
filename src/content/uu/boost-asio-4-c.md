@@ -746,6 +746,3 @@ vcpkg 依赖：`boost-asio`、`boost-endian`、`boost-uuid`（三者均 header-o
 
 自测路径：启动服务后，用任意 TCP 客户端连接 10086，发送一帧 `id=1001`、data 为 `{"id":1001,"data":"hello"}` 的 JSON（按本篇帧格式封包），应收到 `server has received msg: hello` 的回包；Ctrl+C 后观察日志中各线程依次退出。
 
-
-
-
