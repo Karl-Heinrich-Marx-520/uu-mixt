@@ -7,7 +7,7 @@ author: uu
 category: C++
 tags: [C++, 网络编程, 异步编程, 并发]
 featured: false
-draft: true
+draft: false
 ---
 # Boost.Asio学习（4）：实现一个现代 C++ 风格的完备服务器
 
@@ -752,4 +752,5 @@ target_compile_features(server PRIVATE cxx_std_20)
 ```
 
 自测路径：启动服务后，用任意 TCP 客户端连接 10086，发送一帧 `id=1001`、data 为 `{"id":1001,"data":"hello"}` 的 JSON（按本篇帧格式封包），应收到 `server has received msg: hello` 的回包；Ctrl+C 后观察日志中各线程依次退出。
+
 
