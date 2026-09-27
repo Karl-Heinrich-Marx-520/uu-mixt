@@ -742,16 +742,10 @@ int main() {
 
 ## 构建
 
-vcpkg 依赖：`boost-asio`、`boost-endian`、`boost-uuid`（三者均 header-only）、`nlohmann-json`，C++20 编译。`CMakeLists.txt` 关键行：
-
-```cmake
-find_package(Boost CONFIG REQUIRED)            # vcpkg: boost-asio / boost-endian / boost-uuid
-find_package(nlohmann_json CONFIG REQUIRED)
-target_link_libraries(server PRIVATE Boost::headers nlohmann_json::nlohmann_json)
-target_compile_features(server PRIVATE cxx_std_20)
-```
+vcpkg 依赖：`boost-asio`、`boost-endian`、`boost-uuid`（三者均 header-only）、`nlohmann-json`，C++20 编译。
 
 自测路径：启动服务后，用任意 TCP 客户端连接 10086，发送一帧 `id=1001`、data 为 `{"id":1001,"data":"hello"}` 的 JSON（按本篇帧格式封包），应收到 `server has received msg: hello` 的回包；Ctrl+C 后观察日志中各线程依次退出。
+
 
 
 
