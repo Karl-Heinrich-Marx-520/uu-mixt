@@ -117,6 +117,12 @@ func (g *GitStore) RemoveCategory(face, name, msg string) (int, string, error) {
 	newCats := append(cats[:idx:idx], cats[idx+1:]...)
 	newCats, _ = seedFallback(newCats)
 
+	/* 把删减后的配置写回工作树（此前漏写：配置文件从未变更，git add 无差异，
+	   commit 落入 "nothing to commit" 返回空串，表现为「删除后分类原样回来」） */
+	if err := os.WriteFile(cfgPath, marshalCategories(newCats), 0o644); err != nil {
+		return 0, "", err
+	}
+
 	// 级联：本人面文章里 category == name 的行改为「未分类」
 	touched := []string{cfgRel}
 	changed := 0
