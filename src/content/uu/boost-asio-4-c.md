@@ -4,7 +4,7 @@ slug: boost-asio-4-c
 description: "在 Boost.Asio 异步读写基础上补齐粘包处理、发送队列、逻辑线程解耦与 io_context 多线程执行，并用 strand 保证会话回调串行、信号实现优雅退出。"
 date: 2026-09-27
 author: uu
-category: C++
+category: Boost.Asio
 tags: [C++, 网络编程, 异步编程, 并发]
 featured: false
 draft: false
@@ -752,5 +752,6 @@ target_compile_features(server PRIVATE cxx_std_20)
 ```
 
 自测路径：启动服务后，用任意 TCP 客户端连接 10086，发送一帧 `id=1001`、data 为 `{"id":1001,"data":"hello"}` 的 JSON（按本篇帧格式封包），应收到 `server has received msg: hello` 的回包；Ctrl+C 后观察日志中各线程依次退出。
+
 
 
