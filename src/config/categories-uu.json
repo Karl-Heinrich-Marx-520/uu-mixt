@@ -6,8 +6,8 @@
   },
   {
     "slug": "network-programming",
-    "name": "网络编程",
-    "desc": "从内核到用户态的网络栈拆解：epoll、三次握手、accept 全路径。"
+    "name": "Boost.Asio",
+    "desc": "Boost.Asio 学习笔记"
   },
   {
     "slug": "research",
