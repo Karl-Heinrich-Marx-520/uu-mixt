@@ -7,7 +7,7 @@ author: uu
 category: Boost.Asio
 tags: [C++, 网络编程, 异步编程, Boost.Asio]
 featured: false
-draft: true
+draft: false
 ---
 # Boost.Asio学习（1）：基础的客户端服务器
 
@@ -254,4 +254,5 @@ client: Sent 11 bytes
 ```
 
 服务器处理完这一个连接后正常退出（同步模型一次只服务一个连接，多连接留到第 4 篇）。
+
 
