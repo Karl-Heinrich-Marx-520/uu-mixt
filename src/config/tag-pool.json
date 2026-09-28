@@ -18,5 +18,6 @@
   "mp_",
   "ret2dir",
   "堆喷",
-  "nokaslr"
+  "nokaslr",
+  "Boost.Asio"
 ]
