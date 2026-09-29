@@ -9,8 +9,6 @@ tags: [C++, 网络编程, Boost.Asio, 异步编程]
 featured: false
 draft: false
 ---
-# Boost.Asio学习（2）：同步读写
-
 第 1 篇我们已经能让客户端发一条、服务器回一条。本篇把同步收发的 API 讲全：发送的 `send` / `write_some` / `write`，接收的 `receive` / `read_some` / `read`，以及它们共同依赖的 `asio::buffer`。读完你会知道：**六个函数各管什么、返回值怎么读、对端关闭怎么判断**。
 
 ## buffer：收发的内存视图
@@ -267,5 +265,6 @@ client2: Sent 1000 bytes
 ```
 
 服务端"Echoed 1000 bytes"证明 1000 字节被 256 的小缓冲分块读齐；客户端的 `matches` 证明 `read` 原样拼回了完整消息。TCP 没有消息边界——想按"条"收发，需要自己定协议，第 4 篇从粘包问题讲起。
+
 
 
