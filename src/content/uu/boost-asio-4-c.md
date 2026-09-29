@@ -5,7 +5,7 @@ description: "在 Boost.Asio 异步读写基础上补齐粘包处理、发送队
 date: 2026-09-27
 author: uu
 category: Boost.Asio
-tags: [C++, 网络编程, 异步编程, 并发]
+tags: [C++, 网络编程, 异步编程, Boost.Asio]
 featured: false
 draft: false
 ---
@@ -745,4 +745,5 @@ int main() {
 vcpkg 依赖：`boost-asio`、`boost-endian`、`boost-uuid`（三者均 header-only）、`nlohmann-json`，C++20 编译。
 
 自测路径：启动服务后，用任意 TCP 客户端连接 10086，发送一帧 `id=1001`、data 为 `{"id":1001,"data":"hello"}` 的 JSON（按本篇帧格式封包），应收到 `server has received msg: hello` 的回包；Ctrl+C 后观察日志中各线程依次退出。
+
 
