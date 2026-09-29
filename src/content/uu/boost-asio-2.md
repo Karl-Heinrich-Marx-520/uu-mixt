@@ -7,7 +7,7 @@ author: uu
 category: C++
 tags: [C++, 网络编程, Boost.Asio, 异步编程]
 featured: false
-draft: true
+draft: false
 ---
 # Boost.Asio学习（2）：同步读写
 
@@ -267,4 +267,5 @@ client2: Sent 1000 bytes
 ```
 
 服务端"Echoed 1000 bytes"证明 1000 字节被 256 的小缓冲分块读齐；客户端的 `matches` 证明 `read` 原样拼回了完整消息。TCP 没有消息边界——想按"条"收发，需要自己定协议，第 4 篇从粘包问题讲起。
+
 
