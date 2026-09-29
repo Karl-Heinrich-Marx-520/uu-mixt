@@ -9,8 +9,6 @@ tags: [C++, 网络编程, 异步编程, Boost.Asio]
 featured: false
 draft: false
 ---
-# Boost.Asio学习（1）：基础的客户端服务器
-
 学习 Asio 之前，建议先熟悉 Linux 下的 socket 套接字编程，对 C 风格的网络 API 有一手体感。本篇用 Asio 建立最基本的服务器与客户端模型，并介绍几个核心类：`endpoint`、`socket`、`acceptor`。全文为同步（阻塞）模型，异步读写留到第 3 篇。
 
 ## 服务器
@@ -254,5 +252,6 @@ client: Sent 11 bytes
 ```
 
 服务器处理完这一个连接后正常退出（同步模型一次只服务一个连接，多连接留到第 4 篇）。
+
 
 
