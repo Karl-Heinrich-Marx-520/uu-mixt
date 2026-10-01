@@ -259,4 +259,113 @@ int main(void){
 
 * 结构体`tty_struct`位于`include/linux/tty.h`中，`tty_operations`位于`include/linux/tty_driver.h`中
 
+```c
+struct tty_struct {
+	int	magic;    //0
+	struct kref kref; //0x4
+	struct device *dev;     //0x8
+	struct tty_driver *driver;    //0x10
+	const struct tty_operations *ops;  //0x18
+	int index;
+
+	/* Protects ldisc changes: Lock tty not pty */
+	struct ld_semaphore ldisc_sem;
+	struct tty_ldisc *ldisc;
+
+	struct mutex atomic_write_lock;
+	struct mutex legacy_mutex;
+	struct mutex throttle_mutex;
+	struct rw_semaphore termios_rwsem;
+	struct mutex winsize_mutex;
+	spinlock_t ctrl_lock;
+	spinlock_t flow_lock;
+	/* Termios values are protected by the termios rwsem */
+	struct ktermios termios, termios_locked;
+	struct termiox *termiox;	/* May be NULL for unsupported */
+	char name[64];
+	struct pid *pgrp;		/* Protected by ctrl lock */
+	struct pid *session;
+	unsigned long flags;
+	int count;
+	struct winsize winsize;		/* winsize_mutex */
+	unsigned long stopped:1,	/* flow_lock */
+		      flow_stopped:1,
+		      unused:BITS_PER_LONG - 2;
+	int hw_stopped;
+	unsigned long ctrl_status:8,	/* ctrl_lock */
+		      packet:1,
+		      unused_ctrl:BITS_PER_LONG - 9;
+	unsigned int receive_room;	/* Bytes free for queue */
+	int flow_change;
+
+	struct tty_struct *link;
+	struct fasync_struct *fasync;
+	int alt_speed;		/* For magic substitution of 38400 bps */
+	wait_queue_head_t write_wait;
+	wait_queue_head_t read_wait;
+	struct work_struct hangup_work;
+	void *disc_data;
+	void *driver_data;
+	struct list_head tty_files;
+
+#define N_TTY_BUF_SIZE 4096
+
+	int closing;
+	unsigned char *write_buf;
+	int write_cnt;
+	/* If the tty has a pending do_SAK, queue it here - akpm */
+	struct work_struct SAK_work;
+	struct tty_port *port;
+};
+```
+
+> 所以ops在tty_struct[3]
+
+```c
+struct tty_operations {
+    struct tty_struct *(*lookup)(struct tty_driver *driver,
+                                 struct inode *inode, int idx);           // 0x00
+    int (*install)(struct tty_driver *driver, struct tty_struct *tty);    // 0x08
+    void (*remove)(struct tty_driver *driver, struct tty_struct *tty);    // 0x10
+    int (*open)(struct tty_struct *tty, struct file *filp);               // 0x18
+    void (*close)(struct tty_struct *tty, struct file *filp);             // 0x20
+    void (*shutdown)(struct tty_struct *tty);                             // 0x28
+    void (*cleanup)(struct tty_struct *tty);                              // 0x30
+    int (*write)(struct tty_struct *tty,
+                 const unsigned char *buf, int count);                    // 0x38
+    int (*put_char)(struct tty_struct *tty, unsigned char ch);            // 0x40
+    void (*flush_chars)(struct tty_struct *tty);                          // 0x48
+    int (*write_room)(struct tty_struct *tty);                            // 0x50
+    int (*chars_in_buffer)(struct tty_struct *tty);                       // 0x58
+    int (*ioctl)(struct tty_struct *tty,
+                 unsigned int cmd, unsigned long arg);                    // 0x60
+    long (*compat_ioctl)(struct tty_struct *tty,
+                         unsigned int cmd, unsigned long arg);            // 0x68
+    void (*set_termios)(struct tty_struct *tty, struct ktermios *old);    // 0x70
+    void (*throttle)(struct tty_struct *tty);                             // 0x78
+    void (*unthrottle)(struct tty_struct *tty);                           // 0x80
+    void (*stop)(struct tty_struct *tty);                                 // 0x88
+    void (*start)(struct tty_struct *tty);                                // 0x90
+    void (*hangup)(struct tty_struct *tty);                               // 0x98
+    int (*break_ctl)(struct tty_struct *tty, int state);                  // 0xA0
+    void (*flush_buffer)(struct tty_struct *tty);                         // 0xA8
+    void (*set_ldisc)(struct tty_struct *tty);                            // 0xB0
+    void (*wait_until_sent)(struct tty_struct *tty, int timeout);         // 0xB8
+    void (*send_xchar)(struct tty_struct *tty, char ch);                  // 0xC0
+    int (*tiocmget)(struct tty_struct *tty);                              // 0xC8
+    int (*tiocmset)(struct tty_struct *tty,
+                    unsigned int set, unsigned int clear);                // 0xD0
+    int (*resize)(struct tty_struct *tty, struct winsize *ws);            // 0xD8
+    int (*set_termiox)(struct tty_struct *tty, struct termiox *tnew);     // 0xE0
+    int (*get_icount)(struct tty_struct *tty,
+                      struct serial_icounter_struct *icount);             // 0xE8
+    int (*show_fdinfo)(struct tty_struct *tty, struct seq_file *m);       // 0xF0
+#ifdef CONFIG_CONSOLE_POLL
+    int (*poll_init)(struct tty_driver *driver, int line, char *options); // 0xF8
+    int (*poll_get_char)(struct tty_driver *driver, int line);            // 0x100
+    void (*poll_put_char)(struct tty_driver *driver, int line, char ch);  // 0x108
+#endif
+};
+```
+
 
