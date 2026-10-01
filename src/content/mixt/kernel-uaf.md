@@ -132,7 +132,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
   利用fd2改写tty_struct的ops，相当于得到执行一次gadget的机会
 
-* 因为没有开启SMAP，所以可以在栈上布置`rop`和 `fake_ops`
+* 因为没有开启SMAP，所以可以在用户栈上布置`rop`和 `fake_ops`
 
 * 栈迁移选择的gadget是`0xffffffff8181bfc5 : mov rsp, rax ; dec ebx ; jmp 0xffffffff8181bf7e`
 
@@ -363,6 +363,7 @@ struct tty_operations {
 #endif
 };
 ```
+
 
 
 
