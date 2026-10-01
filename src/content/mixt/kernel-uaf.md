@@ -7,7 +7,7 @@ author: mixt
 category: linux kernel pwn
 tags: [UAF, kernel pwn]
 featured: false
-draft: true
+draft: false
 ---
 # Use After Free
 
@@ -367,6 +367,7 @@ struct tty_operations {
 #endif
 };
 ```
+
 
 
 
