@@ -9,6 +9,11 @@ tags: [UAF, kernel pwn]
 featured: false
 draft: true
 ---
-
 # Use After Free
+
+## 一. UAF：悬空指针利用
+
+* 内核分配的对象地址由内核管理，用户态一般来说拿不到直接指针
+
+* 
 
