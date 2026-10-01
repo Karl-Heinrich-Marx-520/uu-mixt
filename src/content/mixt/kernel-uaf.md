@@ -370,7 +370,8 @@ struct tty_operations {
 
 但由于新版本的内核常常开启`KPTI`保护，内核页表的用户地址空间无执行权限
 
-传统的 ret2usr 和“把 ROP 链放用户栈”的 SMEP/SMAP bypass 失效，与之伴生的bypass-smep也随之失效。
+传统的 ret2usr 失效，与之伴生的bypass-smep也随之失效
+
 
 
 
