@@ -368,7 +368,10 @@ struct tty_operations {
 
 `CR4`寄存器用以控制`CPU`的各种特性，CPU根据`CR4`寄存器的第20位判断是否开启SMEP保护
 
-但由于新版本的内核常常开启`KPTI`保护，KPTI 让内核页表不再映射用户空间，因此内核态无法直接执行或读写用户空间代码/数据。传统的 ret2usr 和“把 ROP 链放用户栈”的 SMEP/SMAP bypass 失效，与之伴生的bypass-smep也随之失效。
+但由于新版本的内核常常开启`KPTI`保护，内核页表的用户地址空间无执行权限
+
+传统的 ret2usr 和“把 ROP 链放用户栈”的 SMEP/SMAP bypass 失效，与之伴生的bypass-smep也随之失效。
+
 
 
 
