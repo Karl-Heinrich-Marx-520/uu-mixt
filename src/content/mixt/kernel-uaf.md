@@ -84,12 +84,6 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 .text:000000000000016F
 ```
 
-`mov     filp, buffer`将用户缓冲区设为`rdi`
-
-`mov     buffer, cs:babydev_struct.device_buf`将该`chunk`设为`copy_to_user`的`rsi`
-
-是把`copy to user`的rdi设为chunk，虽然IDA里没有表示出`copy to user`的参数，还是可以在汇编里面看到
-
 `rcx`对应的`offset`并没有任何调用，只是一个摆设
 
 `length`被限制小于全局变量`device_buf_len`，不存在溢出风险
@@ -143,16 +137,6 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
   利用fd2改写tty_struct的ops，相当于得到执行一次gadget的机会
 
 * 因为没有开启SMAP，所以可以在栈上布置`rop`和 `fake_ops`
-
-  > SMAP只会影响内核对用户的读写权限，并不会影响设备内置的`copy_to_user`读取内核操作
-  >
-  > 而如果开启了SMAP，真正会崩溃的是`write(fd3,buf,8)`操作
-  >
-  > 因为write(fd2)会把`fake_ops`写入`tty_struct`，这不受影响
-  >
-  > 但`write(fd3)`，会顺用户态的`fake_ops`找指针，是无效的，所以如果开启了SMAP，只能把`fake_ops`放置到内核内存区域
-  >
-  > 而rop的执行依赖fake_ops的栈迁移，其中ret操作会从用户栈[rsp]读数据，但是执行`fake_ops`关掉`SMEP`的同时也关掉`SMAP`不就行了
 
 * 栈迁移选择的gadget是`0xffffffff8181bfc5 : mov rsp, rax ; dec ebx ; jmp 0xffffffff8181bf7e`
 
@@ -264,4 +248,15 @@ int main(void){
     return 0;
 }
 ```
+
+#### 四.说明
+
+##### `tty_struct`
+
+* `tty_struct`内部包含一个`const struct tty_operations *ops`指针，这个`ops`指针指向一个函数表，当用户对TTY设备执行`read，write，ioctl`等操作时，内核会通过这个指针调用响应的函数  
+
+* `/dev`下有一个伪终端设备`ptmx`，每调用一次`open("/dev/ptmx")`都可以分配一次`tty_struct`对象  
+
+* 结构体`tty_struct`位于`include/linux/tty.h`中，`tty_operations`位于`include/linux/tty_driver.h`中
+
 
