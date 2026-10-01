@@ -34,9 +34,9 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 > 内核版本为4.4.72
 
-##### babyreads
+##### babyread
 
-![babyread](D:/blog/babyread.png)
+![babyread](/images/mixt/babyread.png)
 
 ```asm
 .text:0000000000000130 ; =============== S U B R O U T I N E =======================================
@@ -92,13 +92,13 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 ##### babywrite
 
-![babywrite](D:/blog/babywrite.png)
+![babywrite](/images/mixt/babywrite.png)
 
 ---
 
 ##### babyopen
 
-![babyopen](D:/blog/babyopen.png)
+![babyopen](/images/mixt/babyopen.png)
 
 每次打开`/dev/babydev`都会分配一个`chunk`存到全局变量`babydev_struct`中
 
@@ -112,7 +112,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 ##### babyicocl
 
-![babyioctl](D:/blog/babyioctl.png)
+![babyioctl](/images/mixt/babyioctl.png)
 
 重新申请内存，chunk大小由用户控制
 
@@ -120,7 +120,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 ##### babyrelease
 
-![babyrelease](D:/blog/babyrelease.png)
+![babyrelease](/images/mixt/babyrelease.png)
 
 在关闭设备文件时会释放该chunk，但由于没用置空指针，存在UAF漏洞
 
@@ -140,7 +140,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 * 栈迁移选择的gadget是`0xffffffff8181bfc5 : mov rsp, rax ; dec ebx ; jmp 0xffffffff8181bf7e`
 
-  ![gadgets](D:/blog/gadgets.png)
+  ![gadgets](/images/mixt/gadgets.png)
 
   在跳到`fake_ops`的时候 ,`rax`为`fake_ops[0]`
 
@@ -367,5 +367,6 @@ struct tty_operations {
 #endif
 };
 ```
+
 
 
