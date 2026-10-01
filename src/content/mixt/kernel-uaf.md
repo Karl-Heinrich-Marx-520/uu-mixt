@@ -23,8 +23,6 @@ draft: false
 
 ## 二. 例：[CISCN-2017]babydriver
 
-### 一. 逆向分析
-
 ```sh
 mixt@mixt-VMware-Virtual-Platform:~/pwn$ strings vmlinux | grep -i 'Linux version'
 Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.4) ) #1 SMP Thu Jun 15 19:52:50 PDT 2017
@@ -32,7 +30,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 > 内核版本为4.4.72
 
-#### babyread
+### babyread
 
 ![babyread](/images/mixt/babyread.png)
 
@@ -88,13 +86,13 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 ---
 
-#### babywrite
+### babywrite
 
 ![babywrite](/images/mixt/babywrite.png)
 
 ---
 
-#### babyopen
+### babyopen
 
 ![babyopen](/images/mixt/babyopen.png)
 
@@ -108,7 +106,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 ---
 
-#### babyicocl
+### babyicocl
 
 ![babyioctl](/images/mixt/babyioctl.png)
 
@@ -116,7 +114,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 ---
 
-#### babyrelease
+### babyrelease
 
 ![babyrelease](/images/mixt/babyrelease.png)
 
@@ -124,7 +122,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 ---
 
-### 二.利用思路
+## 三.利用思路
 
 * 由于堆的指针存在全局变量中，所有fd都可以共享该指针，用fd1，fd2同时打开设备，关闭fd1，会得到一个指向空闲对象的指针
 
@@ -150,7 +148,7 @@ Linux version 4.4.72 (atum@ubuntu) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ub
 
 ---
 
-### 三.Exploit
+## 四.Exploit
 
 ```c
 #include<stdio.h>
@@ -247,9 +245,9 @@ int main(void){
 }
 ```
 
-### 四.说明
+## 五.说明
 
-#### `tty_struct`
+### `tty_struct`
 
 * `tty_struct`内部包含一个`const struct tty_operations *ops`指针，这个`ops`指针指向一个函数表，当用户对TTY设备执行`read，write，ioctl`等操作时，内核会通过这个指针调用响应的函数  
 
@@ -365,6 +363,7 @@ struct tty_operations {
 #endif
 };
 ```
+
 
 
 
