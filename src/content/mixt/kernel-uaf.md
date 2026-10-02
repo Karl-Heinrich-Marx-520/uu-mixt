@@ -372,7 +372,7 @@ struct tty_operations {
 
 传统的 ret2usr 失效，与之伴生的bypass-smep也随之失效
 
-而本题不用`bypass-smep`，直接在栈上走ROP也是可以的
+而本题不用`bypass-smep`，直接在栈上走提权ROP也是可以的
 
 只是佬这么用了，我就跟着用了
 
@@ -391,6 +391,7 @@ struct tty_operations {
 ```
 
 感谢佬https://arttnba3.cn/2021/03/03/PWN-0X00-LINUX-KERNEL-PWN-PART-I/
+
 
 
 
