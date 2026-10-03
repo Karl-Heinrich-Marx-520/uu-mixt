@@ -35,8 +35,7 @@ mixt@mixt-VMware-Virtual-Platform:~/pwn$ seccomp-tools dump ./service
 
 
 
-
-![image-20261003215942325](C:\Users\10935\AppData\Roaming\Typora\typora-user-images\image-20261003215942325.png)
+![gunmu](/images/mixt/gunmu.png)
 
 本题感觉挺有意思的，因为当你想看伪代码的时候，你会发现里面是棍木
 
@@ -381,6 +380,7 @@ tcachebins
  63 io.interactive()
 
 ```
+
 
 
 
