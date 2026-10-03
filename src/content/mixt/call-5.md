@@ -242,7 +242,7 @@ mixt@mixt-VMware-Virtual-Platform:~/pwn$ seccomp-tools dump ./service
 当`ptr`存在时，假设`ptr`指向的`chunk1 = 0xa0`
 
 * `realloc(chunk1,0x20)`，会直接切割`chunk1`，得到`chunk2 = 0x30，chunk3 = 0x70`，并释放`chunk3`
-* `realloc(chunk1,0xb0)`，会分配`chunk2 = 0xb0`，释放`chunk1`，但这时`realloc`不会取`tcache`找`chunk2`
+* `realloc(chunk1,0xb0)`，会分配`chunk2 = 0xb0`，释放`chunk1`，但这时`realloc`不会去`tcache`找`chunk2`
 
 ---
 
@@ -382,6 +382,7 @@ tcachebins
 ```
 
 题目链接：https://www.nssctf.cn/problem/635
+
 
 
 
