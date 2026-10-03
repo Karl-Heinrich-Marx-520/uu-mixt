@@ -120,7 +120,7 @@ mixt@mixt-VMware-Virtual-Platform:~/pwn$ seccomp-tools dump ./service
 
 逆向的时候会发现隐藏选项3（刷新回答，程序会再次问你有女友吗，使用次数为1）
 
-和隐藏选项4（把`chunk0`作为`rdi`并`puts`），以下是选项4的汇编
+和隐藏选项4（把`chunk0`作为`rdi`并`puts`，使用次数为1），以下是选项4的汇编
 
 ```asm
 .text:0000000000000CE8
@@ -382,6 +382,7 @@ tcachebins
 ```
 
 题目链接：https://www.nssctf.cn/problem/635
+
 
 
 
