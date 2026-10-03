@@ -37,7 +37,7 @@ mixt@mixt-VMware-Virtual-Platform:~/pwn$ seccomp-tools dump ./service
 
 ![gunmu](/images/mixt/gunmu.png)
 
-本题感觉挺有意思的，因为当你想看伪代码的时候，你会发现里面是**     **
+本题感觉挺有意思的，因为当你想看伪代码的时候，你会发现里面是**                                                  **
 
 怎么做到的呢？原来它通过
 
@@ -380,6 +380,7 @@ tcachebins
  63 io.interactive()
 
 ```
+
 
 
 
