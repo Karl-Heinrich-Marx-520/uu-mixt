@@ -8,6 +8,7 @@ import { render } from "astro:content";
 import Layout from "../../../components/Layout.astro";
 import { published, categories, type Face } from "../../../lib/content-layer";
 import { charCount, readMinutes, formatWords, formatDate } from "../../../lib/format";
+import "../../../styles/reading.css";
 import categoriesUU from "../../../config/categories-uu.json";
 import categoriesMixt from "../../../config/categories-mixt.json";
 
@@ -64,7 +65,7 @@ const publishedISO = d.date instanceof Date ? d.date.toISOString() : String(d.da
   ogImage={ogImage}
   publishedTime={publishedISO}
   bodyClass="article-page"
-  scripts={["/scripts/article.js?v=4"]}
+  scripts={["/scripts/article.js?v=4", "/scripts/reading.js?v=1"]}
 >
   <Fragment slot="nav">
     <a href={`/${face}/`}>首页</a>
