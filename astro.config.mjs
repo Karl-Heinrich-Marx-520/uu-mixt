@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import rehypeLazyImg from './scripts/rehype-lazy-img.mjs';
+import rehypeWrapTable from './scripts/rehype-table-wrap.mjs';
 
 // UU&Mixt · Astro 配置
 // 说明：纯静态输出；无框架集成、无 SSR。
@@ -24,7 +25,7 @@ export default defineConfig({
   markdown: {
     /* 正文图片补 loading="lazy" + decoding="async"（零依赖，见 scripts/rehype-lazy-img.mjs）。
        只影响 Markdown 里的 ![]()，不碰页面手写的头像 <img>。 */
-    rehypePlugins: [rehypeLazyImg],
+    rehypePlugins: [rehypeLazyImg, rehypeWrapTable],
     shikiConfig: {
       theme: 'css-variables',
       // 保留 Shiki 的逐行 span（.line → 由 rehype 插件改名为 .cl，供行号 CSS 使用）

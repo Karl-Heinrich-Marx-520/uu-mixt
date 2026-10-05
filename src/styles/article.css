@@ -391,7 +391,12 @@ body.is-resizing { cursor: col-resize; user-select: none; }
 /* 正文里的宽元素不许撑破版面：图片自适应；表格、代码块、十六进制长串各自内部横向滚动 */
 .prose { overflow-wrap: break-word; }
 .prose img { max-width: 100%; height: auto; }
-.prose table { display: block; width: max-content; max-width: 100%; overflow-x: auto; }
+/* 表格：滚动容器在外层（rehype-table-wrap 注入 .table-wrap），table 本身保持
+   display:table —— 历史上图省事写过 display:block（本项目 admin.css 与本站此前的
+   窄屏规则都吃过这个亏），那会抹掉表格语义与列对齐。 */
+.table-wrap { max-width: 100%; overflow-x: auto; margin: 14px 0; }
+.table-wrap:focus-visible { outline: 2px solid var(--accent-border, var(--border-strong)); outline-offset: 2px; }
+.prose table { width: 100%; border-collapse: collapse; }
 
 /* Shiki（css-variables 主题）：Astro 输出的 token span 引用的是
    --astro-code-token-* 前缀（不是 --shiki-*，此前写错前缀导致整套配色
