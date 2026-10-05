@@ -131,8 +131,14 @@ const publishedISO = d.date instanceof Date ? d.date.toISOString() : String(d.da
 
       {headings.length > 0 && (
         <aside class="toc">
-          <div class="toc-title">目录</div>
-          <nav>
+          <div class="toc-head">
+            <div class="toc-title">目录</div>
+            <button class="toc-toggle" type="button" data-action="toc-toggle" aria-expanded="true" aria-controls="toc-nav">
+              <span data-label>收起</span>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <nav id="toc-nav">
             {headings.filter((h) => h.depth === 2 || h.depth === 3).map((h) => (
               <a href={`#${h.slug}`} class={h.depth === 3 ? "toc-sub" : undefined}>{h.text}</a>
             ))}
@@ -141,4 +147,26 @@ const publishedISO = d.date instanceof Date ? d.date.toISOString() : String(d.da
       )}
     </div>
   </div>
+  {/* 窄屏目录折叠：<860px 默认收起，避免目录把正文挤出视口（2026-10-06 修复 P0）。
+      脚本只有几行且与样式同页交付，放在体内避免再发一个请求。 */}
+  <script is:inline>
+    (function () {
+      var toc = document.querySelector(".article-layout .toc");
+      var btn = toc && toc.querySelector('[data-action="toc-toggle"]');
+      var nav = toc && toc.querySelector("#toc-nav");
+      if (!btn || !nav) return;
+      var label = btn.querySelector("[data-label]");
+      var narrow = function () { return window.matchMedia("(max-width: 860px)").matches; };
+      var set = function (open) {
+        nav.hidden = !open;
+        btn.setAttribute("aria-expanded", String(open));
+        if (label) label.textContent = open ? "收起" : "展开";
+        toc.classList.toggle("is-collapsed", !open);
+      };
+      var syncViewport = function () { set(!narrow()); };
+      syncViewport();
+      btn.addEventListener("click", function () { set(btn.getAttribute("aria-expanded") !== "true"); });
+      window.addEventListener("resize", syncViewport);
+    })();
+  </script>
 </Layout>

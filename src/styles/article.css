@@ -353,6 +353,46 @@ body.is-resizing { cursor: col-resize; user-select: none; }
   .article-page .article-layout > article { padding: 22px 18px 20px; }
 }
 
+/* ---------- 窄屏重排（2026-10-06 修复 P0） ----------
+   背景：桌面 .article-layout 是 [正文 | 220px 目录] 双列，而此前的窄屏断点只改了
+   内边距与拖宽热区，**没有动网格**。实测 375px 视口下：目录仍占 220px、gap 46px，
+   正文被压到 38px 宽，图片实测宽度 0，整页横向溢出到 450px。
+   修法：≤860px 改单列；目录移到正文上方并默认折叠（保留原有的跟随高亮）。 */
+.toc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.toc-toggle {
+  display: none;                /* 桌面恒展开，不需要按钮 */
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.toc-toggle:hover { color: var(--accent-deep); border-color: var(--accent-border); }
+.toc nav[hidden] { display: none; }
+@media (max-width: 860px) {
+  .article-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .toc {
+    position: static;           /* sticky 在单列里会把标题栏压住 */
+    max-height: none;
+    order: -1;                  /* 目录在正文上方；已是 DOM 顺序首位，写在这里防回归 */
+    border-left: none;
+    padding-left: 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+  }
+  .toc-toggle { display: inline-flex; }
+  .toc nav { max-height: 44vh; }
+}
+/* 正文里的宽元素不许撑破版面：图片自适应；表格、代码块、十六进制长串各自内部横向滚动 */
+.prose { overflow-wrap: break-word; }
+.prose img { max-width: 100%; height: auto; }
+.prose table { display: block; width: max-content; max-width: 100%; overflow-x: auto; }
+
 /* Shiki（css-variables 主题）：Astro 输出的 token span 引用的是
    --astro-code-token-* 前缀（不是 --shiki-*，此前写错前缀导致整套配色
    从未生效）。token 色全部走 --cb-tok-* 局部变量，亮/暗两套 GitHub Primer
