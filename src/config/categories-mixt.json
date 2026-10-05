@@ -13,5 +13,10 @@
     "slug": "cat-20260918-7nyj",
     "name": "无",
     "desc": ""
+  },
+  {
+    "slug": "cve",
+    "name": "CVE",
+    "desc": ""
   }
 ]
