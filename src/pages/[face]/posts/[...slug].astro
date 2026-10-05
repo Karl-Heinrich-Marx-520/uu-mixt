@@ -47,6 +47,11 @@ const next = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
 const { Content, headings } = await render(post);
 /* 分享用的正式地址（面路由） */
 const canonical = new URL(`/${face}/posts/${d.slug}/`, Astro.site).href;
+/* 社交分享图：取正文第一张图当封面（PWN 文章的截图正是最有辨识度的封面），
+   正文无图则由 Layout 回退到 /og-default.jpg */
+const ogImage = (post.body ?? "").match(/!\[[^\]]*\]\(\s*([^)\s]+)/)?.[1];
+/* og:type=article 需 ISO 时间；frontmatter 的 date 被 Astro 解析为 Date */
+const publishedISO = d.date instanceof Date ? d.date.toISOString() : String(d.date ?? "");
 ---
 
 <Layout
@@ -54,6 +59,10 @@ const canonical = new URL(`/${face}/posts/${d.slug}/`, Astro.site).href;
   flipTo={`/${me.other}/`}
   title={`${d.title} · ${me.name} 的文章 · UU&Mixt`}
   description={d.description}
+  canonical={canonical}
+  ogType="article"
+  ogImage={ogImage}
+  publishedTime={publishedISO}
   bodyClass="article-page"
   scripts={["/scripts/article.js?v=4"]}
 >

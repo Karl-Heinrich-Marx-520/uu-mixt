@@ -28,6 +28,16 @@ interface Props {
   scripts?: string[];
   /** 页面主体是否自带 .page 容器（文章页用 .article-page） */
   bodyClass?: string;
+  /** 社交分享图（相对/绝对均可）。不传则回退 /og-default.jpg */
+  ogImage?: string;
+  /** og:type —— 内容页传 "article"，其余默认 "website" */
+  ogType?: "website" | "article";
+  /** 文章发布时间（ISO 字符串），ogType="article" 时输出 */
+  publishedTime?: string;
+  /** 覆盖 canonical 路径；默认取当前路径 */
+  canonical?: string;
+  /** 管理入口与空壳页（如搜索页）传 true，避免被搜索引擎收录 */
+  noindex?: boolean;
 }
 
 const {
@@ -39,9 +49,20 @@ const {
   defaultMode = "dark",
   scripts = [],
   bodyClass = "",
+  ogImage,
+  ogType = "website",
+  publishedTime,
+  canonical,
+  noindex = false,
 } = Astro.props;
 const otherFace = face === "uu" ? "mixt" : "uu";
 const bodyClasses = [hasHero ? "has-hero" : "", bodyClass].filter(Boolean).join(" ");
+
+/* 社交分享与规范链接：全部用绝对地址（分享抓取器不解析相对路径）。
+   站点根取 astro.config.mjs 的 site，兜底写死域名。 */
+const SITE_ROOT = (Astro.site?.href || "https://uuandmixt.com/").replace(/\/$/, "");
+const canonicalURL = new URL(canonical || Astro.url.pathname, SITE_ROOT).href;
+const ogImageURL = new URL(ogImage || "/og-default.jpg", SITE_ROOT).href;
 ---
 <!DOCTYPE html>
 <html lang="zh-CN" data-mode={defaultMode} data-default-mode={defaultMode}>
@@ -51,6 +72,27 @@ const bodyClasses = [hasHero ? "has-hero" : "", bodyClass].filter(Boolean).join(
   <title>{title}</title>
   <link rel="icon" type="image/png" href="/favicon.png?v=1">
   {description && <meta name="description" content={description}>}
+  {noindex && <meta name="robots" content="noindex, follow">}
+  {/* 规范链接：避免带/不带尾斜杠被搜索引擎算作重复页（trailingSlash: always） */}
+  <link rel="canonical" href={canonicalURL}>
+  {/* 社交分享卡片（微信 / QQ / Twitter / Discord 抓取用）。此前全站缺失，
+      分享出去只有一条光秃链接，没有任何标题与缩略图 */}
+  <meta property="og:type" content={ogType}>
+  <meta property="og:site_name" content="UU&Mixt">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content={title}>
+  {description && <meta property="og:description" content={description}>}
+  <meta property="og:url" content={canonicalURL}>
+  <meta property="og:image" content={ogImageURL}>
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  {ogType === "article" && publishedTime && (
+    <meta property="article:published_time" content={publishedTime}>
+  )}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={title}>
+  {description && <meta name="twitter:description" content={description}>}
+  <meta name="twitter:image" content={ogImageURL}>
   {hasHero && <link rel="preload" as="image" href={`/assets/bg/bg-${face}.jpg`}>}
   {/* RSS 自动发现（PRD 5.4）：面页给该面的 feed，共享页给全站合流 feed */}
   <link
