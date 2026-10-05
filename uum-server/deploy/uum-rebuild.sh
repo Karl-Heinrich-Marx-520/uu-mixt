@@ -60,6 +60,15 @@ while :; do
   rm -rf node_modules/.astro
   if npm run build >>"$LOG" 2>&1 && [ -d dist ]; then
     if node scripts/check-pages.mjs >>"$LOG" 2>&1; then
+      # 图片压缩是"可选优化"：sharp 缺失时脚本会打印警告但仍退出 0，以免一个优化
+      # 把发布卡住。代价是它可能静默不生效（2026-10-06 实测：npm audit fix --omit=dev
+      # 剪掉了 dev 依赖 sharp，构建照常成功、图片却全未压缩，且没人看得见）。
+      # 这里加一道兜底检查：产物里只要还有超过 PRD 单图 400KB 红线的图片就写进日志
+      # ——不阻断发布，但运维在日志里一定看得到。
+      BIG=$(find dist -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' \) -size +400k -print -quit 2>/dev/null)
+      if [ -n "$BIG" ]; then
+        log "WARN: 产物存在 >400KB 的图（如 $BIG）——图片压缩可能未生效，请检查 sharp 是否已安装（npm ls sharp）"
+      fi
       if rsync -a --delete dist/ "$DIST/"; then
         log "rebuild OK -> $DIST"
       else
