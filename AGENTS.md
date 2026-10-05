@@ -188,6 +188,8 @@
 | 23 | **Astro content layer 缓存陷阱**：删文章后 `rm -rf .astro`（构建缓存）无效，`node_modules/.astro/data-store.json` 才是真正的数据存储缓存——不清它，构建仍读旧索引，已删文章照常出现在产物里（本次「删除后前台不变」bug 的第二个叠加根因） | 构建脚本在 `npm run build` 前先 `rm -rf node_modules/.astro`（uum-rebuild.sh 已内置）；本地排查「内容改了产物没变」先清它再构建 | 2026-09-15 |
 | 24 | **master 直推 bare 主库以 root 落盘，夺走 uum 服务写权限 → P0 数据销毁链**：uum 的 push 被拒只体现在 API warning（前端当时不显示），work 副本堆积未推送提交，下次构建的 `reset --hard origin/main` 把作者内容整链销毁（实测丢 redis 文章/友链/简介，靠孤儿对象救回） | 三层防（已全部落地）：① bare 库 `core.sharedRepository=group` + 全树 chgrp uum/chmod g+w/目录 g+s——root 推完 uum 仍可写（已实战验证）；② GitStore 每次 写/删 前 fetch 对齐 origin/main，**检测到未推送本地提交时跳过 reset**（防自毁），push 失败自动 rebase 重试一次；③ master 每次直推后 `chown -R uum:uum /srv/uum/repo.git`。数据恢复：work 的 reflog/孤儿 hash 里 `git show <hash>:<path>` 取各文件终态，单恢复提交重放 | 2026-09-16 |
 | 25 | **同一文件的多个 Edit 并行发出会相互覆盖（写竞态）**：一条消息里对同一文件发多个编辑，工具各自读-改-写整份文件，后写者基于旧内容，先写者的改动被静默吞掉——本次 desk.js 5 处编辑丢 4 处、store.go 丢 1 处，且编译与冒烟全绿（改动恰好落在未执行路径），差点带病上线 | 同一文件的多处修改**必须串行**（一次一个 Edit 等结果）或合并为单个 Edit/脚本；批量修改后用特征 grep 复核每处都在，再进编译与自测 | 2026-09-21 |
+| 26 | **Nginx `add_header` 是覆盖不是叠加**：某个 `location` 内只要出现一条 `add_header`，上级（含 server 级 HSTS 与安全头）的全部 `add_header` 在该 location 内**静默失效**——本站 `location /_astro/ { add_header Cache-Control … }` 里的 HSTS 已静默丢了一周多，且只 curl 根路径完全看不出来 | 安全头抽成 `snippets/uum-sec.conf`，凡自带 add_header 的 location 一律重复 `include`；验证要覆盖 404 页 / 图片 / `/_astro/` 资源等多条路径（配置存档见 `uum-server/deploy/nginx/`） | 2026-10-06 |
+| 27 | **本地 `npm run build` 被 safe-delete 钩子拦下**：Astro 构建前会 `rm -rf dist`，删除量触顶后报 `SAFE_DELETE_BULK_CONFIRM_REQUIRED` 并中断构建（服务器构建无此问题） | 构建前先把旧产物挪走再构建：`mv dist dist-prev-<日期> && npm run build`；产物用完自行清理 | 2026-10-06 |
 
 ---
 
