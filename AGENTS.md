@@ -190,6 +190,10 @@
 | 25 | **同一文件的多个 Edit 并行发出会相互覆盖（写竞态）**：一条消息里对同一文件发多个编辑，工具各自读-改-写整份文件，后写者基于旧内容，先写者的改动被静默吞掉——本次 desk.js 5 处编辑丢 4 处、store.go 丢 1 处，且编译与冒烟全绿（改动恰好落在未执行路径），差点带病上线 | 同一文件的多处修改**必须串行**（一次一个 Edit 等结果）或合并为单个 Edit/脚本；批量修改后用特征 grep 复核每处都在，再进编译与自测 | 2026-09-21 |
 | 26 | **Nginx `add_header` 是覆盖不是叠加**：某个 `location` 内只要出现一条 `add_header`，上级（含 server 级 HSTS 与安全头）的全部 `add_header` 在该 location 内**静默失效**——本站 `location /_astro/ { add_header Cache-Control … }` 里的 HSTS 已静默丢了一周多，且只 curl 根路径完全看不出来 | 安全头抽成 `snippets/uum-sec.conf`，凡自带 add_header 的 location 一律重复 `include`；验证要覆盖 404 页 / 图片 / `/_astro/` 资源等多条路径（配置存档见 `uum-server/deploy/nginx/`） | 2026-10-06 |
 | 27 | **本地 `npm run build` 被 safe-delete 钩子拦下**：Astro 构建前会 `rm -rf dist`，删除量触顶后报 `SAFE_DELETE_BULK_CONFIRM_REQUIRED` 并中断构建（服务器构建无此问题） | 构建前先把旧产物挪走再构建：`mv dist dist-prev-<日期> && npm run build`；产物用完自行清理 | 2026-10-06 |
+| 28 | **给表格加横向滚动时不要改 table 的 display**：`.prose table{display:block}` 会抹掉表格语义（AT 不再读作 table）并丢列对齐——本项目 `admin.css` 里就留着这条历史教训 | 滚动容器做在**外层**：rehype 插件给 `<table>` 套 `.table-wrap{overflow-x:auto}`，table 保持 `display:table`。借用 rehype-table-wrap.mjs 的模式，零依赖 20 行 | 2026-10-06 |
+| 29 | **构建期依赖没有写进 package.json 就等于没有**：sharp 只在 package-lock 里出现、package.json 未声明时，`npm install` 会把它当多余依赖处理掉；而压缩脚本为了不阻断构建是「sharp 缺失 → 打印警告并跳过」——结果就是**静态图悄悄回到未压缩状态且无人报警** | 脚本用到的依赖必须显式声明（devDependencies）；同理：任何"优化类"步骤都不要让它有能力静默失败后还说成功，至少要有可见日志 | 2026-10-06 |
+| 30 | **本机跑不了 `npm audit`**：npmjs 经本机代理报 `Hostname/IP does not match certificate's altnames`，npmmirror 不支持 `/-/npm/v1/security/*` 端点 | 依赖安全审计**到服务器上跑**（直连可达）；不确定的升级（尤其 major）先查本站是否真用到相关代码路径再决定 | 2026-10-06 |
+| 31 | **服务器上 `npm audit fix --omit=dev` 会顺手剪掉 dev 依赖**：2026-10-06 实测把 sharp 从 `node_modules` 移除，而图片压缩脚本是「sharp 缺失 → 打印警告并跳过，不阻断构建」，于是**构建照常成功、图片却全未压缩，且没人看得见**（dist 悄悄回到 5.4MB） | ① 服务器上修依赖**不要带 `--omit=dev`**；② 修完立刻跑一次 rebuild，确认日志里有 compress-images 的压缩摘要；③ uum-rebuild.sh 已加兜底：产物中出现 >400KB 的图片就写 WARN 日志。教训：任何"为了不卡住发布而静默跳过"的优化步骤，都必须配一道**事后可见**的检查 | 2026-10-06 |
 
 ---
 
