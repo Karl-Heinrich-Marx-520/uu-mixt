@@ -26,5 +26,6 @@
   "UAF",
   "kernel pwn",
   "CVE",
-  "Linux kernel"
+  "Linux kernel",
+  "条件竞争"
 ]
