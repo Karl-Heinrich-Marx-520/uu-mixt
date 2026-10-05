@@ -1,0 +1,69 @@
+---
+/**
+ * 站点数据页（PRD 开放项 E7）—— 构建期算好，静态输出，无服务端、无统计脚本。
+ * 展示：篇数与双面分布、总字数与阅读时长、分类与标签数、最近更新。
+ * 为什么 diese 数据有用而不是虚荣指标：两位作者各自更新查名称。
+ */
+import Layout from "../components/Layout.astro";
+import "../styles/content-org.css";
+import { published, categories, tags } from "../lib/content-layer";
+import { charCount, readMinutes, formatWords, formatDate } from "../lib/format";
+
+const uuPosts = await published("uu");
+const mixtPosts = await published("mixt");
+const all = [...uuPosts, ...mixtPosts];
+
+const wordsOf = (body?: string) => charCount(body ?? "");
+const uuWords = uuPosts.reduce((n, p) => n + wordsOf(p.body), 0);
+const mixtWords = mixtPosts.reduce((n, p) => n + wordsOf(p.body), 0);
+const totalWords = uuWords + mixtWords;
+const total = all.length;
+
+const pct = (n: number) => (total ? Math.round((n / total) * 100) : 0);
+
+const allTags = await tags();
+const catCount = categories("uu").length + categories("mixt").length;
+
+const latest = [...all].sort((a, b) => +b.data.date - +a.data.date)[0] ?? null;
+const first = [...all].sort((a, b) => +a.data.date - +b.data.date)[0] ?? null;
+---
+
+<Layout
+  face="shared"
+  title="站点数据 · UU&Mixt"
+  description="UU&Mixt 的双面内容统计：文章篇数、字数与阅读时长、分类与标签数、最近更新时间。全部在构建期算出。"
+>
+  <h1 style="font-size:1.5rem;margin:6px 0 4px">站点数据</h1>
+  <p class="stats-note" style="margin:0 0 18px">
+    全部由构建期算出，不含任何访问统计与第三方脚本。
+  </p>
+
+  <div class="stats-grid">
+    <div class="stat-card"><b>{total}</b><span>篇文章</span></div>
+    <div class="stat-card"><b>{formatWords(totalWords)}</b><span>字（约 {readMinutes(totalWords)} 分钟读完）</span></div>
+    <div class="stat-card"><b>{catCount}</b><span>个分类</span></div>
+    <div class="stat-card"><b>{allTags.length}</b><span>个共享标签</span></div>
+  </div>
+
+  <section class="stats-section">
+    <h2>两位作者的占比</h2>
+    <div class="stats-bar" role="img" aria-label={`UU ${uuPosts.length} 篇 / Mixt ${mixtPosts.length} 篇`}>
+      <i class="uu" style={`width:${pct(uuPosts.length)}%`}></i>
+      <i class="mixt" style={`width:${pct(mixtPosts.length)}%`}></i>
+    </div>
+    <p class="stats-legend">
+      <span><em>UU</em> {uuPosts.length} 篇（{pct(uuPosts.length)}%）· {formatWords(uuWords)} 字</span>
+      <span><em>Mixt</em> {mixtPosts.length} 篇（{pct(mixtPosts.length)}%）· {formatWords(mixtWords)} 字</span>
+    </p>
+  </section>
+
+  <section class="stats-section">
+    <h2>时间</h2>
+    <p class="stats-legend">
+      <span>首篇发布：<em>{first ? formatDate(first.data.date) : "—"}</em></span>
+      <span>最近更新：<em>{latest ? `${formatDate(latest.data.date)}（${latest.data.author === "uu" ? "UU" : "Mixt"} · ${latest.data.title}）` : "—"}</em></span>
+    </p>
+  </section>
+
+  <p class="stats-note">数据随每次「构建发布」刷新。</p>
+</Layout>

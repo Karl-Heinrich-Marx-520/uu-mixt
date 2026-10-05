@@ -1,0 +1,92 @@
+/* content-org.css —— 内容组织增强：文末同分类推荐 + 站点数据页（2026-10-06）
+   只在对应页面里 import，不进全站公用 CSS。 */
+
+/* ---------- 文末同分类推荐 ---------- */
+.related {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.related-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-2);
+  margin: 0 0 12px;
+}
+.related-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.related-list a {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s, 8px);
+  background: var(--surface-2);
+  text-decoration: none;
+  color: var(--text-1);
+  transition: border-color var(--t-fast, 160ms) ease, color var(--t-fast, 160ms) ease;
+}
+.related-list a:hover {
+  border-color: var(--accent-border, var(--border-strong));
+  color: var(--accent-deep, var(--text-1));
+}
+.related-name { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.related-meta { flex: none; font-size: 0.78rem; color: var(--text-3); }
+
+/* ---------- 站点数据页（PRD E7） ---------- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 18px 0 26px;
+}
+.stat-card {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m, 14px);
+  background: var(--surface);
+}
+.stat-card b {
+  display: block;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  color: var(--text-1);
+}
+.stat-card span {
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+.stats-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-soft);
+  margin: 6px 0 8px;
+}
+.stats-bar i { display: block; height: 100%; }
+.stats-bar .uu { background: #ef9f27; }
+.stats-bar .mixt { background: #378add; }
+.stats-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  margin: 0 0 22px;
+}
+.stats-legend em { font-style: normal; font-weight: 500; color: var(--text-1); }
+.stats-section { margin: 26px 0 0; }
+.stats-section h2 { font-size: 1rem; margin: 0 0 10px; color: var(--text-1); }
+.stats-note { font-size: 0.8rem; color: var(--text-3); margin-top: 24px; }
+@media (max-width: 640px) {
+  .related-list a { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .related-name { white-space: normal; }
+}

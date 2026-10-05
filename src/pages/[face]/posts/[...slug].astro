@@ -9,6 +9,7 @@ import Layout from "../../../components/Layout.astro";
 import { published, categories, type Face } from "../../../lib/content-layer";
 import { charCount, readMinutes, formatWords, formatDate } from "../../../lib/format";
 import "../../../styles/reading.css";
+import "../../../styles/content-org.css";
 import categoriesUU from "../../../config/categories-uu.json";
 import categoriesMixt from "../../../config/categories-mixt.json";
 
@@ -43,6 +44,12 @@ const list = await published(face as Face);
 const idx = list.findIndex((p) => p.data.slug === d.slug);
 const prev = idx > 0 ? list[idx - 1] : null;
 const next = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
+
+/* 同分类推荐（最多 3 篇，排除自身）：上下篇解决「相邻」，同专题才是读者真正想去的下一跳。
+   构建期取同面同分类的最新几篇，作者什么都不用做。 */
+const related = d.category
+  ? list.filter((p) => p.data.slug !== d.slug && p.data.category === d.category).slice(0, 3)
+  : [];
 
 /* 目录：从渲染后的正文标题生成（与 demo 的 h2/h3 目录一致） */
 const { Content, headings } = await render(post);
@@ -128,6 +135,24 @@ const publishedISO = d.date instanceof Date ? d.date.toISOString() : String(d.da
             <a class="next" href={`/${face}/posts/${next.data.slug}/`}><span>下一篇</span><b>{next.data.title}</b></a>
           ) : <span />}
         </nav>
+
+        {/* 同分类推荐（最多 3 篇）：上下篇只解决「相邻」，同专题才是读者真正想要的下一跳。
+            构建期取同面同分类的最新几篇，作者什么都不用做。 */}
+        {related.length > 0 && (
+          <section class="related" aria-label="同一分类的更多文章">
+            <h2 class="related-title">同属「{d.category}」</h2>
+            <ul class="related-list">
+              {related.map((p) => (
+                <li>
+                  <a href={`/${face}/posts/${p.data.slug}/`}>
+                    <span class="related-name">{p.data.title}</span>
+                    <span class="related-meta">{formatDate(p.data.date)}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </article>
 
       {headings.length > 0 && (
