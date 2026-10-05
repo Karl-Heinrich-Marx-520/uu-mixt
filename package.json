@@ -6,7 +6,7 @@
   "description": "UU&Mixt —— 双作者双面技术博客（Astro 静态站）",
   "scripts": {
     "dev": "node node_modules/astro/astro.js dev",
-    "build": "node node_modules/astro/astro.js build",
+    "build": "node node_modules/astro/astro.js build && node scripts/compress-dist-images.mjs",
     "preview": "node node_modules/astro/astro.js preview"
   },
   "dependencies": {
