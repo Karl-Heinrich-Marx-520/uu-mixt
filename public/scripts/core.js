@@ -8,11 +8,17 @@
   "use strict";
   var doc = document;
 
-  /* ---------- 明暗模式（localStorage 持久化；支持页级默认主题） ---------- */
-  var pageDefault = doc.documentElement.dataset.defaultMode || "dark";
-  var savedMode = pageDefault;
-  try { savedMode = localStorage.getItem("uum-mode") || pageDefault; } catch (e) {}
-  doc.documentElement.dataset.mode = savedMode;
+  /* ---------- 明暗模式（localStorage 持久化；首帧由 head 内联脚本定调） ----------
+     取值优先级：用户显式选择 > 页面的 data-mode-lock（写作台写死自己的主题）
+     > 系统偏好 prefers-color-scheme > 兜底 dark。
+     此前兜底是 data-default-mode（全站硬编码 dark），结果两套色板里的浅色几乎
+     没人能用；而且这里的赋值发生在 body 末尾，比首帧晚，会造成「深色闪一下再变
+     浅色」——head 里的内联引导脚本已经提前定好，这里只负责同步与后续切换。 */
+  var lock = doc.documentElement.dataset.modeLock || "";
+  var savedMode = "";
+  try { savedMode = localStorage.getItem("uum-mode") || ""; } catch (e) {}
+  var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+  doc.documentElement.dataset.mode = savedMode || lock || (prefersLight ? "light" : "dark");
 
   doc.addEventListener("click", function (e) {
     var btn = e.target.closest('[data-action="toggle-mode"]');

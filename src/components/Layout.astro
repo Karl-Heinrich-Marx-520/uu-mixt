@@ -70,6 +70,26 @@ const ogImageURL = new URL(ogImage || "/og-default.jpg", SITE_ROOT).href;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
+  {/* 明暗模式引导（必须在 CSS 与 body 之前同步执行）：core.js 挂在 body 末尾，
+      等它读到 localStorage 时首帧已经按默认深色画完了，切到浅色会闪一下。
+      这里提前定调；首次访问（无存储）跟随系统偏好——此前默认写死 dark，
+      导致 tokens.css 里那套浅色主题基本没人能用到。 */}
+  <script is:inline>
+    (function () {
+      try {
+        var saved = localStorage.getItem("uum-mode");
+        var lock = document.documentElement.dataset.modeLock || "";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        var mode = saved || lock || (prefersLight ? "light" : "dark");
+        document.documentElement.setAttribute("data-mode", mode);
+        /* 移动端浏览器地址栏跟着走（取值对应 tokens.css 的 --bg） */
+        var meta = document.createElement("meta");
+        meta.name = "theme-color";
+        meta.content = mode === "light" ? "#f5f6f8" : "#0d121d";
+        document.head.appendChild(meta);
+      } catch (e) {}
+    })();
+  </script>
   <link rel="icon" type="image/png" href="/favicon.png?v=1">
   {description && <meta name="description" content={description}>}
   {noindex && <meta name="robots" content="noindex, follow">}
