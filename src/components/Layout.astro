@@ -222,12 +222,21 @@ const ogImageURL = new URL(ogImage || "/og-default.jpg", SITE_ROOT).href;
   </button>
 
   <script is:inline src="/scripts/core.js"></script>
-  <script is:inline src="/scripts/flip.js"></script>
+  {/* flip.js 只在需要翻面的页面加载：它管的是卡牌翻转的翻出/翻入与触屏滑动，
+      而 /stats/ /search/ /about/ 这类共享页根本没有 flipTo，加载它就是白下载 */}
+  {flipTo && <script is:inline src="/scripts/flip.js"></script>}
   {scripts.map((src) => <script is:inline src={src}></script>)}
   <!-- 站点鼠标样式图集 + 藤蔓点击效果（demo 定稿 2026-09-22）：非关键路径，defer 加载 -->
   <script is:inline src="/scripts/cursors.js?v=1" defer></script>
   <script is:inline src="/scripts/vine.js?v=1" defer></script>
-  <!-- 桌宠小鹿（PRD E1）：非关键路径，defer 加载，不占首屏 JS 预算 -->
-  <script is:inline src="/scripts/pet.js?v=3" defer></script>
+  <!-- 桌宠小鹿（PRD E1）：全站最大的脚本（33KB / gzip 13.6KB），原本 defer 仍会在
+       首屏阶段下载并解析。改成 window load 之后再注入——桌宠本就不该和正文抢带宽。 -->
+  <script is:inline>
+    window.addEventListener("load", function () {
+      var s = document.createElement("script");
+      s.src = "/scripts/pet.js?v=3";
+      document.body.appendChild(s);
+    });
+  </script>
 </body>
 </html>

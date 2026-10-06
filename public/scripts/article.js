@@ -168,16 +168,23 @@
       });
     });
 
+    /* 标题距文档顶部的距离缓存起来：此前每帧对每个标题 getBoundingClientRect()，
+       69 条目录就是每帧 69 次强制读布局。判定语义完全不变（仍是"越过 25% 线"），
+       只是把布局读取从"每帧"降到"布局真的变化时"——换 IntersectionObserver 会
+       改变判定语义，那需要重新在真机上调高亮位置，不适合在没有浏览器的环境里改。 */
+    var tops = [];
+    function measure() {
+      tops = tocHeads.map(function (h) { return h.getBoundingClientRect().top + window.scrollY; });
+    }
     var tocTicking = false;
     function tocTrack() {
       tocTicking = false;
       var line = window.scrollY + window.innerHeight * 0.25;
-      var current = tocHeads.length ? tocHeads[0] : null;
-      for (var i = 0; i < tocHeads.length; i++) {
-        var top = tocHeads[i].getBoundingClientRect().top + window.scrollY;
-        if (top <= line) current = tocHeads[i];
+      var current = tocHeads.length ? 0 : -1;
+      for (var i = 0; i < tops.length; i++) {
+        if (tops[i] <= line) current = i;
       }
-      if (current) setActive(current.id);
+      if (current >= 0) setActive(tocHeads[current].id);
     }
     window.addEventListener("scroll", function () {
       if (!tocTicking) {
@@ -185,6 +192,16 @@
         requestAnimationFrame(tocTrack);
       }
     }, { passive: true });
+    /* 布局变化的三个时机都要重算：视口变化、图片/字体加载完（懒加载图片撑开正文）、
+       代码块折叠展开——否则缓存会带着旧位置算错当前节。 */
+    window.addEventListener("resize", function () { measure(); tocTrack(); }, { passive: true });
+    window.addEventListener("load", function () { measure(); tocTrack(); });
+    doc.addEventListener("click", function (e) {
+      if (e.target.closest('[data-action="fold-code"]')) {
+        setTimeout(function () { measure(); tocTrack(); }, 0);
+      }
+    });
+    measure();
     tocTrack();
   }
 
