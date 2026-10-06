@@ -149,6 +149,16 @@ export async function validateContent(): Promise<void> {
   /* 先做文件层 slug 冲突扫描（集合读取会静默覆盖，晚做就抓不到了） */
   for (const face of faces) scanSlugConflicts(face, errors);
 
+  /* 已发布文章的 slug 索引：**每面只取一次集合**。
+     此前死链检测是「每遇到一条站内链接就 getCollection() 全量取一次集合」，
+     成本是 O(链接数 × 文章数) 的重复解析；这里摊平成一次建表 + O(1) 查询。 */
+  const publishedSlugs: Record<Face, Set<string>> = { uu: new Set(), mixt: new Set() };
+  for (const face of faces) {
+    for (const entry of await getCollection(face)) {
+      if (!entry.data.draft) publishedSlugs[face].add(entry.data.slug);
+    }
+  }
+
   for (const face of faces) {
     const entries = await getCollection(face);
     const registered = CATEGORY_CONFIG[face].map((c) => c.name);
@@ -192,10 +202,8 @@ export async function validateContent(): Promise<void> {
         for (const link of internalLinks(entry.body ?? '')) {
           const targetFace = link.startsWith('/uu/') ? 'uu' : 'mixt';
           const targetSlug = link.split('/posts/')[1]?.replace(/\/$/, '');
-          const target = (await getCollection(targetFace as Face)).find(
-            ({ data }) => data.slug === targetSlug && !data.draft
-          );
-          if (!target) {
+          /* 查预建的 slug 表：语义与原先一致（slug 匹配且目标已发布） */
+          if (!publishedSlugs[targetFace as Face].has(targetSlug)) {
             errors.push(
               `[内容校验失败] ${file} · 正文站内链接死链 · 「${link}」 · 期望：指向一篇已发布文章（目标不存在或为草稿）`
             );
@@ -224,5 +232,16 @@ export async function validateContent(): Promise<void> {
   }
 }
 
-/* 模块加载即校验：任何页面构建时导入本模块都会先跑校验，失败即构建失败 */
-await validateContent();
+let validation: Promise<void> | null = null;
+
+/** 幂等的校验入口：同一构建内被 import 多次只跑一次，也便于将来显式调用 */
+export function ensureContentValid(): Promise<void> {
+  if (!validation) validation = validateContent();
+  return validation;
+}
+
+/* 模块加载即校验：任何页面构建时导入本模块都会先跑校验，失败即构建失败。
+   **保留这个副作用是有意的**——它是「内容门禁不会被忘记跑」的唯一保证；
+   外置成显式调用后一旦漏在构建脚本之外，就是静默失去校验，而这类失败最难发现。
+   这里只加幂等：同一个 promise，避免被多个页面导入时重复全量扫描。 */
+await ensureContentValid();

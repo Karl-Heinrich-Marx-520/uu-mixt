@@ -45,10 +45,11 @@ async function shrink(buf, ext) {
   // 逐档降质量/降宽度，第一档满足红线即返回；全档失败返回最小的一档
   const isPng = ext === '.png';
   let best = null;
+  /* metadata 只解码一次：此前写在档位循环里，每张图最多重复解码 9 次 */
+  const meta = await sharp(buf).metadata();
   for (const width of [MAX_WIDTH, 1280, 1000]) {
     for (const q of isPng ? [85, 70, 55] : [82, 72, 62]) {
       let pipe = sharp(buf, { animated: false }).rotate(); // rotate() 吃 EXIF 方向
-      const meta = await sharp(buf).metadata();
       if (meta.width && meta.width > width) pipe = pipe.resize({ width, withoutEnlargement: true });
       const out = await (isPng
         ? pipe.png({ quality: q, compressionLevel: 9, palette: true })
