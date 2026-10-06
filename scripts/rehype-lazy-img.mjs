@@ -13,17 +13,27 @@
  */
 export default function rehypeLazyImg() {
   return function transformer(tree) {
-    walk(tree);
+    /* 正文第一张图多半落在首屏：给它套 lazy 反而会拖慢 LCP（浏览器要先等布局
+       判断它是否在视口内）。所以第一张走 eager + 高优先级，其余照旧懒加载。 */
+    walk(tree, { seen: 0 });
   };
 }
 
-function walk(node) {
+function walk(node, state) {
   if (!node || typeof node !== "object") return;
-  if (Array.isArray(node.children)) node.children.forEach(walk);
+  if (Array.isArray(node.children)) {
+    node.children.forEach(function (child) { walk(child, state); });
+  }
   if (node.type !== "element" || node.tagName !== "img") return;
 
   node.properties = node.properties || {};
-  /* 已有的显式声明优先（作者想要 eager 时不覆盖） */
-  if (!("loading" in node.properties)) node.properties.loading = "lazy";
+  /* 已有的显式声明优先（作者想要别的策略时不覆盖） */
+  if (state.seen === 0) {
+    if (!("loading" in node.properties)) node.properties.loading = "eager";
+    if (!("fetchPriority" in node.properties)) node.properties.fetchPriority = "high";
+  } else if (!("loading" in node.properties)) {
+    node.properties.loading = "lazy";
+  }
   if (!("decoding" in node.properties)) node.properties.decoding = "async";
+  state.seen++;
 }

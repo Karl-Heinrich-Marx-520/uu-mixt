@@ -45,10 +45,31 @@
   }
   window.uumToast = toast;
 
-  /* ---------- 回到顶部 ---------- */
+  /* ---------- 回到顶部 ----------
+     此前只有点击处理，没有任何代码给按钮加 .show —— 而 shell.css 里按钮默认是
+     opacity:0 + visibility:hidden，于是这个按钮从建成起就没露过面（滚动多深都不出现）。
+     这里补上"滚动超过约一屏才显示"，默认态仍然是不显示。 */
+  (function () {
+    var btn = doc.querySelector('[data-action="back-top"]');
+    if (!btn) return;
+    var ticking = false;
+    function update() {
+      ticking = false;
+      btn.classList.toggle("show", window.pageYOffset > window.innerHeight * 0.8);
+    }
+    window.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    }, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    update();
+  })();
+
   doc.addEventListener("click", function (e) {
     if (e.target.closest('[data-action="back-top"]')) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
     }
   });
 
