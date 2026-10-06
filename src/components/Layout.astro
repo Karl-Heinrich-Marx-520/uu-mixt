@@ -16,6 +16,7 @@ import "../styles/components.css";
 import "../styles/face.css";
 import "../styles/article.css";
 import "../styles/pet.css";
+import ThemeBoot from "./ThemeBoot.astro";
 
 interface Props {
   face: "uu" | "mixt" | "shared";
@@ -24,7 +25,7 @@ interface Props {
   title: string;
   description?: string;
   defaultMode?: "light" | "dark";
-  /** 额外的页级脚本（如文章页的 article.js） */
+  /** 额外的页级脚本（如文章页的 article-share / article-code / article-view / reading） */
   scripts?: string[];
   /** 页面主体是否自带 .page 容器（文章页用 .article-page） */
   bodyClass?: string;
@@ -70,26 +71,9 @@ const ogImageURL = new URL(ogImage || "/og-default.jpg", SITE_ROOT).href;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
-  {/* 明暗模式引导（必须在 CSS 与 body 之前同步执行）：core.js 挂在 body 末尾，
-      等它读到 localStorage 时首帧已经按默认深色画完了，切到浅色会闪一下。
-      这里提前定调；首次访问（无存储）跟随系统偏好——此前默认写死 dark，
-      导致 tokens.css 里那套浅色主题基本没人能用到。 */}
-  <script is:inline>
-    (function () {
-      try {
-        var saved = localStorage.getItem("uum-mode");
-        var lock = document.documentElement.dataset.modeLock || "";
-        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
-        var mode = saved || lock || (prefersLight ? "light" : "dark");
-        document.documentElement.setAttribute("data-mode", mode);
-        /* 移动端浏览器地址栏跟着走（取值对应 tokens.css 的 --bg） */
-        var meta = document.createElement("meta");
-        meta.name = "theme-color";
-        meta.content = mode === "light" ? "#f5f6f8" : "#0d121d";
-        document.head.appendChild(meta);
-      } catch (e) {}
-    })();
-  </script>
+  {/* 明暗模式引导：抽成 ThemeBoot 组件，入口页共用同一份（入口页不走 Layout，
+      以前两处各写一份，改起来必漏一处） */}
+  <ThemeBoot />
   <link rel="icon" type="image/png" href="/favicon.png?v=1">
   {description && <meta name="description" content={description}>}
   {noindex && <meta name="robots" content="noindex, follow">}
@@ -225,7 +209,9 @@ const ogImageURL = new URL(ogImage || "/og-default.jpg", SITE_ROOT).href;
   {/* flip.js 只在需要翻面的页面加载：它管的是卡牌翻转的翻出/翻入与触屏滑动，
       而 /stats/ /search/ /about/ 这类共享页根本没有 flipTo，加载它就是白下载 */}
   {flipTo && <script is:inline src="/scripts/flip.js"></script>}
-  {scripts.map((src) => <script is:inline src={src}></script>)}
+  {/* 页级脚本一律 defer：文章页拆成 4 个脚本后，同步加载会各自阻塞一次解析。
+      defer 保证 DOM 解析完再按顺序执行，对这几个脚本（都依赖 DOM）语义一致。 */}
+  {scripts.map((src) => <script is:inline src={src} defer></script>)}
   <!-- 站点鼠标样式图集 + 藤蔓点击效果（demo 定稿 2026-09-22）：非关键路径，defer 加载 -->
   <script is:inline src="/scripts/cursors.js?v=1" defer></script>
   <script is:inline src="/scripts/vine.js?v=1" defer></script>

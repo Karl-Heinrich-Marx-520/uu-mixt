@@ -72,7 +72,12 @@ const publishedISO = d.date instanceof Date ? d.date.toISOString() : String(d.da
   ogImage={ogImage}
   publishedTime={publishedISO}
   bodyClass="article-page"
-  scripts={["/scripts/article.js?v=4", "/scripts/reading.js?v=1"]}
+  scripts={[
+    "/scripts/article-share.js?v=1",
+    "/scripts/article-code.js?v=1",
+    "/scripts/article-view.js?v=1",
+    "/scripts/reading.js?v=1",
+  ]}
 >
   <Fragment slot="nav">
     <a href={`/${face}/`}>首页</a>

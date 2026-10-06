@@ -102,6 +102,10 @@
     doc.body.removeChild(ta);
     return ok;
   }
+  /* 复制能力对外暴露：文章页的分享与代码复制各写一份 legacyCopy 的时代结束了，
+     统一走这里（Clipboard API 优先，execCommand 降级）。 */
+  window.uumCopyText = copyText;
+
   doc.addEventListener("click", function (e) {
     var el = e.target.closest('[data-action="copy-mail"]');
     if (!el) return;
