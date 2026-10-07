@@ -17,7 +17,7 @@ const DIST = process.argv[2] || 'dist';
    增长（Mixt 每发一篇带截图的文章就更慢一点）。源图内容没变时直接复用上次结果。
    缓存在 node_modules/.cache 下（不在 dist 里，构建清 dist 不影响；也不在
    .astro 里，清 content 缓存不影响）。改压缩参数时把 CACHE_VERSION 加一即可全部失效。 */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';   /* v2：背景图启用更激进的压缩参数，缓存需全部失效一次 */
 const CACHE_DIR = join('node_modules', '.cache', 'uum-img');
 const MAX_WIDTH = 1600; // 超过则等比缩到该宽（PWN 截图多为 1920 宽终端图）
 const TARGET = 400 * 1024; // PRD 单图红线
@@ -48,14 +48,24 @@ async function walk(dir, out = []) {
 
 const kb = (n) => (n / 1024).toFixed(0) + 'KB';
 
-async function shrink(buf, ext) {
+/* 背景图（assets/bg/*）单独用更激进的参数：它整页铺满、上面压着 veil 遮罩，
+   视觉冗余度高，而它是首屏 preload 的最大资源（2026-10-08：三张 204–362KB）。
+   文章里的技术截图保持原参数——那些是要看清的。 */
+function isBackground(rel) {
+  return /(^|[\\/])assets[\\/]bg[\\/]/.test(rel);
+}
+
+async function shrink(buf, ext, rel) {
   // 逐档降质量/降宽度，第一档满足红线即返回；全档失败返回最小的一档
   const isPng = ext === '.png';
+  const bg = isBackground(rel || '');
   let best = null;
   /* metadata 只解码一次：此前写在档位循环里，每张图最多重复解码 9 次 */
   const meta = await sharp(buf).metadata();
-  for (const width of [MAX_WIDTH, 1280, 1000]) {
-    for (const q of isPng ? [85, 70, 55] : [82, 72, 62]) {
+  const widths = bg ? [1440, 1200] : [MAX_WIDTH, 1280, 1000];
+  const qualities = isPng ? [85, 70, 55] : (bg ? [70, 62] : [82, 72, 62]);
+  for (const width of widths) {
+    for (const q of qualities) {
       let pipe = sharp(buf, { animated: false }).rotate(); // rotate() 吃 EXIF 方向
       if (meta.width && meta.width > width) pipe = pipe.resize({ width, withoutEnlargement: true });
       const out = await (isPng
@@ -99,7 +109,7 @@ for (const f of files) {
   } catch (e) {}   /* 没有缓存或读不到，按未命中处理 */
 
   try {
-    const out = await shrink(src, ext);
+    const out = await shrink(src, ext, f);
     if (out && out.length < src.length) {
       await writeFile(f, out);
       try {
