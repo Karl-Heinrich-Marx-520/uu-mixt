@@ -40,6 +40,27 @@
 .related-name { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .related-meta { flex: none; font-size: 0.78rem; color: var(--text-3); }
 
+/* ---------- 文章页标签入口 ---------- */
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+}
+.article-tags a {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  text-decoration: none;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: color var(--t-fast, 160ms) ease, border-color var(--t-fast, 160ms) ease;
+}
+.article-tags a:hover {
+  color: var(--accent-deep);
+  border-color: var(--accent-border, var(--border-strong));
+}
+
 /* ---------- 站点数据页（PRD E7） ---------- */
 .stats-grid {
   display: grid;

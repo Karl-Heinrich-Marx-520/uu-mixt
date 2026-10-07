@@ -113,6 +113,15 @@ const publishedISO = d.date instanceof Date ? d.date.toISOString() : String(d.da
               分享
             </button>
           </div>
+          {/* 标签：同样的话题要从这里能跳走。此前文章页只有分类徽章，而标签页
+              （/uu/tags/…）早就存在，等于有目的地却没有路标。 */}
+          {d.tags && d.tags.length > 0 && (
+            <div class="article-tags" aria-label="文章标签">
+              {d.tags.map((t) => (
+                <a href={`/${face}/tags/${encodeURIComponent(t)}/`}>#{t}</a>
+              ))}
+            </div>
+          )}
           {d.updated && +d.updated > +d.date && (
             <p class="updated-note">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
