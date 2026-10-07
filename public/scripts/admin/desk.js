@@ -78,6 +78,10 @@
       date: get("date"), author: get("author"), category: get("category"),
       tags: tagsRaw ? tagsRaw.split(",").map(function (t) { return t.trim(); }).filter(Boolean) : [],
       featured: get("featured") === "true", draft: get("draft") === "true",
+      /* updated 此前压根没解析：作者手写的"最后更新"会在写作台保存时被悄悄抹掉
+         （2026-10-07 内容体检时发现——20 篇文章里 0 篇有 updated，而文章页早就
+         写好了"最后更新于"的渲染分支，等于这个功能一直在空转） */
+      updated: get("updated"),
       body: body, sha: null, path: null,
     };
   }
@@ -265,6 +269,19 @@
       body: $("#f-body").value,
     };
     if (!data.slug) data.slug = autoSlugNow();
+    /* 「最后更新于」真正生效：编辑已发布的文章且正文/标题/摘要确有变化时，自动写入
+       今天；没变化就沿用原值（避免把作者手写的 updated 抹掉）。
+       只给已发布文章写——草稿改来改去不该留下更新痕迹。 */
+    if (state.editing) {
+      var before = state.editing;
+      var changed =
+        before.body !== data.body ||
+        before.title !== data.title ||
+        before.description !== data.description;
+      data.updated = changed && !data.draft
+        ? new Date().toISOString().slice(0, 10)
+        : (before.updated || "");
+    }
     /* AI 兜底（决策 7.20）：desc/tags 留空时保存前自动补全——只接管空字段，绝不覆盖已填 */
     if (!data.description || !data.tags.length) {
       msg(out, "AI 正在阅读正文，补全摘要与标签…");
