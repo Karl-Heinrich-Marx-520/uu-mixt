@@ -62,8 +62,13 @@ while :; do
   # ~17s 涨到 ~29s（2026-10-07 实测）。构建时间随文章/图片增长而变长，
   # 这里贡献了最大的一块，所以改成精确清除。
   rm -f node_modules/.astro/data-store.json
+  # 分阶段计时：构建为什么慢、慢在哪一步，日志里要能直接看出来（否则只能猜）
+  T_BUILD=$(date +%s)
   if npm run build >>"$LOG" 2>&1 && [ -d dist ]; then
+    log "构建用时 $(( $(date +%s) - T_BUILD ))s"
+    T_CHK=$(date +%s)
     if node scripts/check-pages.mjs >>"$LOG" 2>&1; then
+      log "自检用时 $(( $(date +%s) - T_CHK ))s"
       # 图片压缩是"可选优化"：sharp 缺失时脚本会打印警告但仍退出 0，以免一个优化
       # 把发布卡住。代价是它可能静默不生效（2026-10-06 实测：npm audit fix --omit=dev
       # 剪掉了 dev 依赖 sharp，构建照常成功、图片却全未压缩，且没人看得见）。
@@ -73,7 +78,9 @@ while :; do
       if [ -n "$BIG" ]; then
         log "WARN: 产物存在 >400KB 的图（如 $BIG）——图片压缩可能未生效，请检查 sharp 是否已安装（npm ls sharp）"
       fi
+      T_SYNC=$(date +%s)
       if rsync -a --delete dist/ "$DIST/"; then
+        log "同步用时 $(( $(date +%s) - T_SYNC ))s"
         log "rebuild OK -> $DIST"
       else
         log "rsync FAILED —— 保留旧 dist"; FAIL=1
