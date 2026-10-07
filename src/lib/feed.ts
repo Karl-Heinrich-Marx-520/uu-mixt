@@ -29,7 +29,9 @@ export async function buildFeed(opts: {
         description: p.data.description,
         pubDate: p.data.date,
         link: `/${face}/posts/${p.data.slug}/`,
-        categories: [p.data.category ?? '', ...(p.data.tags ?? [])].filter(Boolean),
+        /* 分类与标签同名时会重复输出 <category>（线上实测：CVE、linux kernel pwn
+           都各出现了两次）。RSS 阅读器里看着像脏数据，这里去重并保持顺序。 */
+        categories: [...new Set([p.data.category ?? '', ...(p.data.tags ?? [])].filter(Boolean))],
         author: face === 'uu' ? 'UU' : 'Mixt',
       });
     }
