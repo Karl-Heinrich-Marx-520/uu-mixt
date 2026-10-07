@@ -239,6 +239,12 @@
     state.q = params.get("q") || "";
     state.tag = params.get("tag") || "";
     input.value = state.q;
+    /* 桌面端进来就聚焦（搜索页只有一件事可做）；触屏不聚焦——软键盘会先弹出来
+       盖住结果区，反而是干扰。*/
+    var coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    if (!coarse && !state.q) {
+      try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
+    }
     try {
       var res = await fetch("/search-index.json");
       state.index = await res.json();
