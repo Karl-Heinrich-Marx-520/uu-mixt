@@ -813,7 +813,9 @@
   var rebuildBusy = false;
   async function siteRebuild() {
     if (rebuildBusy) return;
-    if (!window.confirm("重新构建并发布前台页面？\n约需 1-2 分钟，期间可以继续写作。")) return;
+    /* 实测（2026-10-07 优化后）：服务器 rebuild 约 17-20 秒。旧文案写"1-2 分钟"是
+       缓存优化前的数字，会让作者以为要等很久而不敢点。 */
+    if (!window.confirm("重新构建并发布前台页面？\n约需 20-40 秒，期间可以继续写作。")) return;
     var btn = $("[data-action='site-rebuild']");
     var out = $("[data-rebuild-msg]");
     var logEl = $("[data-rebuild-log]");
