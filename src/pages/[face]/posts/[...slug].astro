@@ -38,6 +38,9 @@ const other = AUTHOR[me.other as Face];
 /* 本面分类配置（空配置面不显示分类标签，PRD 3.5） */
 const cats = face === "uu" ? categoriesUU : categoriesMixt;
 const showCategory = cats.length > 0 && !!d.category;
+/* 分类徽章此前只是个纯文本标签，标签已经有入口了、分类却没有（读者想看同分类
+   还得自己绕去分类页）。这里查到分类 slug，把徽章链到分类页对应锚点。 */
+const catSlug = cats.find((c) => c.name === d.category)?.slug ?? "";
 
 /* 上下篇（限同面，与 demo 一致：列表按 featured/日期排序后的相邻项） */
 const list = await published(face as Face);
@@ -90,7 +93,9 @@ const publishedISO = d.date instanceof Date ? d.date.toISOString() : String(d.da
     <div class="article-layout">
       <article>
         <header class="article-header">
-          {showCategory && <span class="chip chip--cat">{d.category}</span>}
+          {showCategory && (catSlug
+            ? <a class="chip chip--cat" href={`/${face}/categories/#cat-${catSlug}`}>{d.category}</a>
+            : <span class="chip chip--cat">{d.category}</span>)}
           <h1>{d.title}</h1>
           <div class="article-meta">
             <span class="author"><img src={me.avatar} alt="" width="26" height="26">{me.name}</span>
