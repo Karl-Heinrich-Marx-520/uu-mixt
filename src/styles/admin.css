@@ -91,6 +91,9 @@
 .admin-table td { vertical-align: middle; }
 .admin-table td { vertical-align: middle; }
 .admin-table td:first-child { max-width: 360px; }
+/* 媒体体积：让作者在上传时就能看到是否压线（PRD 单图 ≤400KB） */
+.admin-media-size { font-size: 0.75rem; color: var(--text-3); margin-left: 6px; }
+.admin-media-size.is-over { color: #e0736c; font-weight: 600; }
 /* 状态 / 操作 合并列：徽章居左、按钮居右、整行不折行。
    注意：td 本身必须保持 table-cell——历史上这里写过 display:flex，
    会让状态格脱离表格行高协调（底边线上浮 22px，行分隔线错位）。 */

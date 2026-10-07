@@ -770,12 +770,24 @@
   function mediaReference(name) {
     return "![" + name.replace(/\.[^.]+$/, "") + "](/images/" + FACE + "/" + name + ")";
   }
-  function insertMediaRow(name, imgSrc, reference, path, sha) {
+  /* PRD 单图红线 400KB：构建期压缩脚本会兜底，但作者上传时看不到体积，
+     要等到构建完才知道超没超。这里把体积显示在文件名后面，超限标红。 */
+  var MEDIA_LIMIT = 400 * 1024;
+  function sizeLabel(bytes) {
+    var n = Number(bytes);
+    if (!n || n <= 0) return "";
+    var over = n > MEDIA_LIMIT;
+    return '<span class="admin-media-size' + (over ? " is-over" : "") + '"' +
+      (over ? ' title="超过 400KB 红线，构建时会尝试压缩"' : "") + ">" +
+      (n >= 1024 * 1024 ? (n / 1024 / 1024).toFixed(1) + "MB" : Math.round(n / 1024) + "KB") +
+      "</span>";
+  }
+  function insertMediaRow(name, imgSrc, reference, path, sha, bytes) {
     var list = $("[data-media-list]");
     var row = doc.createElement("div");
     row.className = "admin-media-row";
     row.innerHTML = '<img src="' + imgSrc + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
-      '<div class="admin-media-info"><b>' + esc(name) + "</b>" +
+      '<div class="admin-media-info"><b>' + esc(name) + "</b>" + sizeLabel(bytes) +
       '<code class="admin-media-ref">' + esc(reference) + "</code></div>" +
       '<button class="admin-mini" data-media-copy="' + esc(reference) + '">复制引用</button>' +
       '<button class="admin-mini" data-media-del="' + esc(path) + '" data-media-sha="' + esc(sha || "") + '">删除</button>';
@@ -795,7 +807,7 @@
       list.innerHTML = "";
       if (empty) empty.hidden = files.length > 0;
       files.forEach(function (f) {
-        insertMediaRow(f.name, "/images/" + FACE + "/" + f.name, mediaReference(f.name), f.path, f.sha);
+        insertMediaRow(f.name, "/images/" + FACE + "/" + f.name, mediaReference(f.name), f.path, f.sha, f.size);
       });
     } catch (e) {
       list.innerHTML = "";
@@ -816,7 +828,7 @@
       var path = IMAGE_DIR + "/" + safeName;
       try {
         var r = await GH.uploadBinary(path, base64, "media(" + FACE + "): 上传 " + safeName);
-        insertMediaRow(safeName, "data:" + file.type + ";base64," + base64, mediaReference(safeName), path, (r && r.sha) || "");
+        insertMediaRow(safeName, "data:" + file.type + ";base64," + base64, mediaReference(safeName), path, (r && r.sha) || "", file.size);
         var emp = $("[data-media-empty]");
         if (emp) emp.hidden = true;
         toast("已上传到 " + path);
