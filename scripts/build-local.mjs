@@ -31,19 +31,21 @@ if (existsSync('dist')) {
   /* 放在同盘的 node_modules/.cache 下：跨盘 rename 会报 EXDEV（实测 D 盘 → C 盘 temp 失败），
      而且这里不进 git、不污染工作区。 */
   const backupRoot = join('node_modules', '.cache', 'uum-dist-prev');
-  const target = join(backupRoot, String(Date.now()));
+  const last = join(backupRoot, 'last');
+  const stale = join(backupRoot, 'stale-' + Date.now());
   try {
     mkdirSync(backupRoot, { recursive: true });
-    renameSync('dist', target);
-    step(`旧 dist 已移到 ${target}`);
-    /* 只留最近一份，避免备份越攒越多 */
-    for (const old of readdirSync(backupRoot).sort().slice(0, -1)) {
-      rmSync(join(backupRoot, old), { recursive: true, force: true });
-    }
+    /* 先把上一份挪开（同盘 rename，不会被删除钩子拦），再把当前 dist 挪过来，
+       最后才清理过期那份——清理即使被 safe-delete 钩子拒绝也不影响构建。 */
+    if (existsSync(last)) { try { renameSync(last, stale); } catch (e) {} }
+    renameSync('dist', last);
+    step(`旧 dist 已备份到 ${last}`);
   } catch (e) {
     console.warn('[build-local] 移动旧 dist 失败，退回原地清理：', e.message);
-    rmSync('dist', { recursive: true, force: true });
+    try { rmSync('dist', { recursive: true, force: true }); } catch (e2) {}
   }
+  /* 清理过期备份：失败无所谓，下次构建还会再试 */
+  try { rmSync(stale, { recursive: true, force: true }); } catch (e) {}
 }
 
 /* 2. 清 content layer 缓存（data-store.json 是唯一的陈旧源头，其余缓存留着提速） */
