@@ -9,10 +9,11 @@
     "build": "node node_modules/astro/astro.js build && node scripts/compress-dist-images.mjs",
     "preview": "node node_modules/astro/astro.js preview",
     "build:local": "node scripts/build-local.mjs",
-    "selftest": "node scripts/selftest-core.mjs && node scripts/selftest-article.mjs && node scripts/selftest-reading.mjs",
+    "selftest": "node scripts/selftest-core.mjs && node scripts/selftest-article.mjs && node scripts/selftest-reading.mjs && node scripts/selftest-flip.mjs",
     "verify": "npm run build:local && npm run selftest && node scripts/check-pages.mjs",
     "audit:assets": "node scripts/scan-orphan-images.mjs",
-    "audit:content": "node scripts/audit-content.mjs"
+    "audit:content": "node scripts/audit-content.mjs",
+    "audit:friends": "node scripts/audit-friends.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
