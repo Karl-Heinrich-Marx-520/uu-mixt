@@ -147,9 +147,18 @@ const cards = await Promise.all(
 
   <script is:inline src="/scripts/core.js"></script>
   <script is:inline src="/scripts/entry.js"></script>
-  <script is:inline src="/scripts/friends.js" defer></script>
   <script is:inline src="/scripts/cursors.js?v=1" defer></script>
   <script is:inline src="/scripts/vine.js?v=1" defer></script>
-  <script is:inline src="/scripts/pet.js?v=3" defer></script>
+  {/* 卡组（15KB）与桌宠（33KB）都不参与首屏呈现：放到 window load 之后再注入。
+      入口页是整站唯一的门面，这两个脚本不该和翻牌动画抢带宽。 */}
+  <script is:inline>
+    window.addEventListener("load", function () {
+      ["/scripts/friends.js", "/scripts/pet.js?v=3"].forEach(function (src) {
+        var s = document.createElement("script");
+        s.src = src;
+        document.body.appendChild(s);
+      });
+    });
+  </script>
 </body>
 </html>
