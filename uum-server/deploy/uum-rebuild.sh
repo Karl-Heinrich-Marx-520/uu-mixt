@@ -56,8 +56,12 @@ while :; do
 
   rm -rf dist
   # content layer 缓存必须清：写作台删除/改名文章后，旧 data-store 会让构建校验
-  # 报「文件已删但仍被校验」而失败（本地实测踩坑，2026-09-15）
-  rm -rf node_modules/.astro
+  # 报「文件已删但仍被校验」而失败（本地实测踩坑，2026-09-15）。
+  # 但**只清这一个文件就够了**——真正的陈旧数据就是 data-store.json；
+  # 清整个 .astro 目录会把 Shiki 高亮与资源处理的缓存一起扔掉，实测构建从
+  # ~17s 涨到 ~29s（2026-10-07 实测）。构建时间随文章/图片增长而变长，
+  # 这里贡献了最大的一块，所以改成精确清除。
+  rm -f node_modules/.astro/data-store.json
   if npm run build >>"$LOG" 2>&1 && [ -d dist ]; then
     if node scripts/check-pages.mjs >>"$LOG" 2>&1; then
       # 图片压缩是"可选优化"：sharp 缺失时脚本会打印警告但仍退出 0，以免一个优化
