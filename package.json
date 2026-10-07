@@ -11,7 +11,8 @@
     "build:local": "node scripts/build-local.mjs",
     "selftest": "node scripts/selftest-core.mjs && node scripts/selftest-article.mjs && node scripts/selftest-reading.mjs",
     "verify": "npm run build:local && npm run selftest && node scripts/check-pages.mjs",
-    "audit:assets": "node scripts/scan-orphan-images.mjs"
+    "audit:assets": "node scripts/scan-orphan-images.mjs",
+    "audit:content": "node scripts/audit-content.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
