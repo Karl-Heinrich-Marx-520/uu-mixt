@@ -3,17 +3,29 @@ title: "Boost.Asio学习（1）：基础的客户端服务器"
 slug: boost-asio-1
 description: "用 Boost.Asio 同步模型搭建最小 TCP 服务器与客户端，讲解 io_context、endpoint、socket、acceptor 及错误处理方式。"
 date: 2026-09-28
+updated: 2026-10-12
 author: uu
 category: Boost.Asio
 tags: [C++, 网络编程, 异步编程, Boost.Asio]
 featured: false
 draft: false
 ---
-学习 Asio 之前，建议先熟悉 Linux 下的 socket 套接字编程，对 C 风格的网络 API 有一手体感。本篇用 Asio 建立最基本的服务器与客户端模型，并介绍几个核心类：`endpoint`、`socket`、`acceptor`。全文为同步（阻塞）模型，异步读写留到第 3 篇。
+> **作者**：游翰灵（Karl-Heinrich-Marx-520） · **原创声明**：本文为本人原创学习笔记整理，示例代码均为本人编写并在本地（MinGW g++ 13.1 + Boost 1.91，C++20）编译运行验证
+> **主要参考**：[Boost.Asio 官方文档](https://think-async.com/Asio/)、[cppreference](https://en.cppreference.com/)、[llfc 博客](https://llfc.club/)\
+> **目标读者**：有 socket 基础概念、想入门 Boost.Asio 的现代 C++ 学习者
+> **授权说明**：同意维护者调整标题、格式、放置位置与部分措辞；随仓库以 MIT 许可发布
 
-## 服务器
+本篇假设你已经知道 socket、bind、listen、accept、connect 大致在做什么，重点看 Boost.Asio 把这些流程封装成了什么形状。读完你能写出一个最小可运行的同步 echo 服务器与客户端。全文使用同步（阻塞）API，异步读写在第 3 篇展开。
 
-一个最小但完整的服务器：监听 8080 端口、接受一个连接、读一条消息并原样回显：
+## 完整示例：最小同步 echo
+
+### 服务器
+
+监听 8080 端口、接受一个连接、读一条消息并原样回显：
+
+> 注意：这里假设一次 `read_some` 就能读到完整消息，仅适合本地演示。TCP 是字节流、没有消息边界，生产代码必须按固定长度、分隔符或长度前缀切分；第 4 篇会按长度前缀重做一遍。
+>
+> 两个示例用同一套错误处理策略：启动阶段（`acceptor` 构造、`socket.connect`）用异常直接失败退出，收发阶段（`read_some` / `write`）用 `error_code` 取原因。
 
 ```cpp
 // server.cpp
@@ -30,15 +42,18 @@ int main() {
 
         asio::io_context io_context;
 
-        // 创建监听器并绑定 0.0.0.0:8080：
+        // 创建监听器并绑定 0.0.0.0:8080
         // tcp::v4() 配 endpoint 时默认地址即 INADDR_ANY
+        // 若端口已被占用，这个构造函数直接抛 system_error
         tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), 8080));
         std::cout << "Server is listening on port 8080...\n";
 
         tcp::socket socket(io_context);
         acceptor.accept(socket);  // 同步阻塞，直到一个客户端连入
-        std::cout << "Client connected from " << socket.remote_endpoint() << "\n";
+        std::cout << "Client connected from "
+                  << socket.remote_endpoint() << "\n";
 
+        // read_some：有多少读多少，不保证读满（详细语义见第 2 篇）
         std::array<char, 1024> recv_buf{};
         boost::system::error_code ec;
         const std::size_t len = socket.read_some(asio::buffer(recv_buf), ec);
@@ -51,6 +66,10 @@ int main() {
 
         // 原样回显给客户端
         boost::asio::write(socket, asio::buffer(recv_buf.data(), len), ec);
+        if (ec) {
+            std::cerr << "Send failed: " << ec.message() << "\n";
+            return 1;
+        }
     } catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n";
         return 1;
@@ -59,11 +78,7 @@ int main() {
 }
 ```
 
-**`io_context` 是 Asio 的核心：**&#x540C;步模型下它主要充当资源上下文——`socket`、`acceptor` 等所有 I/O 对象的构造都必须传入它；到异步模式（第 3 篇起）它会升级为驱动所有回调的事件循环，真正的价值那时才显现。现在记住一条即可：**每个 Asio I/O 对象都挂在一个 `io_context` 上**。
-
-另外，所有收发都**不涉及 `'\0'`**：TCP 是字节流，按长度收发，字符串结尾符是应用层的事——收了多少字节（`len`）就处理多少，`read_some` 与 `write` 都以长度为准。
-
-## 客户端
+### 客户端
 
 ```cpp
 // client.cpp
@@ -109,11 +124,50 @@ int main() {
 }
 ```
 
-两个程序里错误都走了两条通道：**收发函数带 `boost::system::error_code&` 出参**（失败不抛异常，`ec` 里给原因），**连接与监听的建立阶段用异常**（端口被占、地址非法这类"启动期硬错误"直接 fail-fast）。
+## 跑起来是什么样
 
-## endpoint：地址与端口的抽象
+开两个终端，先启动 server.exe（打印 `Server is listening on port 8080...`），再运行 client.exe：
 
-`endpoint` 相当于原生编程里的 `sockaddr_in`，是"IP 地址 + 端口"的组合：
+```text
+server:
+Client connected from 127.0.0.1:xxxxx
+Received 11 bytes: hello, asio
+
+client:
+Sent 11 bytes
+Echo: hello, asio
+```
+
+服务器只服务一个连接，处理完就退出。（同步模型一次只服务一个连接，多连接留到第 4 篇）
+
+## 与原生 socket API 的对比
+
+| **原生 API**            | **Boost.Asio 对应**                                             |
+| --------------------- | ------------------------------------------------------------- |
+| `socket()`            | `tcp::socket socket(io_context)`                              |
+| `bind()` + `listen()` | `tcp::acceptor acceptor(io_context, endpoint)`                |
+| `accept()`            | `acceptor.accept(socket)`                                     |
+| `connect()`           | `socket.connect(endpoint)` / `asio::connect(socket, results)` |
+| `send()` / `recv()`   | `write_some` / `read_some`（全局 `write` / `read` 见第 2 篇）        |
+| `close(fd)`           | 析构自动关闭，或 `socket.close()`                                     |
+
+封装成类之后，关闭交给析构（RAII），错误处理从 `errno` 换成 `error_code` 或异常。
+
+***
+
+## 逐个拆解
+
+示例里出现的几个类型，下面逐个拆开讲。
+
+### io\_context：执行上下文
+
+`io_context` 是 Asio 的执行上下文。同步模型下它主要提供**执行器（executor）：**`socket`、`acceptor` 等所有 I/O 对象在构造时都要关联一个 executor，它通常就来自 `io_context`——所以本篇所有对象共用同一个 `io_context`。到异步模式（第 3 篇起）它会升级为驱动所有回调的事件循环，真正的价值那时才显现。
+
+本篇所有 I/O 对象共用这一个 `io_context`，构造时它会以 executor 的形式被记进每个对象里。现代 Asio 还允许 `any_io_executor`、`strand` 等其他执行器，第 3、4 篇会用到。
+
+### endpoint：地址与端口
+
+endpoint 相当于原生编程里的 `sockaddr_in`，是"IP 地址 + 端口"的组合：
 
 ```cpp
 tcp::endpoint ep1(asio::ip::make_address("127.0.0.1"), 8080);  // 指定 IP
@@ -122,100 +176,101 @@ tcp::endpoint ep2(tcp::v4(), 8080);                            // 任意 IPv4 �
 
 常用成员：
 
-| **成员**                   | **说明**                |
-| ------------------------ | --------------------- |
-| `address()` / `port()`   | 读取 IP 地址 / 端口号        |
-| `address(a)` / `port(p)` | 设置 IP 地址 / 端口号        |
-| `protocol()`             | 返回协议类型（如 `tcp::v4()`） |
+| **成员**               | **说明**                      |
+| -------------------- | --------------------------- |
+| address() / port()   | 读取 IP 地址 / 端口号              |
+| address(a) / port(p) | 设置 IP 地址 / 端口号              |
+| protocol()           | 返回协议类型（如 tcp::v4()）         |
+| size() / data()      | 与原生 `sockaddr` 互操作时的字节长度与指针 |
 
-### make\_address：字符串解析成地址
+`make_address` 负责把字符串解析成地址，但它只接受 IP 字面量：`"127.0.0.1"` 合法，`"example.com"` 会直接解析失败。解析域名是 `tcp::resolver` 的职责。
 
-`asio::ip::make_address(str)` 把字符串解析为 `asio::ip::address`，提供异常与 `error_code` 两个重载：
+### socket：连接对象与原生 fd 的对应关系
 
-```cpp
-asio::ip::address make_address(const std::string& str);             // 解析失败抛异常
-asio::ip::address make_address(const std::string& str,
-                               boost::system::error_code& ec);      // 失败写 ec，不抛
-```
-
-启动期配置（如从配置文件读监听地址）适合异常版 fail-fast；解析运行期不可信输入时用 `ec` 版：
+Boost.Asio 把 socket 抽象为类，TCP 用 `asio::ip::tcp::socket`、UDP 用 `asio::ip::udp::socket`。它对应原生编程里的 fd，构造时必须关联一个执行器（通常是 `io_context`）：
 
 ```cpp
-boost::system::error_code ec;
-auto addr = asio::ip::make_address(user_input, ec);
-if (ec) {
-    std::cerr << "Invalid address: " << ec.message() << "\n";
-}
+tcp::socket socket(io_context);  // 关联 io_context 的执行器；此时尚未连接
 ```
 
-注意它**只接受 IP 字面量**——`"127.0.0.1"` 合法、`"example.com"` 直接解析失败；解析域名是 `tcp::resolver` 的职责，见下文 `connect` 一节。
+本篇用到的成员：
 
-## socket：类型安全的连接端点
+| **成员函数**                      | **说明**                      |
+| ----------------------------- | --------------------------- |
+| connect(endpoint)             | 同步连接到指定的 endpoint           |
+| read\_some / write\_some      | 单次读 / 写，不保证读满或写满            |
+| shutdown(what)                | 半关闭：只关读端或只关写端               |
+| close() / 析构                  | 关闭；`close` 会顺带取消挂起的异步操作     |
+| set\_option() / get\_option() | socket 选项，如 `tcp::no_delay` |
 
-Boost.Asio 把 socket 抽象为类，TCP 用 `asio::ip::tcp::socket`、UDP 用 `asio::ip::udp::socket`。构造必须传入 `io_context`（或执行器）：
+收发的六个函数（send / write\_some / write、receive / read\_some / read）与 `asio::buffer` 的完整语义留到第 2 篇。
 
-```cpp
-tcp::socket socket(io_context);  // 创建未连接的 socket
-```
+### acceptor：服务器的监听器
 
-与 Linux 原生 socket 的对比：
-
-| **差异点** | **Linux 原生 socket**                           | **Boost.Asio socket**             |
-| ------- | --------------------------------------------- | --------------------------------- |
-| 创建方式    | `socket(AF_INET, SOCK_STREAM, 0)` 返回 `int` fd | `tcp::socket(io_context)` 强类型对象   |
-| 错误处理    | 手动检查 `errno`                                  | `error_code` 或异常                  |
-| 关闭      | 手动 `close(fd)`                                | 析构自动关闭（RAII）                      |
-| 异步支持    | 手写 epoll/select                               | 内置 `async_read` / `async_write` 等 |
-| 跨平台     | POSIX 风格 API（Windows 为另一套 Winsock）            | 同一份代码覆盖 Windows / Linux / macOS   |
-
-## connect：成员函数与全局函数
-
-TCP 连接有两个同名成员：
-
-```cpp
-// ① socket 的成员函数：连接到指定的一个 endpoint
-socket.connect(endpoint);
-
-// ② 全局函数 boost::asio::connect：配合 resolver，依次尝试多个地址直到成功
-tcp::resolver resolver(io_context);
-auto results = resolver.resolve("example.com", "http");  // 域名 → 多个 endpoint
-boost::asio::connect(socket, results);
-```
-
-区别一句话：**`socket.connect(ep)` 只试一个地址；`asio::connect(socket, results)` 对 DNS 解析出的多个候选逐个尝试**。域名解析就是 `resolver` 的职责——`make_address` 处理不了的字符串都交给它。
-
-## acceptor：服务器的监听器
-
-`tcp::acceptor` 是服务器专用类，一个构造函数等价于原生 API 的三步：
+`tcp::acceptor` 是服务器专用类，对应原生流程里的 socket + bind + listen：
 
 ```cpp
 // 等价于 socket() + bind() + listen()
 tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), 8080));
 ```
 
-构造完成即处于监听状态，之后用 `accept` 接收连接：
+构造完成即处于监听状态，之后用 accept 接收连接：
 
 ```cpp
 tcp::socket socket(io_context);
 acceptor.accept(socket);  // 同步阻塞；连接建立后 socket 可用于收发
 ```
 
-常用成员函数：
+想设置 `SO_REUSEADDR` 就必须放弃上面这个便捷构造，改成分四步显式调用，解决"服务刚关掉就重启，报 Address already in use的问题"
 
-| **成员函数**                        | **说明**                                      |
-| ------------------------------- | ------------------------------------------- |
-| `accept(socket)`                | 同步阻塞，接收一个连接                                 |
-| `async_accept(socket, handler)` | 异步接收，完成时回调（需 `io_context::run()` 驱动，见第 3 篇） |
-| `is_open()` / `close()`         | 判断打开状态 / 关闭监听器                              |
-| `local_endpoint()`              | 获取本地绑定的地址与端口                                |
-| `set_option()` / `get_option()` | 设置/获取 socket 选项（如地址复用）                      |
-| `native_handle()`               | 拿到底层 fd（与原生 API 交互时用）                       |
-| `listen()` / `bind()`           | 显式调用（构造函数已隐含）                               |
-| `cancel()`                      | 取消所有挂起的异步操作                                 |
+```cpp
+tcp::acceptor acceptor(io_context);
+acceptor.open(tcp::v4());
+acceptor.set_option(tcp::acceptor::reuse_address(true));  // 必须在 bind 之前
+acceptor.bind(tcp::endpoint(tcp::v4(), 8080));
+acceptor.listen();
+```
+
+常用成员：
+
+| **成员函数**                      | **说明**           |
+| ----------------------------- | ---------------- |
+| accept(socket)                | 同步阻塞，接收一个连接      |
+| is\_open() / close()          | 判断打开状态 / 关闭监听器   |
+| local\_endpoint()             | 获取本地绑定的地址与端口     |
+| set\_option() / get\_option() | 设置 / 获取选项（如地址复用） |
+
+`async_accept`、`cancel`、`native_handle()`、显式 `listen()` / `bind()` 等在后面的异步篇与更完整的示例里再展开。
+
+### connect：成员函数与全局函数
+
+TCP 连接有两个容易混淆的 `connect`：
+
+```cpp
+// ① socket 的成员函数：只连接一个确定的 endpoint
+socket.connect(endpoint);
+
+// ② 全局函数 boost::asio::connect：配合 resolver，依次尝试多个地址直到成功
+tcp::resolver resolver(io_context);
+auto results = resolver.resolve("example.com", "80");  // 域名 → 多个 endpoint
+boost::asio::connect(socket, results);
+```
+
+真实客户端拿到的是域名，第一步就是用 resolver 换成 endpoint 列表，把 client.cpp 里的地址换成 `"localhost"` 只要两行：
+
+```cpp
+tcp::resolver resolver(io_context);
+auto results = resolver.resolve("localhost", "8080");
+boost::asio::connect(socket, results);   // 对解析出的多个候选地址逐个尝试
+```
+
+`socket.connect(ep)` 只试一个地址，`asio::connect(socket, results)` 则会把 DNS 解析出的多个候选依次试一遍。
+
+***
 
 ## 同步与异步的对比
 
-本篇全部是**同步**调用：`accept`、`connect`、`read_some`、`write` 都阻塞当前线程直到完成。异步版本把阻塞变成回调：
+本篇全部是同步调用：accept、connect、read\_some、write 都阻塞当前线程直到完成。异步版本把阻塞变成回调：
 
 ```cpp
 // 同步：调用线程阻塞直到连接到来
@@ -229,29 +284,13 @@ acceptor.async_accept(socket, [](const boost::system::error_code& ec) {
 });
 ```
 
-异步是 Asio 的主菜，但它的回调线程模型、生命周期管理都比同步复杂得多——先在同步模型里把 `endpoint` / `socket` / `acceptor` 三个类用熟，第 3 篇再进入异步。
+同步模型的能力边界很清楚：一个线程同时只能伺候一个连接。所以同步版适合启动期逻辑和命令行小工具；做服务端的话，要么一连接一线程（连接数一上去线程就撑不住），要么走异步。
 
-## 构建与自测
+异步是 Asio 的主菜，但它的回调线程模型、生命周期管理都比同步复杂得多——先在同步模型里把 endpoint / socket / acceptor 三个类用熟，第 3 篇再进入异步。
 
-Boost.Asio 是 header-only，C++20 编译，`CMakeLists.txt` 关键行：
+## 参考资源
 
-```cmake
-find_package(Boost CONFIG REQUIRED)
-target_link_libraries(server PRIVATE Boost::headers)
-target_compile_features(server PRIVATE cxx_std_20)
-```
-
-开两个终端，先启动 `server.exe`（打印 `Server is listening on port 8080...`），再运行 `client.exe`。预期结果：
-
-```text
-server: Client connected from 127.0.0.1:xxxxx
-        Received 11 bytes: hello, asio
-
-client: Sent 11 bytes
-        Echo: hello, asio
-```
-
-服务器处理完这一个连接后正常退出（同步模型一次只服务一个连接，多连接留到第 4 篇）。
-
-
+* Boost.Asio 官方文档：[https://think-async.com/Asio/](https://think-async.com/Asio/)
+* cppreference（同步 I/O 对象与 error\_code 语义）：[https://en.cppreference.com/](https://en.cppreference.com/)
+* llfc 博客（C++ 后端教程）：[https://llfc.club/](https://llfc.club/)
 
