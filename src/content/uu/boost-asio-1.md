@@ -10,11 +10,6 @@ tags: [C++, 网络编程, 异步编程, Boost.Asio]
 featured: false
 draft: false
 ---
-> **作者**：游翰灵（Karl-Heinrich-Marx-520） · **原创声明**：本文为本人原创学习笔记整理，示例代码均为本人编写并在本地（MinGW g++ 13.1 + Boost 1.91，C++20）编译运行验证
-> **主要参考**：[Boost.Asio 官方文档](https://think-async.com/Asio/)、[cppreference](https://en.cppreference.com/)、[llfc 博客](https://llfc.club/)\
-> **目标读者**：有 socket 基础概念、想入门 Boost.Asio 的现代 C++ 学习者
-> **授权说明**：同意维护者调整标题、格式、放置位置与部分措辞；随仓库以 MIT 许可发布
-
 本篇假设你已经知道 socket、bind、listen、accept、connect 大致在做什么，重点看 Boost.Asio 把这些流程封装成了什么形状。读完你能写出一个最小可运行的同步 echo 服务器与客户端。全文使用同步（阻塞）API，异步读写在第 3 篇展开。
 
 ## 完整示例：最小同步 echo
@@ -219,16 +214,6 @@ tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), 8080));
 ```cpp
 tcp::socket socket(io_context);
 acceptor.accept(socket);  // 同步阻塞；连接建立后 socket 可用于收发
-```
-
-想设置 `SO_REUSEADDR` 就必须放弃上面这个便捷构造，改成分四步显式调用，解决"服务刚关掉就重启，报 Address already in use的问题"
-
-```cpp
-tcp::acceptor acceptor(io_context);
-acceptor.open(tcp::v4());
-acceptor.set_option(tcp::acceptor::reuse_address(true));  // 必须在 bind 之前
-acceptor.bind(tcp::endpoint(tcp::v4(), 8080));
-acceptor.listen();
 ```
 
 常用成员：
