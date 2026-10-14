@@ -135,18 +135,29 @@
     if (homeLink) homeLink.href = "/" + FACE + "/";
   }
 
-  /* ---------- 文章列表 ---------- */
-  async function loadPosts() {
-    var files = (await GH.listDir(CONTENT_DIR)).filter(function (f) { return /\.md$/.test(f.name); });
-    var posts = [];
-    for (var i = 0; i < files.length; i++) {
-      var r = await GH.readFile(files[i].path);
-      if (!r) continue;
+  /* ---------- 文章列表 ----------
+     prefetched = 首屏数据包里的 posts（决策 7.41）。给了就直接用（0 次往返）；
+     没给（mock 自测 / 保存文章后的刷新 / 数据包不可用）就自己取，且**并行取**：
+     此前是 for + await 一篇一次往返，14 篇 = 14 个往返。 */
+  async function loadPosts(prefetched) {
+    var rows;
+    if (prefetched) {
+      rows = prefetched;
+    } else {
+      var files = (await GH.listDir(CONTENT_DIR)).filter(function (f) { return /\.md$/.test(f.name); });
+      var got = await Promise.all(files.map(function (f) {
+        return GH.readFile(f.path).then(function (r) {
+          return r ? { path: f.path, sha: r.sha, content: r.content } : null;
+        });
+      }));
+      rows = got.filter(Boolean);
+    }
+    var posts = rows.map(function (r) {
       var p = parseFrontmatter(r.content);
       p.sha = r.sha;
-      p.path = files[i].path;
-      posts.push(p);
-    }
+      p.path = r.path;
+      return p;
+    });
     posts.sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
     state.posts = posts;
     renderPosts();
@@ -314,9 +325,11 @@
     }
   }
 
-  /* ---------- 分类 ---------- */
-  async function loadCategories() {
-    var r = await GH.readFile(CATEGORY_FILE);
+  /* ---------- 分类 ----------
+     bundle（可选）= 首屏数据包；给了就取包里的 categories 字段（可能为 null＝本面还没建），
+     没给（保存分类后的刷新）才单读这一个文件。 */
+  async function loadCategories(bundle) {
+    var r = bundle ? bundle.categories : await GH.readFile(CATEGORY_FILE);
     state.categories = r ? JSON.parse(r.content) : [];
     state.categorySha = r ? r.sha : null;
     renderCategories();
@@ -414,8 +427,8 @@
   /* ---------- 友链（站点级共享数据；入口页卡组数据源，PRD E8 · 决策 7.16） ----------
      写路径与文章同通道（GitHub Contents API）：读改写整个 friends.json、带 sha 乐观锁；
      重名校验在前端（正式 JSON 无 id，name 即唯一键）；保存即提交，部署后入口页可见。 */
-  async function loadFriends() {
-    var r = await GH.readFile(FRIENDS_FILE);
+  async function loadFriends(bundle) {
+    var r = bundle ? bundle.friends : await GH.readFile(FRIENDS_FILE);
     state.friends = r ? JSON.parse(r.content) : [];
     state.friendsSha = r ? r.sha : null;
     renderFriends();
@@ -640,8 +653,8 @@
     return { list: out, partial: partial };
   }
 
-  async function loadBio() {
-    var r = await GH.readFile(AUTHOR_FILE);
+  async function loadBio(bundle) {
+    var r = bundle ? bundle.author : await GH.readFile(AUTHOR_FILE);
     state.author = r ? JSON.parse(r.content) : { bio: "", tags: [] };
     state.authorSha = r ? r.sha : null;
     $("#s-bio").value = state.author.bio || "";
@@ -688,8 +701,8 @@
     return s ? s.count : 0;
   }
 
-  async function loadTags() {
-    var r = await GH.getTags();
+  async function loadTags(bundle) {
+    var r = bundle ? (bundle.tags || { tags: [], pool: [] }) : await GH.getTags();
     state.tagStats = Array.isArray(r.tags) ? r.tags : [];
     state.tagPool = Array.isArray(r.pool) ? r.pool : [];
     renderTagPool();
@@ -1067,10 +1080,17 @@
   var authorFileEl = $("[data-author-file]");
   if (authorFileEl) authorFileEl.textContent = AUTHOR_FILE;
   (async function init() {
+    /* 首屏占位：数据包只等一次往返，但作者侧单次往返可能接近 0.5s，
+       空表格容易被读成"文章没了"。 */
+    var rowsHint = $("[data-post-rows]");
+    if (rowsHint) rowsHint.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-3)">正在加载文章…</td></tr>';
+    /* 首屏数据包（决策 7.41）：一次往返取齐六个面板；mock 或端点不可用时返回 null，
+       下面各面板自动回落到逐文件接口。 */
+    var bundle = await GH.deskBundle();
     try {
       /* 顺序敏感：文章先于分类——分类面板的时间线与「N 篇」徽章要按 state.posts 统计 */
-      await loadPosts();
-      await loadCategories();
+      await loadPosts(bundle && bundle.posts);
+      await loadCategories(bundle);
       resetEditor();
       resetCategoryForm();                           /* 分类表单初始收起（与 demo 一致） */
       resetFriendForm();
@@ -1079,17 +1099,17 @@
       msg($("[data-post-msg]"), "加载失败：" + e.message);
     }
     try {
-      await loadBio();                               /* 设置面板加载失败不阻断其他面板 */
+      await loadBio(bundle);                         /* 设置面板加载失败不阻断其他面板 */
     } catch (e) {
       msg($("[data-bio-msg]"), "简介加载失败：" + e.message);
     }
     try {
-      await loadFriends();                           /* 友链失败不阻断文章/分类 */
+      await loadFriends(bundle);                     /* 友链失败不阻断文章/分类 */
     } catch (e) {
       msg($("[data-friend-msg]"), "友链加载失败：" + e.message);
     }
     try {
-      await loadTags();                              /* 标签池失败不阻断其他面板 */
+      await loadTags(bundle);                        /* 标签池失败不阻断其他面板 */
     } catch (e) {
       msg($("[data-tagpool-msg]"), "标签池加载失败：" + e.message);
     }

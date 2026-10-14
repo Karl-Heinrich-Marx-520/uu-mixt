@@ -346,6 +346,20 @@
       return res.json();
     },
 
+    /** 写作台首屏数据包（决策 7.41）：一次请求拿齐文章 + 分类 + 简介 + 友链 + 标签池，
+        替代此前 1 次 list + N 次 read 的串行往返（作者侧实测 18 次往返 ≈ 9-10s）。
+        形状：{ posts:[{path,sha,content}], categories|author|friends: {path,sha,content}|null,
+               tags:{tags:[{name,count}], pool:[...]} }
+        mock 与失败一律返回 null，调用方回落到逐文件接口（新端点未部署时也不会空面板）。 */
+    async deskBundle() {
+      if (mock) return null;
+      try {
+        return await request("/api/desk");
+      } catch (e) {
+        return null;
+      }
+    },
+
     /** 列目录：返回 [{ name, path, sha, type }]（服务器 git 工作副本的最新状态） */
     async listDir(path) {
       if (mock) {
