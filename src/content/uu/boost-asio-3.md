@@ -3,67 +3,18 @@ title: "Boost.Asio学习（3）：异步读写"
 slug: boost-asio-3
 description: "讲解 Boost.Asio 异步读写：async_ 系列 API 与回调签名、回调执行线程与串行化规则，并实现一个基于 shared_ptr 保活的异步回声服务器。"
 date: 2026-10-03
+updated: 2026-10-14
 author: uu
 category: Boost.Asio
 tags: [C++, Boost.Asio, 异步编程, 网络编程]
 featured: false
 draft: false
 ---
-第 2 篇的同步 API 有个天花板：`read`/`write`/`accept` 阻塞线程，一个线程同时只能伺候一个连接。本篇进入 Asio 的主菜——**异步读写**：发起操作后立即返回，完成时由回调通知。伴随这个模式而来的三件事是本篇的核心：**回调在哪个线程执行、回调链上对象如何保活、`io_context::run()` 如何驱动一切**。
+第 1、2 篇用的都是同步（阻塞）API：`accept`、`read_some`、`write` 都阻塞当前线程直到完成，一个线程同时只能伺候一个连接。本篇把收发换成异步版本——发起操作后立即返回，完成时由回调通知。伴随这个切换，有三件同步模型里原本不存在的事需要讲清楚：回调在哪个线程执行、回调链上的对象怎么保活、`io_context::run()` 如何驱动一切。读完你能写出一个常驻、可同时服务多个连接的异步回声服务器。全文用单线程异步 API，客户端复用第 1 篇。
 
-## 异步 API 总览
+## 完整示例：异步回声服务器
 
-与第 2 篇的同步三兄弟一一对应，异步版本在名字前加 `async_`：
-
-| **分类** | **函数**                    | **完整性**       | **回调签名**                  |
-| ------ | ------------------------- | ------------- | ------------------------- |
-| 写      | `socket.async_write_some` | ❌ 可能部分写       | `(ec, bytes_transferred)` |
-| 写      | `async_write`（全局）         | ✅ 循环写完        | `(ec, bytes_transferred)` |
-| 写      | `socket.async_send`       | ❌ 部分，支持 flags | `(ec, bytes_transferred)` |
-| 读      | `socket.async_read_some`  | ❌ 有多少读多少      | `(ec, bytes_transferred)` |
-| 读      | `async_read`（全局）          | ✅ 循环读满        | `(ec, bytes_transferred)` |
-| 读      | `socket.async_receive`    | ❌ 部分，支持 flags | `(ec, bytes_transferred)` |
-
-flags 参数（如 `MSG_PEEK`）异步版同样存在，同样极少使用，不再展开。
-
-**回调签名要看操作类型**：读写类是 `(error_code, bytes_transferred)`；`async_accept` 的回调只有 `(error_code)`（移动接受版本多一个新 socket）；定时器 `async_wait` 也只有 `(error_code)`。
-
-异步调用的语义是**注册**：函数立即返回，I/O 在后台由 `io_context` 的完成队列驱动，完成时回调被调度执行。
-
-## 回调在哪个线程执行
-
-一条铁律：**回调执行在调用 `io_context::run()` 的线程里**。
-
-* 单线程 `run()`：所有回调在这个唯一线程里**串行**执行——天然线程安全，不需要任何锁；
-* 多个线程 `run()` 同一个 `io_context`：回调可能在不同线程**并发**执行——共享状态需要显式串行化（strand 或 mutex），第 4 篇展开。
-
-关于线程安全的准确规则是：**不同 Asio 对象可以被不同线程并发使用；同一个对象的成员函数（或其回调）并发使用则不安全**。单线程 `run()` 模式下回调天然串行，这条规则自动满足——这也是本篇示例不加任何锁的原因。
-
-串行化的专用工具是 `boost::asio::strand`：它把一组回调"排队"，即使多个线程在 `run()`，同一 strand 里的回调也一个一个执行。单线程模型用不上它，多线程模型（第 4 篇）里它是保护会话内部状态的首选。
-
-## async\_accept：异步接收连接
-
-```cpp
-tcp::socket socket(io_context);
-
-// 版本 A：自己准备 socket，accept 完成后它就是那条新连接
-acceptor.async_accept(socket,
-    [](const boost::system::error_code& ec) {
-        if (!ec) { /* socket 可用 */ }
-    });
-
-// 版本 B：移动接受——不传 socket，accept 成功才在回调里拿到新连接
-acceptor.async_accept(
-    [](const boost::system::error_code& ec, tcp::socket peer) {
-        if (!ec) { /* std::move(peer) 交给会话对象 */ }
-    });
-```
-
-版本 B 是协程风格（第 6 篇）的主力用法：`tcp::socket peer = co_await acceptor.async_accept(use_awaitable);` 本质就是它的 co\_await 形式。accept 永远是被动等待，不存在"指定要 accept 哪个地址"；对端地址随用随查 `socket.remote_endpoint()` 即可。本篇与第 4 篇采用版本 A——先建会话、accept 落到会话的 socket 成员上，socket 与会话的绑定关系一目了然。
-
-## 动手：异步回声服务器
-
-三个文件：`Session`（一个连接的会话）、`Server`（监听并管理所有会话）、`main`（驱动事件循环）。
+服务器由四个文件组成：`Session` 管一条连接的读与回显，`Server` 负责监听并把连接交给会话，`main` 只负责驱动事件循环。先看Session会话类：
 
 ```cpp
 // Session.h
@@ -79,6 +30,7 @@ acceptor.async_accept(
 
 class Server;
 
+// 一个连接对应一个会话：负责这一条连接的读、写、回显。
 class Session : public std::enable_shared_from_this<Session> {
 public:
     Session(boost::asio::io_context& ioc, Server& server);
@@ -91,7 +43,6 @@ private:
     void DoRead();
     void HandleRead(const boost::system::error_code& ec, std::size_t bytes_transferred);
     void DoWrite(std::size_t bytes_transferred);
-    void HandleWrite(const boost::system::error_code& ec, std::size_t bytes_transferred);
 
     boost::asio::ip::tcp::socket socket_;
     std::string uuid_;
@@ -111,7 +62,7 @@ private:
 
 Session::Session(boost::asio::io_context& ioc, Server& server)
     : socket_(ioc), server_(server) {
-    uuid_ = boost::uuids::to_string(boost::uuids::random_generator()());
+    uuid_ = boost::uuids::to_string(boost::uuids::random_generator()());  // 随机生成id号
 }
 
 void Session::Start() {
@@ -119,7 +70,7 @@ void Session::Start() {
 }
 
 void Session::DoRead() {
-    auto self = shared_from_this();  // 保活
+    auto self = shared_from_this();  // 保活：回调触发时对象还在
     socket_.async_read_some(
         boost::asio::buffer(buf_),
         [self](const boost::system::error_code& ec, std::size_t bytes) {
@@ -131,10 +82,10 @@ void Session::HandleRead(const boost::system::error_code& ec,
                          std::size_t bytes_transferred) {
     if (ec == boost::asio::error::eof) {
         std::cout << "session " << uuid_ << ": peer closed gracefully\n";
-        server_.RemoveSession(uuid_);  // 单线程模型：这里直接调用是安全的
+        server_.RemoveSession(uuid_);  // 在单线程模型里直接调用是安全的
         return;                        // 不再发起读，回调链结束
     }
-    if (ec) {
+    else if (ec) {
         std::cout << "session " << uuid_ << ": read error " << ec.message() << "\n";
         server_.RemoveSession(uuid_);
         return;
@@ -161,6 +112,8 @@ void Session::DoWrite(std::size_t bytes_transferred) {
 }
 ```
 
+会话的读、写是两个交替的异步操作，`Session` 只干这一件事。管理所有会话的是 `Server`：
+
 ```cpp
 // Server.h
 #pragma once
@@ -173,6 +126,7 @@ void Session::DoWrite(std::size_t bytes_transferred) {
 
 class Session;
 
+// 监听并管理所有会话：接受连接、登记会话、按 uuid 注销会话。
 class Server {
 public:
     Server(boost::asio::io_context& ioc, unsigned short port);
@@ -211,7 +165,7 @@ void Server::DoAccept() {
             } else {
                 std::cout << "accept failed: " << ec.message() << "\n";
             }
-            DoAccept();  // 继续等下一个连接——accept 回调链同样是"注册 → 完成 → 再注册"
+            DoAccept();  // 继续等下一个连接——accept 回调链同样是「注册 → 完成 → 再注册」
         });
 }
 
@@ -219,6 +173,8 @@ void Server::RemoveSession(const std::string& uuid) {
     sessions_.erase(uuid);
 }
 ```
+
+最后是入口，把 `io_context` 跑起来：
 
 ```cpp
 // main.cpp
@@ -240,26 +196,192 @@ int main() {
 }
 ```
 
-几个要点：
+### 客户端
 
-* **回调链保活**。异步世界最大的坑是"回调触发时对象已经死了"。本例的保活链条是：`Server::sessions_` 强持有每个 `Session`（`shared_ptr`），同时每个异步回调都捕获 `self = shared_from_this()`——读写链不断，会话就活着。
-* **同一时刻每个会话只有一个挂起操作**。`Start → DoRead → HandleRead → DoWrite → DoRead → …` 是一条交替的串行链：写回调完成才发下一轮读。这保证了 `buf_` 不会被读和写同时触碰。
-* **eof 的处理**。`async_read_some` 收到对端关闭时 `ec == eof` 且 `bytes_transferred == 0`，此时结束会话并从服务器注销。
-* **`Server&` 裸引用为什么安全**：`server` 是 `main` 的栈对象，活到 `main` 结束；所有回调都执行在 `ioc.run()` 期间，`run()` 返回后不会再有回调碰它。第 4 篇引入多线程后这个前提会重新审视，那里升级为 `weak_ptr`。
+客户端复用第 1 篇的同步写法，只发一条、收一条回显，然后半关闭退出：
 
-## io\_context::run() 的语义
+```cpp
+// client.cpp
+#include <array>
+#include <iostream>
+#include <string>
+#include <string_view>
 
-`run()` 阻塞当前线程驱动事件循环，**直到 `io_context` 内部的工作计数归零**。计数由两部分构成：每个挂起的异步操作（挂起的 `async_accept`、进行中的读写）各占 1；`make_work_guard(io_context)` 创建的 **work guard** 也占 1，重置它才释放。
+#include <boost/asio.hpp>
 
-本篇的服务器靠前者"续命"：accept 回调末尾立刻再挂下一个 `async_accept`，任何时刻都恰好有一个挂起的 accept，计数永不归零，`run()` 因此不返回。这也是一个陷阱——如果哪条代码路径忘记重新挂 accept（比如某个错误分支提前 return），计数归零，`run()` 返回，服务器**静默退出**，没有任何报错。
+int main() {
+    try {
+        namespace asio = boost::asio;
+        using tcp = asio::ip::tcp;
 
-第 4 篇的线程池会引入 work guard：把 `run()` 显式"钉住"，直到 `Stop()` 释放——那时停止时机由代码决定，而不是由"恰好还有没有挂起操作"决定。本例停止服务器的方式是 Ctrl+C 强杀——**优雅退出（信号 + 资源清理）留到第 4 篇**。
+        asio::io_context io_context;
+        tcp::socket socket(io_context);
+        socket.connect(tcp::endpoint(asio::ip::make_address("127.0.0.1"), 8082));
 
-## 构建与自测
+        const std::string msg = "hello, async";
+        boost::system::error_code ec;
+        boost::asio::write(socket, asio::buffer(msg), ec);
+        if (ec) {
+            std::cerr << "Send failed: " << ec.message() << "\n";
+            return 1;
+        }
 
-```bash
-g++ -std=c++20 -Wall -Wextra Session.cpp Server.cpp main.cpp -o server3.exe -lws2_32 -lmswsock
+        std::array<char, 1024> recv_buf{};
+        const std::size_t rlen = socket.read_some(asio::buffer(recv_buf), ec);
+        if (ec) {
+            std::cerr << "Receive failed: " << ec.message() << "\n";
+            return 1;
+        }
+        std::cout << "Echo: " << std::string_view(recv_buf.data(), rlen) << "\n";
+
+        socket.shutdown(tcp::socket::shutdown_send);  // 告诉服务器「我发完了」
+    } catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << "\n";
+        return 1;
+    }
+    return 0;
+}
 ```
 
-每个连接对应一个会话对象、按 uuid 注销——多连接管理到这里已经成型。第 4 篇在它之上补齐：多线程 `io_context`、发送队列、粘包协议、逻辑线程与优雅退出。
+## 跑起来是什么样
+
+先启动服务器，再运行客户端。服务器常驻，按 Ctrl+C 结束。会话的 uuid 每次随机，下面用省略号占位：
+
+```text
+server:
+Server running on port 8082. Ctrl+C to stop.
+session f31f93e4-... received hello, async
+session f31f93e4-...: peer closed gracefully
+
+client:
+Echo: hello, async
+```
+
+客户端收到的 `hello, async` 正是它发出去的那条；服务器打印的 `peer closed gracefully` 对应客户端的 `shutdown`。
+
+## 线程、保活、驱动
+
+从同步切到异步，看起来只是把 `read_some` 换成 `async_read_some`。但底层多了三件同步模型里根本不会遇到的问题，这也是本篇要逐个拆开讲的三条主线：
+
+| **问题**       | **它到底在解决什么**                 |
+| ------------ | ---------------------------- |
+| 回调在哪个线程执行    | 谁调用 `run()`，回调就在谁的线程上执行      |
+| 对象怎么保活       | 回调真正触发时，它引用的对象必须还活着          |
+| `run()` 怎么驱动 | `run()` 靠一份工作计数撑着，计到零自动肯收工返回 |
+
+***
+
+## 逐个拆解
+
+### 异步读写 API：回调签名变了
+
+第 2 篇的同步六函数（`send` / `write_some` / `write`、`receive` / `read_some` / `read`）都有异步版，名字在前面加 `async_`，同样分成「一次调用」和「循环到满」两类：
+
+| **同步**                  | **异步**                              | **归类**        |
+| ----------------------- | ----------------------------------- | ------------- |
+| `write_some` / `send`   | `async_write_some` / `async_send`   | 一次写，不保证发完     |
+| `write`                 | `async_write`                       | 循环写完整个 buffer |
+| `read_some` / `receive` | `async_read_some` / `async_receive` | 一次读，不保证读满     |
+| `read`                  | `async_read`                        | 循环读满整个 buffer |
+
+它们最大的不同是**调用方式**：同步版返回值就是结果，异步版没有返回值，它需要你在发起时给一个回调，结果通过回调参数送回来
+
+```cpp
+// 同步：返回值即结果，当前线程阻塞
+std::size_t n = socket.read_some(asio::buffer(buf), ec);
+
+// 异步：立即返回，结果通过回调参数 (ec, n) 送达
+socket.async_read_some(asio::buffer(buf),
+    [](const boost::system::error_code& ec, std::size_t n) {
+        // 完成时才会走到这里
+    });
+```
+
+读写类回调的签名统一是 `(error_code, bytes_transferred)`。
+
+​
+
+### async\_accept：两版回调
+
+服务器接受连接用 `async_accept`，它有两种回调形态：
+
+```cpp
+// 版本 A：自己准备好 socket，accept 完成后它就是那条新连接
+tcp::socket socket(io_context);
+acceptor.async_accept(socket,
+    [](const boost::system::error_code& ec) {
+        if (!ec) { /* socket 可用 */ }
+    });
+
+// 版本 B：移动接受——不传 socket，成功后回调里才拿到新连接
+acceptor.async_accept(
+    [](const boost::system::error_code& ec, tcp::socket peer) {
+        if (!ec) { /* 把 peer 交给会话对象 */ }
+    });
+```
+
+本篇用版本 A：先建会话、把 accept 落到会话的 socket 成员上。accept 永远是被动等待，对端地址可随时用`socket.remote_endpoint()` 查询。
+
+​
+
+### 回调在哪个线程执行：run() 的线程
+
+一条铁律：**回调执行在调用 `io_context::run()` 的线程里**。
+
+单线程 `run()` 时，所有回调在这个唯一线程里**串行**执行，天然线程安全，所以示例里不加任何锁。多个线程 `run()` 同一个 `io_context` 时，回调可能在不同线程**并发**执行，共享状态就要显式串行化（`strand` 或 `mutex`）。
+
+串行化的专用工具是 `boost::asio::strand`：它把一组回调排队，即使多个线程在 `run()`，同一 strand 里的回调也一个一个执行。单线程模型用不上它，第 4 篇的多线程模型里它是保护会话内部状态的首选。
+
+​
+
+### 对象怎么保活：shared\_from\_this
+
+异步世界里最大的坑是**回调触发时对象已经死了**——异步代码里 `async_read_some` 返回后，我们手上的指针可能早就悬空了。
+
+示例的保活链条是：`Server::sessions_` 用 `shared_ptr` 强持有每个 `Session`，同时每个异步回调都捕获 `self = shared_from_this()`。读写链不断，会话就活着：
+
+```cpp
+void Session::DoRead() {
+    auto self = shared_from_this();  // 让回调持有一份 shared_ptr，对象不提前析构
+    socket_.async_read_some(
+        boost::asio::buffer(buf_),
+        [self](const boost::system::error_code& ec, std::size_t bytes) {
+            self->HandleRead(ec, bytes);
+        });
+}
+```
+
+还要注意同一时刻每个会话只有一个挂起操作。`Start → DoRead → HandleRead → DoWrite → DoRead → …` 是一条读写交替的串行链，这保证了 `buf_` 不会被读和写同时触碰。
+
+​
+
+### run() 靠什么续命：工作计数
+
+`run()` 阻塞当前线程驱动事件循环，**直到 `io_context` 内部的工作计数归零**。计数由两部分构成：每个挂起的异步操作（挂起的 `async_accept`、进行中的读写）各占 1；`make_work_guard(io_context)` 创建的 work guard 也占 1，重置它才释放。
+
+本篇的服务器靠前者续命：accept 回调末尾立刻再挂下一个 `async_accept`，任何时刻都恰好有一个挂起的 accept，计数永不归零，`run()` 因此不返回。这也是一个陷阱——如果哪条代码路径忘记重新挂 accept（比如某个错误分支提前 return），计数归零，`run()` 返回，服务器**静默退出**、没有任何报错。
+
+后面会引入 work guard：把 `run()` 显式「钉住」，直到 `Stop()` 释放。本篇停止服务器的方式是 Ctrl+C 强杀，**优雅退出（信号 + 资源清理）留到第 4 篇**。
+
+​
+
+### eof：异步读的对端关闭
+
+第 2 篇讲的 `eof` 判断在异步里原样成立：`async_read_some` 收到对端关闭时 `ec == eof` 且 `bytes_transferred == 0`。示例里正是用 `if (ec == eof)` 结束会话、从服务器注销。
+
+`Server&` 裸引用为什么安全，这里一并说清：`server` 是 `main` 的栈对象，活到 `main` 结束；所有回调都执行在 `ioc.run()` 期间，`run()` 返回后不会再有回调碰它。后面引入多线程后这个前提要重新审视，那时传递裸引用比较危险，需要升级为传递 `weak_ptr`。
+
+***
+
+## 单线程的边界
+
+本篇的服务器已经是常驻、多连接、按 uuid 注销的异步服务器，不过目前还是**单线程**的：`ioc.run()` 只有一个线程，所有回调串行，一旦某个会话的回调里做了耗时操作，所有连接都被卡住。想要真正榨干多核，得让多个线程同时 `run()`，那时 strand、会话表锁、逻辑线程解耦、粘包协议、优雅退出都要补上。
+
+记住三件事就够了：**回调在 `run()` 的线程里跑、对象要 `shared_from_this()` 保活、`run()` 靠工作计数决定何时返回**。第 4 篇将补齐：多线程 `io_context`、发送队列、粘包协议、逻辑线程与优雅退出。
+
+## 参考资源
+
+- Boost.Asio 官方文档：[https://think-async.com/Asio/](https://think-async.com/Asio/)
+- cppreference（异步操作与 error\_code 语义）：[https://en.cppreference.com/](https://en.cppreference.com/)
+- llfc 博客（C++ 后端教程）：[https://llfc.club/](https://llfc.club/)
 
