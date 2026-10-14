@@ -3,14 +3,14 @@ title: "Boost.Asio学习（1）：基础的客户端服务器"
 slug: boost-asio-1
 description: "用 Boost.Asio 同步模型搭建最小 TCP 服务器与客户端，讲解 io_context、endpoint、socket、acceptor 及错误处理方式。"
 date: 2026-09-28
-updated: 2026-10-12
+updated: 2026-10-14
 author: uu
 category: Boost.Asio
 tags: [C++, 网络编程, 异步编程, Boost.Asio]
 featured: false
 draft: false
 ---
-本篇假设你已经知道 socket、bind、listen、accept、connect 大致在做什么，重点看 Boost.Asio 把这些流程封装成了什么形状。读完你能写出一个最小可运行的同步 echo 服务器与客户端。全文使用同步（阻塞）API，异步读写在第 3 篇展开。
+本篇假设读者已经了解 socket、bind、listen、accept、connect 这些Linux原生API大致在做什么，接下来通过一个最小可运行的同步 echo 服务器与客户端，深入了解 Boost.Asio 把这些流程封装成了什么形状。全文使用同步（阻塞）API，异步读写在第 3 篇展开。
 
 ## 完整示例：最小同步 echo
 
@@ -158,7 +158,9 @@ Echo: hello, asio
 
 `io_context` 是 Asio 的执行上下文。同步模型下它主要提供**执行器（executor）：**`socket`、`acceptor` 等所有 I/O 对象在构造时都要关联一个 executor，它通常就来自 `io_context`——所以本篇所有对象共用同一个 `io_context`。到异步模式（第 3 篇起）它会升级为驱动所有回调的事件循环，真正的价值那时才显现。
 
-本篇所有 I/O 对象共用这一个 `io_context`，构造时它会以 executor 的形式被记进每个对象里。现代 Asio 还允许 `any_io_executor`、`strand` 等其他执行器，第 3、4 篇会用到。
+本篇所有 I/O 对象共用这一个 `io_context`，构造时它会以 executor 的形式被记进每个对象里。现代 Asio 还允许 `any_io_executor`、`strand` 等其他执行器。
+
+​
 
 ### endpoint：地址与端口
 
@@ -180,6 +182,8 @@ tcp::endpoint ep2(tcp::v4(), 8080);                            // 任意 IPv4 �
 
 `make_address` 负责把字符串解析成地址，但它只接受 IP 字面量：`"127.0.0.1"` 合法，`"example.com"` 会直接解析失败。解析域名是 `tcp::resolver` 的职责。
 
+​
+
 ### socket：连接对象与原生 fd 的对应关系
 
 Boost.Asio 把 socket 抽象为类，TCP 用 `asio::ip::tcp::socket`、UDP 用 `asio::ip::udp::socket`。它对应原生编程里的 fd，构造时必须关联一个执行器（通常是 `io_context`）：
@@ -190,15 +194,17 @@ tcp::socket socket(io_context);  // 关联 io_context 的执行器；此时尚�
 
 本篇用到的成员：
 
-| **成员函数**                      | **说明**                      |
-| ----------------------------- | --------------------------- |
-| connect(endpoint)             | 同步连接到指定的 endpoint           |
-| read\_some / write\_some      | 单次读 / 写，不保证读满或写满            |
-| shutdown(what)                | 半关闭：只关读端或只关写端               |
-| close() / 析构                  | 关闭；`close` 会顺带取消挂起的异步操作     |
-| set\_option() / get\_option() | socket 选项，如 `tcp::no_delay` |
+| **成员函数**                 | **说明**                  |
+| ------------------------ | ----------------------- |
+| connect(endpoint)        | 同步连接到指定的 endpoint       |
+| read\_some / write\_some | 单次读 / 写，不保证读满或写满        |
+| shutdown(what, ec)       | 半关闭：只关读端或只关写端           |
+| close() / 析构             | 关闭；`close` 会顺带取消挂起的异步操作 |
+| remote\_endpoint()       | 查询对端地址和端口               |
 
 收发的六个函数（send / write\_some / write、receive / read\_some / read）与 `asio::buffer` 的完整语义留到第 2 篇。
+
+​
 
 ### acceptor：服务器的监听器
 
@@ -218,14 +224,15 @@ acceptor.accept(socket);  // 同步阻塞；连接建立后 socket 可用于收�
 
 常用成员：
 
-| **成员函数**                      | **说明**           |
-| ----------------------------- | ---------------- |
-| accept(socket)                | 同步阻塞，接收一个连接      |
-| is\_open() / close()          | 判断打开状态 / 关闭监听器   |
-| local\_endpoint()             | 获取本地绑定的地址与端口     |
-| set\_option() / get\_option() | 设置 / 获取选项（如地址复用） |
+| **成员函数**             | **说明**         |
+| -------------------- | -------------- |
+| accept(socket)       | 同步阻塞，接收一个连接    |
+| is\_open() / close() | 判断打开状态 / 关闭监听器 |
+| local\_endpoint()    | 获取本地绑定的地址与端口   |
 
 `async_accept`、`cancel`、`native_handle()`、显式 `listen()` / `bind()` 等在后面的异步篇与更完整的示例里再展开。
+
+​
 
 ### connect：成员函数与全局函数
 
@@ -253,29 +260,9 @@ boost::asio::connect(socket, results);   // 对解析出的多个候选地址逐
 
 ***
 
-## 同步与异步的对比
-
-本篇全部是同步调用：accept、connect、read\_some、write 都阻塞当前线程直到完成。异步版本把阻塞变成回调：
-
-```cpp
-// 同步：调用线程阻塞直到连接到来
-acceptor.accept(socket);
-
-// 异步：立即返回，连接到来时回调触发（需要 io_context::run() 驱动事件循环）
-acceptor.async_accept(socket, [](const boost::system::error_code& ec) {
-    if (!ec) {
-        std::cout << "Client connected!\n";
-    }
-});
-```
-
-同步模型的能力边界很清楚：一个线程同时只能伺候一个连接。所以同步版适合启动期逻辑和命令行小工具；做服务端的话，要么一连接一线程（连接数一上去线程就撑不住），要么走异步。
-
-异步是 Asio 的主菜，但它的回调线程模型、生命周期管理都比同步复杂得多——先在同步模型里把 endpoint / socket / acceptor 三个类用熟，第 3 篇再进入异步。
-
 ## 参考资源
 
-* Boost.Asio 官方文档：[https://think-async.com/Asio/](https://think-async.com/Asio/)
-* cppreference（同步 I/O 对象与 error\_code 语义）：[https://en.cppreference.com/](https://en.cppreference.com/)
-* llfc 博客（C++ 后端教程）：[https://llfc.club/](https://llfc.club/)
+- Boost.Asio 官方文档：[https://think-async.com/Asio/](https://think-async.com/Asio/)
+- cppreference（同步 I/O 对象与 error\_code 语义）：[https://en.cppreference.com/](https://en.cppreference.com/)
+- llfc 博客（C++ 后端教程）：[https://llfc.club/](https://llfc.club/)
 
