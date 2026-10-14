@@ -4,6 +4,7 @@
 	UU&Mixt · uum-server —— 统一小服务（PRD 6.1 修订后的唯一常驻组件）
 	职责一：写作台写入 API（docs/09 T5-1 · 决策 7.19）
 	  · POST   /api/verify  登录验证（token → {login, face}，替代 GitHub /user）
+	  · GET    /api/desk    首屏数据包（posts+categories+author+friends+tags，一次取齐；决策 7.41）
 	  · GET    /api/list    列目录（与 gh.js listDir 语义一致）
 	  · GET    /api/read    读文件（{content, sha}；404 = 不存在）
 	  · POST   /api/write   写文件（JSON 文本 / multipart 图片）
@@ -522,6 +523,7 @@ func main() {
 	s.rb.init()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/verify", s.handleVerify)
+	mux.HandleFunc("/api/desk", s.handleDesk)
 	mux.HandleFunc("/api/list", s.handleList)
 	mux.HandleFunc("/api/read", s.handleRead)
 	mux.HandleFunc("/api/write", s.handleWrite)

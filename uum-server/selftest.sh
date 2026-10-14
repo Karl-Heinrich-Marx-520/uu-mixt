@@ -4,9 +4,9 @@
 # 用法：
 #   BASE=http://127.0.0.1:8791 UU_TOKEN=<token> MIXT_TOKEN=<token> sh selftest.sh
 # 缺省 token 为本地开发值（对应 config.dev.json 里的 hash）。
-# 覆盖：verify(401/200/限流) · list(跨面403) · read(404) · write(新建/409/更新/
-#       路径穿越/绝对路径/超限413) · 站点级友链 · multipart 图片(200/后缀400/
-#       超限413) · delete(409/200/404) · 桌宠路由(502 无 Key) · healthz
+# 覆盖：verify(401/200/限流) · desk 首屏数据包(401/200/面隔离) · list(跨面403) ·
+#       read(404) · write(新建/409/更新/路径穿越/绝对路径/超限413) · 站点级友链 ·
+#       multipart 图片(200/后缀400/超限413) · delete(409/200/404) · 桌宠路由(502 无 Key) · healthz
 # ==========================================================================
 set -u
 BASE="${BASE:-http://127.0.0.1:8791}"
@@ -71,6 +71,24 @@ req GET "/api/read?path=src/content/mixt/tcache-layout.md" "$MIXT_TOKEN"
 check "read 本人文章 → 200" 200 "$code" '"sha"'
 req GET "/api/read?path=src/content/mixt/no-such.md" "$MIXT_TOKEN"
 check "read 不存在 → 404" 404 "$code" "404"
+
+echo "=== 3.5 首屏数据包（决策 7.41：一次取齐 posts/categories/author/friends/tags）==="
+req GET /api/desk ""
+check "desk 未登录 → 401" 401 "$code" "凭据无效"
+req GET /api/desk "$MIXT_TOKEN"
+check "desk Mixt → 200 含 posts 与 tags" 200 "$code" '"tags"'
+if grep -q '"posts":\[' "$BODY" && grep -q '"pool":' "$BODY"; then
+  ok "desk 响应含 posts 数组与标签池"
+else
+  bad "desk 响应结构不对（缺 posts/pool）"
+fi
+if grep -q '"path":"src/content/uu/' "$BODY"; then
+  bad "desk 面隔离：Mixt 的包里出现了 UU 面文章"
+else
+  ok "desk 面隔离：包里无他人面文章"
+fi
+req GET /api/desk "$UU_TOKEN"
+check "desk UU → 200（本人面独立打包）" 200 "$code" '"posts"'
 
 echo "=== 4. write（文本） ==="
 NEW='{"path":"src/content/mixt/hello.md","content":"---\ntitle: hello\n---\n\nhi\n","message":"content(mixt): 新增 hello"}'
@@ -168,8 +186,8 @@ check "配置中「堆利用」已移除且兜底已种子" 200 "$code" "未分�
 echo "=== 7. 桌宠路由（无 Key 上游 → 502 优雅报错）==="
 req POST /api/pet/chat "" '{"messages":[{"role":"user","content":"你好呀"}]}'
 check "pet/chat → 502 小鹿走神" 502 "$code" "小鹿走神"
-req POST /api/chat "" '{"messages":[{"role":"user","content":"你好呀"}]}'
-check "chat 兼容别名 → 502 同语义" 502 "$code" "小鹿走神"
+# 2026-10-14：删除「/api/chat 兼容别名」断言——pet.js 已于 09-23 切到 /api/pet/chat，
+# 别名按 petchat.go 头注「前端切换后移除」的约定不再注册，该断言恒红会掩盖真失败。
 
 echo "=== 8. healthz ==="
 req GET /healthz ""

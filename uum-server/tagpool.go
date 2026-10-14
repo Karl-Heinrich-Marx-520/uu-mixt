@@ -323,26 +323,27 @@ func (m *MockStore) BackfillTags() (int, error) {
 	return len(added), nil
 }
 
-/* ---------- GET /api/tags：汇总（文章标签计数 + 池） ---------- */
+/* ---------- 标签汇总（/api/tags 与 /api/desk 共用同一计算，避免两处口径漂移） ---------- */
 
-func (s *server) handleTags(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "GET only", http.StatusMethodNotAllowed)
-		return
-	}
-	if _, ok := s.author(r); !ok { // 站点级数据：读汇总不区分面，仅要求有效登录
-		unauthorized(w)
-		return
-	}
-	postTags, err := s.store.ScanTags()
+type tagStat struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// tagsPayload 汇总响应体形状：tags 按（篇数降序，名字升序）排序，pool 为池内容
+type tagsPayload struct {
+	Tags []tagStat `json:"tags"`
+	Pool []string  `json:"pool"`
+}
+
+func tagSummary(st Store) (tagsPayload, error) {
+	postTags, err := st.ScanTags()
 	if err != nil {
-		s.fail(w, err)
-		return
+		return tagsPayload{}, err
 	}
-	pool, err := s.store.ReadTagPool()
+	pool, err := st.ReadTagPool()
 	if err != nil {
-		s.fail(w, err)
-		return
+		return tagsPayload{}, err
 	}
 	counts := map[string]int{}
 	for _, tags := range postTags {
@@ -359,10 +360,6 @@ func (s *server) handleTags(w http.ResponseWriter, r *http.Request) {
 			names = append(names, t)
 		}
 	}
-	type tagStat struct {
-		Name  string `json:"name"`
-		Count int    `json:"count"`
-	}
 	out := make([]tagStat, 0, len(names))
 	for _, n := range names {
 		out = append(out, tagStat{Name: n, Count: counts[n]})
@@ -373,7 +370,29 @@ func (s *server) handleTags(w http.ResponseWriter, r *http.Request) {
 		}
 		return out[i].Name < out[j].Name
 	})
-	writeJSON(w, http.StatusOK, map[string]any{"tags": out, "pool": pool})
+	if pool == nil {
+		pool = []string{}
+	}
+	return tagsPayload{Tags: out, Pool: pool}, nil
+}
+
+/* ---------- GET /api/tags：汇总（文章标签计数 + 池） ---------- */
+
+func (s *server) handleTags(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "GET only", http.StatusMethodNotAllowed)
+		return
+	}
+	if _, ok := s.author(r); !ok { // 站点级数据：读汇总不区分面，仅要求有效登录
+		unauthorized(w)
+		return
+	}
+	out, err := tagSummary(s.store)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 /* ---------- POST /api/tags/add|rename|remove ---------- */
