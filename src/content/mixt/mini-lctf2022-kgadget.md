@@ -3,6 +3,7 @@ title: "[MINI-LCTF2022]kgadget"
 slug: mini-lctf2022-kgadget
 description: "MINI-LCTF2022 kgadget 是一道 Linux 内核 pwn 题，通过内核模块中的栈溢出与 ROP 链构造提权，涉及 SMAP/SMEP 绕过与内核地址泄露。"
 date: 2026-09-21
+updated: 2026-10-14
 author: mixt
 category: linux kernel pwn
 tags: [linux kernel pwn, ret2dir, 堆喷, nokaslr]
@@ -203,7 +204,7 @@ for(;idx < (page_size/8 - 0x10);idx++){
 
 ## 三.Exploit
 
-```text
+```c
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -481,6 +482,7 @@ pwndbg> x/40gx 0xffffc9000018ff58
   `grep -B2 -A2 'iretq' gadgets.txt | grep -B5 'swapgs'`
 
 > 那么我是如何在`kgadget`中找到它的呢？`gdb`崩溃的时候它正好在附近，莫名奇妙的
+
 
 
 
