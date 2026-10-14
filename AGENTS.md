@@ -112,7 +112,7 @@
 ## 4. 提交约定
 
 - 格式：`<type>(<scope>): 中文描述`
-- `type`：`feat` / `fix` / `docs` / `style` / `refactor` / `test` / `chore`
+- `type`：`feat` / `fix` / `perf` / `docs` / `style` / `refactor` / `test` / `chore`
 - `scope` 对应 §2.2 的分区：`shell`（共享外壳）/ `uu` / `mixt` / `pipeline` / `cms`（上传入口）/ `demo` / `docs` / `deploy`
 - **一文一提交**：一篇文章一个提交，不把多篇混在一起
 - **不依赖 PR 流程**：Mixt 走网页入口，开发只有 UI 窗口一人
@@ -194,6 +194,7 @@
 | 29 | **构建期依赖没有写进 package.json 就等于没有**：sharp 只在 package-lock 里出现、package.json 未声明时，`npm install` 会把它当多余依赖处理掉；而压缩脚本为了不阻断构建是「sharp 缺失 → 打印警告并跳过」——结果就是**静态图悄悄回到未压缩状态且无人报警** | 脚本用到的依赖必须显式声明（devDependencies）；同理：任何"优化类"步骤都不要让它有能力静默失败后还说成功，至少要有可见日志 | 2026-10-06 |
 | 30 | **本机跑不了 `npm audit`**：npmjs 经本机代理报 `Hostname/IP does not match certificate's altnames`，npmmirror 不支持 `/-/npm/v1/security/*` 端点 | 依赖安全审计**到服务器上跑**（直连可达）；不确定的升级（尤其 major）先查本站是否真用到相关代码路径再决定 | 2026-10-06 |
 | 31 | **服务器上 `npm audit fix --omit=dev` 会顺手剪掉 dev 依赖**：2026-10-06 实测把 sharp 从 `node_modules` 移除，而图片压缩脚本是「sharp 缺失 → 打印警告并跳过，不阻断构建」，于是**构建照常成功、图片却全未压缩，且没人看得见**（dist 悄悄回到 5.4MB） | ① 服务器上修依赖**不要带 `--omit=dev`**；② 修完立刻跑一次 rebuild，确认日志里有 compress-images 的压缩摘要；③ uum-rebuild.sh 已加兜底：产物中出现 >400KB 的图片就写 WARN 日志。教训：任何"为了不卡住发布而静默跳过"的优化步骤，都必须配一道**事后可见**的检查 | 2026-10-06 |
+| 32 | **首屏慢的真凶常是"请求数 × 往返"，不是体积**：写作台进入时要 1 次 list + 14 次 read + 3 次配置 + 1 次 tags，**18 次严格串行**（前台 `for`+`await`），作者侧每次往返 ≈0.5s → 首屏 9-10 秒；而静态资源、服务器负载、单请求耗时全都正常，所以怎么"优化性能"都看不到效果 | 首屏**先数请求数**（nginx access.log 的时间线就是最直接的证据，同一秒落多条＝并发正常）；能合并成一个端点的就合并（`/api/desk`：18 → 1），合不了的改成 `Promise.all` 并发。兜底路径必须能在端点缺失时回落到旧接口（部署顺序解耦） | 2026-10-14 |
 
 ---
 
