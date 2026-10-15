@@ -7,7 +7,7 @@ author: uu
 category: Boost.Asio
 tags: [C++, Boost.Asio, 网络编程, 异步编程]
 featured: false
-draft: true
+draft: false
 ---
 第 5 篇用协程把回调状态机收回了一个函数，但那台服务器说的还是我们自己定的 id-length-value 协议。换成 HTTP 会怎样？
 
@@ -645,4 +645,5 @@ int main() {
 - Boost.Asio 官方文档：[https://think-async.com/Asio/](https://think-async.com/Asio/)
 - cppreference（C++20 协程）：[https://en.cppreference.com/w/cpp/language/coroutines](https://en.cppreference.com/w/cpp/language/coroutines)
 - llfc 博客（C++ 后端教程）：[https://llfc.club/](https://llfc.club/)
+
 
