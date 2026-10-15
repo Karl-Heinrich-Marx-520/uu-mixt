@@ -4,7 +4,7 @@ slug: boost-asio-5
 description: "把第 4 篇的回调式异步服务器用 C++20 协程重写：co_await 挂起点、Asio 的 awaitable / use_awaitable / co_spawn，以及 strand 与取消语义"
 date: 2026-10-15
 author: uu
-category: C++
+category: Boost.Asio
 tags: [C++, Boost.Asio, 异步编程, 网络编程]
 featured: false
 draft: false
@@ -571,5 +571,6 @@ session 结束: End of file
 - llfc 博客（C++ 后端教程）：[https://llfc.club/](https://llfc.club/)
 
 第 6 篇会用 Boost.Beast 给服务器套一层 HTTP，到时候你会发现 HTTP 报文的解析也有它自己的状态机，以及 Beast 是怎么把这套状态机藏起来的。
+
 
 
