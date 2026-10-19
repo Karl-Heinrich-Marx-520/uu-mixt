@@ -461,7 +461,8 @@ pwndbg> x/40gx 0xffffc9000018ff58
 >
 >`vmlinux-to-elf vmlinux vmlinux.elf`
 >
->`nm ./vmlinux.elf |grep "swapgs_restore_regs_and_return_to_usermode`
+>`nm ./vmlinux.elf |grep "swapgs_restore_regs_and_return_to_usermode"`
+
 
 
 
