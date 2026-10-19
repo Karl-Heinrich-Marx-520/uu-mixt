@@ -455,15 +455,14 @@ pwndbg> x/40gx 0xffffc9000018ff58
 
 所以需要内核中现存的函数来返回到用户页表（`CR3`）
 
-我手写的链：`swapgs只切了GS ，iretq时CR3还是内核页表`
+手写的链：`swapgs只切了GS ，iretq时CR3还是内核页表`
 
->用户态代码 0x40188e 只存在于用户页表里。
->
-> 那么如何找到它的地址？
+> 那么如何找到`swapgs_restore_regs_and_return_to_usermode`的地址？
 >
 >`vmlinux-to-elf vmlinux vmlinux.elf`
 >
 >`nm ./vmlinux.elf |grep "swapgs_restore_regs_and_return_to_usermode`
+
 
 
 
