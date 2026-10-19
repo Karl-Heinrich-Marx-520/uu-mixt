@@ -3,7 +3,7 @@ title: "[MINI-LCTF2022]kgadget"
 slug: mini-lctf2022-kgadget
 description: "MINI-LCTF2022 kgadget 是一道 Linux 内核 pwn 题，通过内核模块中的栈溢出与 ROP 链构造提权，涉及 SMAP/SMEP 绕过与内核地址泄露。"
 date: 2026-09-21
-updated: 2026-10-14
+updated: 2026-10-19
 author: mixt
 category: linux kernel pwn
 tags: [linux kernel pwn, ret2dir, 堆喷, nokaslr]
@@ -418,9 +418,9 @@ pwndbg> x/40gx 0xffffc9000018ff58
    0xffffffff81c00fe9:	xchg   ax,ax
    0xffffffff81c00feb:	mov    rdi,cr3
    0xffffffff81c00fee:	jmp    0xffffffff81c01024
-   0xffffffff81c00ff0:	mov    rax,rdi
-   0xffffffff81c00ff3:	and    rdi,0x7ff
-   0xffffffff81c00ffa:	bt     QWORD PTR gs:0x33956,rdi
+
+---
+
 * pwndbg> x/30i  0xffffffff81c00fb0  + 27
    0xffffffff81c00fcb:	mov    rdi,rsp
    0xffffffff81c00fce:	mov    rsp,QWORD PTR gs:0x6004
@@ -434,28 +434,18 @@ pwndbg> x/40gx 0xffffc9000018ff58
    0xffffffff81c00fe9:	xchg   ax,ax
    0xffffffff81c00feb:	mov    rdi,cr3
    0xffffffff81c00fee:	jmp    0xffffffff81c01024
-   0xffffffff81c00ff0:	mov    rax,rdi
-   0xffffffff81c00ff3:	and    rdi,0x7ff
-   0xffffffff81c00ffa:	bt     QWORD PTR gs:0x33956,rdi
-   0xffffffff81c01004:	jae    0xffffffff81c01015
-   0xffffffff81c01006:	btr    QWORD PTR gs:0x33956,rdi
-   0xffffffff81c01010:	mov    rdi,rax
-   0xffffffff81c01013:	jmp    0xffffffff81c0101d
-   0xffffffff81c01015:	mov    rdi,rax
-   0xffffffff81c01018:	bts    rdi,0x3f
-   0xffffffff81c0101d:	or     rdi,0x800
+
    0xffffffff81c01024:	or     rdi,0x1000
-   0xffffffff81c0102b:	mov    cr3,rdi          ！！
-   0xffffffff81c0102e:	pop    rax              ！！
-   0xffffffff81c0102f:	pop    rdi              ！！
-   0xffffffff81c01030:	swapgs                  ！！
+   0xffffffff81c0102b:	mov    cr3,rdi          
+   0xffffffff81c0102e:	pop    rax              
+   0xffffffff81c0102f:	pop    rdi              
+   0xffffffff81c01030:	swapgs                  
    0xffffffff81c01033:	jmp    0xffffffff81c01060 
-   0xffffffff81c01038:	nop
-   0xffffffff81c01039:	pop    r15
+
 * pwndbg> x/40i 0xffffffff81c01060
-   0xffffffff81c01060:	test   BYTE PTR [rsp+0x20],0x4  ！！
-   0xffffffff81c01065:	jne    0xffffffff81c01069       ！！
-   0xffffffff81c01067:	iretq                           ！！
+   0xffffffff81c01060:	test   BYTE PTR [rsp+0x20],0x4  
+   0xffffffff81c01065:	jne    0xffffffff81c01069      
+   0xffffffff81c01067:	iretq                          
 
 ```
 
@@ -468,20 +458,14 @@ pwndbg> x/40gx 0xffffc9000018ff58
 我手写的链：`swapgs只切了GS ，iretq时CR3还是内核页表`
 
 >用户态代码 0x40188e 只存在于用户页表里。
->只要 CR3 还是内核页表，CPU 就查不到它。
 
 > 那么如何找到它的地址？
 
-* `符号entry_SYSCALL_64`几乎一定在`kallsyms`里
+`vmlinux-to-elf vmlinux vmlinux.elf`
 
-`entry_SYSCALL_64`和`swapgs_restore_regs_and_return_to_usermode`都在`entry_64.S`里
+`nm ./vmlinux.elf |grep "swapgs_restore_regs_and_return_to_usermode`
 
-* 或者直接在`gdb`里`x/200i 0xffffffff81c00080`
 
-* 也可以`ROPgadget --binary vmlinux --depth 30 > gadgets.txt`
-  `grep -B2 -A2 'iretq' gadgets.txt | grep -B5 'swapgs'`
-
-> 那么我是如何在`kgadget`中找到它的呢？`gdb`崩溃的时候它正好在附近，莫名奇妙的
 
 
 
