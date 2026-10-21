@@ -1,12 +1,13 @@
 ---
-title: "[RWCTF2022]Digging into kernel 1 & 2"
+title: "modprobe_path"
 slug: rwctf2022-digging-into-kernel-1-2
-description: "从 RWCTF2022 两道内核题出发，梳理 Linux 内核漏洞的利用思路与调试方法。"
+description: "利用UAF修改freelist为modprobe_path，利用modprobe_path以root权限执行恶意Shell脚本文件"
 date: 2026-10-21
 author: mixt
-category: IO_FILE
-tags: [kernel pwn, Linux kernel, CVE, ROP]
+category: linux kernel pwn
+tags: [kernel pwn, Linux kernel]
 featured: false
 draft: true
 ---
+
 
