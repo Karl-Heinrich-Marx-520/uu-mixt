@@ -3,6 +3,7 @@ title: "call $+5代码混淆"
 slug: call-5
 description: "通过call $+5 + 栈上返回地址修改代码混淆，破坏静态反汇编工具（如 IDA）的控制流分析，让伪代码生成失败或产生错误结果"
 date: 2026-10-03
+updated: 2026-10-30
 author: mixt
 category: 无
 tags: [无]
@@ -281,6 +282,8 @@ mixt@mixt-VMware-Virtual-Platform:~/pwn$ seccomp-tools dump ./service
 
 利用堆重叠修改`fake chunk2 size= 随便一个数`（别跟`fd`抢`tcache`位子就行），设置`fd = __free_hook`
 
+这样再释放chunk2，会在`tcache 0x230`留下`__free_hook`，并且由于chunk2的size已被修改，就不管它飞哪去了
+
 ```sh
 pwndbg> bins
 tcachebins
@@ -382,6 +385,7 @@ tcachebins
 ```
 
 题目链接：https://www.nssctf.cn/problem/635
+
 
 
 
