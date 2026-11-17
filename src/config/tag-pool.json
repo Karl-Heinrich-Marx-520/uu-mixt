@@ -27,5 +27,6 @@
   "kernel pwn",
   "CVE",
   "Linux kernel",
-  "条件竞争"
+  "条件竞争",
+  "数据库"
 ]
