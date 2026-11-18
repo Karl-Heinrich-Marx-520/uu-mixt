@@ -718,7 +718,7 @@ int main(){
 }
 ```
 
-![OOB2](D:\blog\OOB2.png)
+![OOB2](/images/mixt/OOB2.png)
 
 ## 三.漏洞利用
 
@@ -821,6 +821,7 @@ int main(int argc, char **argv){
 }
 ```
 
-![root](D:\blog\root.png)
+![root](/images/mixt/root.png)
+
 
 
