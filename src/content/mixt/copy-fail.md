@@ -3,6 +3,7 @@ title: "copy fail"
 slug: copy-fail
 description: "用户通过加密接口的漏洞绕过只读权限，往任意文件页缓存里写 4 字节"
 date: 2026-11-18
+updated: 2026-11-18
 author: mixt
 category: CVE
 tags: [Linux kernel, CVE]
@@ -821,7 +822,8 @@ int main(int argc, char **argv){
 }
 ```
 
-![root](/images/mixt/root.png)
+![copy-fail-root](/images/mixt/copy-fail-root.png)
+
 
 
 
