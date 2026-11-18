@@ -1,11 +1,11 @@
 ---
 title: "copy fail"
 slug: copy-fail
-description: "正文为空，标题「copy fail」未提供可摘要的内容，无法概括核心结论。"
+description: "用户通过加密接口的漏洞绕过只读权限，往任意文件页缓存里写 4 字节"
 date: 2026-11-18
 author: mixt
-category: IO_FILE
-tags: [C++]
+category: CVE
+tags: [Linux kernel, CVE]
 featured: false
 draft: true
 ---
@@ -822,4 +822,5 @@ int main(int argc, char **argv){
 ```
 
 ![root](D:\blog\root.png)
+
 
