@@ -7,7 +7,7 @@ author: mixt
 category: CVE
 tags: [Linux kernel, CVE]
 featured: false
-draft: true
+draft: false
 ---
 ## 一.前置
 
@@ -822,6 +822,7 @@ int main(int argc, char **argv){
 ```
 
 ![root](/images/mixt/root.png)
+
 
 
 
